@@ -1,0 +1,13 @@
+RewriteEngine On
+RewriteBase /tanda/
+
+# Bỏ đuôi .php cho các trang cơ bản
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.php -f
+RewriteRule ^(.*)$ $1.php [L]
+
+# Link cho trang Danh mục (VD: /danh-muc/camera-wifi)
+RewriteRule ^danh-muc/([a-zA-Z0-9-]+)$ category.php?slug=$1 [L,QSA]
+
+# Link cho trang Chi tiết sản phẩm (VD: /san-pham/camera-tapo-c200)
+RewriteRule ^san-pham/([a-zA-Z0-9-]+)$ product-detail.php?slug=$1 [L,QSA]
