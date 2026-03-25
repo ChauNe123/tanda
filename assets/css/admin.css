@@ -1,0 +1,74 @@
+/* assets/css/admin.css */
+* { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; margin: 0; padding: 0; }
+body { background-color: #eef2f6; color: #333; padding: 15px; }
+
+.admin-container { max-width: 800px; margin: 20px auto; display: flex; flex-direction: column; gap: 25px; }
+.card { background: #fff; padding: 30px 25px; border-radius: 12px; box-shadow: 0 5px 20px rgba(0,0,0,0.05); }
+
+.card-images { border-top: 5px solid #28a745; }
+.card-products { border-top: 5px solid #0056b3; }
+.card-banners { border-top: 5px solid #d9534f; }
+
+h2 { text-align: center; margin-bottom: 5px; font-size: 22px; }
+h2.text-green { color: #28a745; } 
+h2.text-blue { color: #0056b3; } 
+h2.text-red { color: #d9534f; }
+
+.subtitle { text-align: center; color: #666; font-size: 14px; margin-bottom: 25px; }
+.form-group { margin-bottom: 20px; }
+
+.file-upload-wrapper { position: relative; width: 100%; height: 65px; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px dashed; transition: 0.3s; }
+.wrap-green { border-color: #28a745; background: #f4fff6; } 
+.wrap-blue { border-color: #0056b3; background: #f4f9ff; } 
+.wrap-red { border-color: #d9534f; background: #fff5f5; }
+
+.wrap-green:hover { background: #e3ffe9; cursor: pointer; } 
+.file-upload-wrapper input[type="file"] { position: absolute; left: 0; top: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; z-index: 10; }
+.file-upload-text { font-weight: 600; font-size: 16px; z-index: 1; pointer-events: none; }
+.text-green { color: #28a745; } .text-blue { color: #0056b3; } .text-red { color: #d9534f; }
+
+.btn-submit { width: 100%; color: #fff; border: none; padding: 16px; border-radius: 8px; font-size: 18px; font-weight: bold; text-transform: uppercase; cursor: pointer; transition: 0.3s; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+.btn-green { background: #28a745; } .btn-green:hover { background: #218838; }
+.btn-blue { background: #0056b3; } .btn-blue:hover { background: #004494; }
+.btn-red { background: #d9534f; } .btn-red:hover { background: #c9302c; }
+
+.alert { padding: 15px; border-radius: 8px; margin-bottom: 20px; text-align: center; font-weight: bold; }
+.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+
+/* BẢNG PREVIEW HÌNH ẢNH */
+.preview-box { display: none; margin-top: 20px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background: #fff; }
+.preview-header { background: #f8f9fa; padding: 12px 15px; font-weight: bold; border-bottom: 1px solid #ddd; color: #333; }
+.preview-list { max-height: 350px; overflow-y: auto; padding: 10px; }
+.preview-item { display: flex; align-items: center; gap: 15px; padding: 10px; border-bottom: 1px dashed #eee; transition: 0.2s; }
+.preview-item:hover { background: #f9f9f9; }
+.preview-item:last-child { border-bottom: none; }
+.preview-img { width: 60px; height: 60px; object-fit: contain; border-radius: 6px; border: 1px solid #ddd; background: #fff; }
+.preview-input { flex: 1; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; }
+.preview-input:focus { outline: none; border-color: #28a745; box-shadow: 0 0 5px rgba(40,167,69,0.3); }
+
+/* NÚT THÊM & XÓA CỰC XỊN */
+.preview-actions { padding: 15px; background: #f8f9fa; border-top: 1px solid #ddd; display: flex; justify-content: flex-end; gap: 15px; align-items: center; }
+
+.btn-remove { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; transition: 0.2s; white-space: nowrap; }
+.btn-remove:hover { background: #ef4444; color: white; }
+
+.btn-add-more { background: #ffc107; color: #333; border: none; padding: 16px 25px; border-radius: 8px; cursor: pointer; font-weight: bold; transition: 0.2s; font-size: 16px; }
+.btn-add-more:hover { background: #e0a800; transform: translateY(-1px); }
+
+.loading { opacity: 0.5; pointer-events: none; }
+
+/* ========================================================= */
+/* BẢNG PREVIEW KHO HÀNG (MINI EXCEL)                        */
+/* ========================================================= */
+.csv-preview-box { display: none; margin-top: 20px; border: 1px solid #ddd; border-radius: 8px; overflow: hidden; background: #fff; }
+.table-wrapper { width: 100%; overflow-x: auto; max-height: 400px; overflow-y: auto; }
+.csv-table { width: 100%; border-collapse: collapse; min-width: 1200px; }
+.csv-table th { background: #0056b3; color: white; padding: 12px; font-size: 14px; position: sticky; top: 0; z-index: 2; border: 1px solid #004494; white-space: nowrap; }
+.csv-table td { border: 1px solid #ddd; padding: 0; position: relative; }
+.csv-table td input { width: 100%; height: 100%; border: none; padding: 10px; outline: none; font-size: 14px; min-width: 100px; background: transparent; }
+.csv-table td input:focus { background: #eaf4ff; box-shadow: inset 0 0 0 2px #0056b3; }
+.csv-table tr:hover td { background-color: #f8f9fa; }
+.btn-remove-row { background: #ff4d4d; color: white; border: none; border-radius: 4px; padding: 6px 10px; cursor: pointer; font-weight: bold; width: 100%; }
+.btn-remove-row:hover { background: #cc0000; }
+

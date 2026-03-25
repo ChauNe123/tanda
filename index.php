@@ -1,8 +1,24 @@
 <?php 
-// 1. Gọi file kết nối CSDL
-require_once 'cores/db_config.php'; // (Nhớ tạo thư mục core và bỏ file db.php vào đổi tên nhé)
+// 1. Kết nối Database
+require_once 'cores/db_config.php';
 
-// 2. Nhúng Header
+// 2. Lấy dữ liệu Banner từ Database
+$stmtBanners = $conn->prepare("SELECT banner_code, image_file, target_link FROM banners WHERE status = 1");
+$stmtBanners->execute();
+$bannerList = $stmtBanners->fetchAll();
+
+// Tạo một mảng banner dễ gọi (Ví dụ gọi: $banners['BANNER-CHINH'])
+$banners = [];
+foreach ($bannerList as $b) {
+    $banners[$b['banner_code']] = $b;
+}
+
+// 3. Lấy danh sách Sản Phẩm (Mới nhất lên đầu)
+$stmtProds = $conn->prepare("SELECT * FROM products WHERE status = 1 ORDER BY sku DESC LIMIT 12");
+$stmtProds->execute();
+$products = $stmtProds->fetchAll();
+
+// 4. Gọi Header (Thanh menu trên cùng)
 include 'includes/header.php'; 
 ?>
 
@@ -17,43 +33,81 @@ include 'includes/header.php';
                 <li>👉 Phụ Kiện Lắp Đặt</li>
             </ul>
         </div>
+        
         <div class="banner-chinh">
-            <img src="https://cdn.hoanghamobile.com/i/home/Uploads/2023/10/26/web-camera.png" alt="Banner Camera">
+            <?php if(isset($banners['BANNER-CHINH'])): ?>
+                <a href="<?php echo htmlspecialchars($banners['BANNER-CHINH']['target_link']); ?>">
+                    <img src="uploads/<?php echo htmlspecialchars($banners['BANNER-CHINH']['image_file']); ?>" alt="Banner Chính">
+                </a>
+            <?php else: ?>
+                <img src="https://via.placeholder.com/800x400?text=CHUA+UP+BANNER+CHINH" alt="Chưa có banner">
+            <?php endif; ?>
         </div>
+        
         <div class="banner-phu">
-            <img src="https://cdn.hoanghamobile.com/i/home/Uploads/2023/08/11/thay-man-hinh-samsung.png" alt="Banner phụ 1">
-            <img src="https://cdn.hoanghamobile.com/i/home/Uploads/2023/07/28/banner-b2b-01.png" alt="Banner phụ 2">
+            <?php if(isset($banners['BANNER-PHU-1'])): ?>
+                <img src="uploads/<?php echo htmlspecialchars($banners['BANNER-PHU-1']['image_file']); ?>" alt="Banner phụ 1">
+            <?php endif; ?>
+            <?php if(isset($banners['BANNER-PHU-2'])): ?>
+                <img src="uploads/<?php echo htmlspecialchars($banners['BANNER-PHU-2']['image_file']); ?>" alt="Banner phụ 2">
+            <?php endif; ?>
         </div>
     </div>
 </section>
 
-<section class="flash-sale-bg">
+<?php 
+// Lấy ảnh nền Flash Sale từ DB, nếu không có thì xài màu đỏ tĩnh
+$flashSaleBg = isset($banners['FLASH-SALE-BG']) ? 'uploads/' . htmlspecialchars($banners['FLASH-SALE-BG']['image_file']) : '';
+?>
+<section class="flash-sale-bg" style="<?php echo !empty($flashSaleBg) ? "background-image: url('$flashSaleBg');" : "background-color: #d92515;"; ?>">
     <div class="container">
         <div class="title-img">
             <h2>⚡ ĐANG DIỄN RA - GIÁ TỐT CHỐT NGAY ⚡</h2>
         </div>
         
         <div class="product-grid">
-            <div class="product-card">
-                <div class="img-wrap">
-                    <img src="https://cdn.hoanghamobile.com/i/productlist/ts/Uploads/2023/06/13/camera-ip-wifi-tp-link-tapo-c200-360-1080p-2mp-1.png" class="sp-goc" alt="Tapo C200">
-                    <img src="https://theme.hstatic.net/200000722513/1001090675/14/frame_1.png?v=3834" class="sp-vien" alt="khung">
-                    <span class="discount-badge">-25%</span>
-                </div>
-                <div class="info">
-                    <h3>Camera IP Wifi TP-Link Tapo C200 1080p</h3>
-                    <div class="price-area">
-                        <span class="price-new">450.000đ</span>
-                        <span class="price-old">600.000đ</span>
+            <?php if(count($products) > 0): ?>
+                <?php foreach($products as $p): ?>
+                <div class="product-card">
+                    <div class="img-wrap">
+                        <a href="san-pham/<?php echo htmlspecialchars($p['slug']); ?>">
+                            <img src="uploads/<?php echo htmlspecialchars($p['image_file']); ?>" class="sp-goc" alt="<?php echo htmlspecialchars($p['name']); ?>">
+                            
+                            <?php if(!empty($p['frame_file'])): ?>
+                                <img src="uploads/<?php echo htmlspecialchars($p['frame_file']); ?>" class="sp-vien" alt="khung">
+                            <?php endif; ?>
+                        </a>
+                        
+                        <?php if($p['sale_price'] > 0 && $p['price'] > $p['sale_price']): ?>
+                            <?php $percent = round((($p['price'] - $p['sale_price']) / $p['price']) * 100); ?>
+                            <span class="discount-badge">-<?php echo $percent; ?>%</span>
+                        <?php endif; ?>
                     </div>
-                    <button class="btn-zalo">💬 Chốt đơn qua Zalo</button>
+                    
+                    <div class="info">
+                        <a href="san-pham/<?php echo htmlspecialchars($p['slug']); ?>">
+                            <h3><?php echo htmlspecialchars($p['name']); ?></h3>
+                        </a>
+                        <div class="price-area">
+                            <?php if($p['sale_price'] > 0): ?>
+                                <span class="price-new"><?php echo number_format($p['sale_price'], 0, ',', '.'); ?>đ</span>
+                                <span class="price-old"><?php echo number_format($p['price'], 0, ',', '.'); ?>đ</span>
+                            <?php else: ?>
+                                <span class="price-new"><?php echo number_format($p['price'], 0, ',', '.'); ?>đ</span>
+                            <?php endif; ?>
+                        </div>
+                        <button class="btn-zalo" onclick="orderViaZalo('<?php echo htmlspecialchars($p['name']); ?>', '<?php echo $p['sale_price'] > 0 ? $p['sale_price'] : $p['price']; ?>')">💬 Chốt đơn qua Zalo</button>
+                    </div>
                 </div>
-            </div>
-            </div>
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p style="color:#fff; text-align:center; width:100%; font-size:18px;">Chưa có sản phẩm nào trong kho. Hãy nạp file CSV!</p>
+            <?php endif; ?>
+        </div>
     </div>
 </section>
 
 <?php 
-// 3. Nhúng Footer
+// 5. Gọi Footer
 include 'includes/footer.php'; 
 ?>
