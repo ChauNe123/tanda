@@ -6,9 +6,16 @@ ini_set('display_errors', 1);
 
 require_once '../cores/db_config.php';
 
-// XỬ LÝ AJAX: NHẬN HÌNH ẢNH
+// ---------------------------------------------------------
+// XỬ LÝ AJAX 1: NHẬN HÌNH ẢNH (PHÂN LOẠI THƯ MỤC)
+// ---------------------------------------------------------
 if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'upload_images') {
-    $target_dir = "../uploads/";
+    
+    // Bắt lấy lựa chọn của khách hàng (mặc định là uploads cho sản phẩm)
+    $folder_name = (isset($_POST['target_folder']) && $_POST['target_folder'] == 'banners') ? 'banners' : 'uploads';
+    
+    // Đường dẫn tới đúng thư mục
+    $target_dir = "../" . $folder_name . "/";
     if (!is_dir($target_dir)) { mkdir($target_dir, 0777, true); }
 
     $count_success = 0; $count_error = 0;
@@ -32,14 +39,16 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'upload_images') {
     exit;
 }
 
-// [MỚI] XỬ LÝ AJAX: NHẬN FILE CSV KHO HÀNG ĐÃ CHỈNH SỬA
+// ---------------------------------------------------------
+// XỬ LÝ AJAX 2: NHẬN DỮ LIỆU KHO HÀNG (TỪ MINI-EXCEL)
+// ---------------------------------------------------------
 if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'upload_products') {
     if (isset($_FILES['csv_products']) && $_FILES['csv_products']['error'] == 0) {
         $file_tmp = $_FILES['csv_products']['tmp_name'];
         if (($handle = fopen($file_tmp, "r")) !== FALSE) {
             $count_success = 0; $row_num = 0;
             while (($row = fgetcsv($handle, 10000, ",")) !== FALSE) {
-                $row_num++; if ($row_num == 1) continue; // Bỏ dòng tiêu đề
+                $row_num++; if ($row_num == 1) continue; 
 
                 $sku        = trim(preg_replace('/[\xEF\xBB\xBF]/', '', $row[0] ?? '')); 
                 $cat_code   = trim($row[1] ?? ''); $name = trim($row[2] ?? '');
@@ -87,43 +96,9 @@ function createSlug($str) {
     return trim($str, '-');
 }
 
-// XỬ LÝ NẠP KHO HÀNG
-if (isset($_POST['btn_upload_products'])) {
-    if (isset($_FILES['csv_products']) && $_FILES['csv_products']['error'] == 0) {
-        $file_tmp = $_FILES['csv_products']['tmp_name'];
-        if (($handle = fopen($file_tmp, "r")) !== FALSE) {
-            $count_success = 0; $row_num = 0;
-            while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
-                $row_num++; if ($row_num == 1) continue;
-
-                $sku        = trim(preg_replace('/[\xEF\xBB\xBF]/', '', $row[0] ?? '')); 
-                $cat_code   = trim($row[1] ?? ''); $name = trim($row[2] ?? '');
-                $price      = (int)($row[3] ?? 0); $sale_price = (int)($row[4] ?? 0); 
-                $coupon     = trim($row[5] ?? ''); $image_file = trim($row[6] ?? ''); 
-                $frame_file = trim($row[7] ?? ''); $specs = trim($row[8] ?? ''); 
-                $status     = (int)($row[9] ?? 0);
-                
-                if(empty($sku) || empty($name)) continue;
-                $slug = createSlug($name);
-
-                $sql = "INSERT INTO products (sku, cat_code, name, slug, price, sale_price, coupon_code, image_file, frame_file, specs_summary, status) 
-                        VALUES (:sku, :cat, :name, :slug, :price, :sale, :coupon, :img, :frame, :specs, :stt)
-                        ON DUPLICATE KEY UPDATE 
-                        cat_code=VALUES(cat_code), name=VALUES(name), slug=VALUES(slug), price=VALUES(price), 
-                        sale_price=VALUES(sale_price), coupon_code=VALUES(coupon_code), image_file=VALUES(image_file), 
-                        frame_file=VALUES(frame_file), specs_summary=VALUES(specs_summary), status=VALUES(status)";
-                
-                $stmt = $conn->prepare($sql);
-                $stmt->execute([':sku'=>$sku, ':cat'=>$cat_code, ':name'=>$name, ':slug'=>$slug, ':price'=>$price, ':sale'=>$sale_price, ':coupon'=>$coupon, ':img'=>$image_file, ':frame'=>$frame_file, ':specs'=>$specs, ':stt'=>$status]);
-                $count_success++;
-            }
-            fclose($handle);
-            $message = "<div class='alert success'>✅ Đã nạp $count_success SẢN PHẨM vào kho!</div>";
-        }
-    }
-}
-
-// XỬ LÝ NẠP GIAO DIỆN
+// ---------------------------------------------------------
+// XỬ LÝ 3: NẠP GIAO DIỆN BẰNG NÚT CỔ ĐIỂN
+// ---------------------------------------------------------
 if (isset($_POST['btn_upload_banners'])) {
     if (isset($_FILES['csv_banners']) && $_FILES['csv_banners']['error'] == 0) {
         $file_tmp = $_FILES['csv_banners']['tmp_name'];
@@ -147,7 +122,7 @@ if (isset($_POST['btn_upload_banners'])) {
                 $count_success++;
             }
             fclose($handle);
-            $message = "<div class='alert success'>🎨 ✅ Đã cập nhật $count_success BANNER!</div>";
+            $message = "<div class='alert success'>🎨 ✅ Đã cập nhật $count_success BANNER GIAO DIỆN!</div>";
         }
     }
 }
@@ -157,9 +132,8 @@ if (isset($_POST['btn_upload_banners'])) {
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản trị Hệ thống KB Tech</title>
-    
     <link rel="stylesheet" href="../assets/css/admin.css?v=<?php echo time(); ?>">
 </head>
 <body>
@@ -168,9 +142,19 @@ if (isset($_POST['btn_upload_banners'])) {
     <div id="msg-box"><?php echo $message; ?></div>
 
     <div class="card card-images" id="image-upload-section">
-        <h2 class="text-green">🖼️ NẠP HÌNH ẢNH SẢN PHẨM</h2>
-        <p class="subtitle">Bôi đen nhiều ảnh -> Đổi tên trực tiếp -> Bấm Tải Lên</p>
+        <h2 class="text-green">🖼️ NẠP HÌNH ẢNH LÊN SERVER</h2>
+        <p class="subtitle">Bôi đen nhiều ảnh -> Đổi tên -> Bấm Tải Lên</p>
         
+        <div style="text-align: center; margin-bottom: 15px; font-weight: bold; background: #f4fff6; padding: 10px; border-radius: 8px; border: 1px dashed #28a745;">
+            Lưu ảnh này vào thư mục nào?<br><br>
+            <label style="cursor: pointer; margin-right: 30px;">
+                <input type="radio" name="target_folder" value="uploads" checked> 📦 Ảnh Sản Phẩm
+            </label>
+            <label style="cursor: pointer;">
+                <input type="radio" name="target_folder" value="banners"> 🎨 Ảnh Banner/Trang Trí
+            </label>
+        </div>
+
         <div class="form-group">
             <div class="file-upload-wrapper wrap-green">
                 <span class="file-upload-text text-green" id="file-name-images">📁 Chạm để chọn nhiều ảnh cùng lúc...</span>
@@ -200,27 +184,45 @@ if (isset($_POST['btn_upload_banners'])) {
         </div>
 
         <div class="csv-preview-box" id="csv-preview-box">
-            <div class="preview-header text-blue">📝 BẢNG CHỈNH SỬA DỮ LIỆU KHO HÀNG (Sửa trực tiếp vào ô):</div>
-            <div class="table-wrapper" id="csv-table-wrapper">
-                </div>
+            <div class="preview-header text-blue">📝 BẢNG CHỈNH SỬA DỮ LIỆU KHO HÀNG:</div>
+            <div class="table-wrapper" id="csv-table-wrapper"></div>
             <div class="preview-actions">
                 <button type="button" class="btn-submit btn-blue" id="btn_confirm_csv" style="width: auto;">🚀 LƯU VÀO DATABASE</button>
             </div>
         </div>
     </div>
 
-    <div class="card card-banners">
+    <div class="card card-banners" id="banner-upload-section">
         <h2 class="text-red">🎨 THAY ÁO GIAO DIỆN WEB</h2>
-        <p class="subtitle">Dùng file <strong>Trang_Tri.csv</strong> (Cấu trúc 4 cột)</p>
-        <form action="" method="POST" enctype="multipart/form-data">
+        <p class="subtitle">Tải CSV thiết kế mới -> Xem Demo thu nhỏ bên dưới -> Xác nhận</p>
+        
+        <form action="" method="POST" enctype="multipart/form-data" id="form-csv-banners">
             <div class="form-group">
                 <div class="file-upload-wrapper wrap-red">
                     <span class="file-upload-text text-red" id="file-name-banners">📁 Chạm để chọn file Trang_Tri.csv...</span>
-                    <input type="file" name="csv_banners" id="csv_banners" accept=".csv" required>
+                    <input type="file" name="csv_banners" id="csv_banners_input" accept=".csv" required>
                 </div>
             </div>
-            <button type="submit" name="btn_upload_banners" class="btn-submit btn-red">✨ Đổi Banner Sự Kiện</button>
+            <button type="submit" name="btn_upload_banners" class="btn-submit btn-red" id="btn_submit_banners_legacy">✨ Đổi Banner Sự Kiện (Nạp Trực Tiếp)</button>
         </form>
+
+        <div class="design-preview-box" id="design-preview-box">
+            <div class="design-header">👁️ MÔ HÌNH GIAO DIỆN MỚI (XEM TRƯỚC):</div>
+            <div class="demo-layout">
+                <div class="demo-hero">
+                    <div class="demo-menu">Menu Tĩnh</div>
+                    <div class="demo-banner-chinh-wrap" id="demo-BANNER-CHINH"><span class="demo-placeholder-text">Banner Chính</span></div>
+                    <div class="demo-banner-phu-wrap">
+                        <div class="demo-banner-phu-item" id="demo-BANNER-PHU-1"></div>
+                        <div class="demo-banner-phu-item" id="demo-BANNER-PHU-2"></div>
+                    </div>
+                </div>
+                <div class="demo-flash-sale" id="demo-FLASH-SALE-BG">Flash Sale Area</div>
+            </div>
+            <div class="preview-actions">
+                <button type="button" class="btn-submit btn-red" id="btn_confirm_design" style="width: auto;">🚀 XÁC NHẬN THAY ÁO GIAO DIỆN</button>
+            </div>
+        </div>
     </div>
 </div>
 
