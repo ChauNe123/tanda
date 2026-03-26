@@ -194,39 +194,50 @@ if (isset($_POST['btn_upload_banners'])) {
 
     <div class="card card-banners" id="banner-upload-section">
         <h2 class="text-red">🎨 THAY ÁO GIAO DIỆN WEB</h2>
-        <p class="subtitle">Tải CSV thiết kế mới -> Xem Demo thu nhỏ bên dưới -> Xác nhận</p>
+        <p class="subtitle">Tải CSV thiết kế mới -> Bấm XEM THỬ -> Xác nhận</p>
         
         <form action="" method="POST" enctype="multipart/form-data" id="form-csv-banners">
+            <input type="hidden" name="btn_upload_banners" value="1">
             <div class="form-group">
                 <div class="file-upload-wrapper wrap-red">
                     <span class="file-upload-text text-red" id="file-name-banners">📁 Chạm để chọn file Trang_Tri.csv...</span>
                     <input type="file" name="csv_banners" id="csv_banners_input" accept=".csv" required>
                 </div>
             </div>
-            <button type="submit" name="btn_upload_banners" class="btn-submit btn-red" id="btn_submit_banners_legacy">✨ Đổi Banner Sự Kiện (Nạp Trực Tiếp)</button>
+            <button type="submit" class="btn-submit btn-red" id="btn_submit_banners_legacy" style="display: none;">✨ Đổi Banner Sự Kiện</button>
         </form>
 
-        <div class="design-preview-box" id="design-preview-box">
-            <div class="design-header">👁️ MÔ HÌNH GIAO DIỆN MỚI (XEM TRƯỚC):</div>
-            <div class="demo-layout">
-                <div class="demo-hero">
-                    <div class="demo-menu">Menu Tĩnh</div>
-                    <div class="demo-banner-chinh-wrap" id="demo-BANNER-CHINH"><span class="demo-placeholder-text">Banner Chính</span></div>
-                    <div class="demo-banner-phu-wrap">
-                        <div class="demo-banner-phu-item" id="demo-BANNER-PHU-1"></div>
-                        <div class="demo-banner-phu-item" id="demo-BANNER-PHU-2"></div>
-                    </div>
-                </div>
-                <div class="demo-flash-sale" id="demo-FLASH-SALE-BG">Flash Sale Area</div>
+        <div id="design-action-box" style="display: none; margin-top: 15px;">
+            <div class="action-buttons">
+                <button type="button" class="btn-preview" id="btn_preview_design">👁️ XEM THỬ GIAO DIỆN</button>
+                <button type="button" class="btn-cancel-file" id="btn_cancel_design">❌ HỦY BỎ FILE</button>
             </div>
-            <div class="preview-actions">
-                <button type="button" class="btn-submit btn-red" id="btn_confirm_design" style="width: auto;">🚀 XÁC NHẬN THAY ÁO GIAO DIỆN</button>
+            <button type="button" class="btn-submit btn-red" id="btn_confirm_design">🚀 XÁC NHẬN TẢI LÊN SERVER</button>
+        </div>
+    </div>
+</div> <div id="realPreviewModal" class="tanda-modal">
+    <div class="tanda-modal-content">
+        <div class="tanda-modal-header">
+            <h2>👁️ XEM THỬ TRANG CHỦ TANDA</h2>
+            <button type="button" class="tanda-modal-close" id="btn_close_preview">ĐÓNG LẠI</button>
+        </div>
+        <div class="tanda-modal-body">
+            <div class="tp-top-bar"><div class="tp-container"><span>📍 Hệ thống showroom</span> &nbsp;&nbsp;&nbsp; <span>📞 Bán hàng trực tuyến</span></div></div>
+            <div class="tp-main-header"><div class="tp-container"><div class="tp-logo">TAN<span>DA</span></div></div></div>
+            <div class="tp-nav-bar"><div class="tp-container"><div class="tp-nav-category">DANH MỤC SẢN PHẨM</div></div></div>
+            
+            <div class="tp-container tp-banner-section">
+                <div class="tp-banner-top" id="prev-BANNER-CHINH"></div>
+                <div class="tp-banner-bottom-row">
+                    <div class="tp-banner-item" id="prev-BANNER-PHU-1"></div>
+                    <div class="tp-banner-item" id="prev-BANNER-PHU-2"></div>
+                    <div class="tp-banner-item" id="prev-BANNER-PHU-3"></div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <script src="../assets/js/admin_import.js?v=<?php echo time(); ?>"></script>
-
 </body>
 </html>

@@ -72,3 +72,33 @@ h2.text-red { color: #d9534f; }
 .btn-remove-row { background: #ff4d4d; color: white; border: none; border-radius: 4px; padding: 6px 10px; cursor: pointer; font-weight: bold; width: 100%; }
 .btn-remove-row:hover { background: #cc0000; }
 
+/* ========================================================= */
+/* NÚT THAO TÁC & MODAL XEM THỬ TRANG CHỦ REALISTIC          */
+/* ========================================================= */
+.action-buttons { display: flex; gap: 15px; margin-bottom: 15px; }
+.btn-preview { flex: 1; background: #0056b3; color: white; border: none; padding: 14px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; transition: 0.2s; }
+.btn-preview:hover { background: #004494; }
+.btn-cancel-file { flex: 1; background: #ff4d4d; color: white; border: none; padding: 14px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; transition: 0.2s; }
+.btn-cancel-file:hover { background: #cc0000; }
+
+.tanda-modal { display: none; position: fixed; z-index: 10000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.8); align-items: center; justify-content: center; }
+.tanda-modal-content { background-color: #f4f6f9; width: 95%; height: 95%; border-radius: 8px; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.tanda-modal-header { background: #fff; padding: 15px 20px; border-bottom: 2px solid #ff5722; display: flex; justify-content: space-between; align-items: center; }
+.tanda-modal-header h2 { color: #ff5722; margin: 0; font-size: 20px; text-transform: uppercase; }
+.tanda-modal-close { background: #ff4d4d; color: white; border: none; padding: 8px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 14px; transition: 0.2s; }
+.tanda-modal-close:hover { background: #cc0000; }
+
+.tanda-modal-body { flex: 1; overflow-y: auto; padding: 0; background: #f4f6f9; }
+
+/* Giao diện Fake y chang trang chủ TANDA để xem thử */
+.tp-container { max-width: 1200px; margin: 0 auto; padding: 0 10px; }
+.tp-top-bar { background: #003028; color: #fff; padding: 10px 0; font-size: 13px; font-weight: 500; }
+.tp-main-header { background: #fff; padding: 25px 0; }
+.tp-logo { font-size: 38px; font-weight: 900; color: #222; }
+.tp-logo span { color: #ff5722; }
+.tp-nav-bar { background: #fff; border-bottom: 2px solid #eee; }
+.tp-nav-category { background: #003028; color: #fff; padding: 15px 20px; font-weight: 700; width: 260px; border-radius: 6px 6px 0 0; }
+.tp-banner-section { margin-top: 15px; margin-bottom: 40px; }
+.tp-banner-top { width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+.tp-banner-bottom-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.tp-banner-item { border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }

@@ -172,62 +172,92 @@ if (btnConfirmCSV) {
 }
 
 // =========================================================
-// 3. DEMO LAYOUT GIAO DIỆN (BANNER)
+// 3. XỬ LÝ CHỌN FILE, HỦY FILE VÀ XEM THỬ REALISTIC
 // =========================================================
 const csvBannersInput = document.getElementById('csv_banners_input');
-const designPreviewBox = document.getElementById('design-preview-box');
+const designActionBox = document.getElementById('design-action-box');
+const btnPreviewDesign = document.getElementById('btn_preview_design');
+const btnCancelDesign = document.getElementById('btn_cancel_design');
 const btnConfirmDesign = document.getElementById('btn_confirm_design');
 const formCsvBanners = document.getElementById('form-csv-banners');
+
+const realPreviewModal = document.getElementById('realPreviewModal');
+const btnClosePreview = document.getElementById('btn_close_preview');
+
 let designData = [];
 
+// KHI CHỌN FILE CSV
 if (csvBannersInput) {
     csvBannersInput.addEventListener('change', function(e) {
         let file = e.target.files[0];
         if (!file) return;
-        document.getElementById('file-name-banners').innerHTML = '📄 Đang check file: ' + file.name;
+        document.getElementById('file-name-banners').innerHTML = '📄 Đã chọn file: ' + file.name;
+        
         let reader = new FileReader();
         reader.onload = function(event) {
             designData = CSVToArray(event.target.result); 
-            renderDesignDemo(); 
+            // Hiện các nút thao tác lên
+            designActionBox.style.display = 'block';
         };
         reader.readAsText(file, 'UTF-8');
     });
 }
 
-function renderDesignDemo() {
-    if(designData.length < 2) return;
-    const positions = ['BANNER-CHINH', 'BANNER-PHU-1', 'BANNER-PHU-2', 'FLASH-SALE-BG'];
-    positions.forEach(pos => {
-        const wrap = document.getElementById('demo-' + pos);
-        if(wrap) { wrap.innerHTML = ''; }
+// KHI BẤM NÚT HỦY BỎ (XÓA FILE)
+if (btnCancelDesign) {
+    btnCancelDesign.addEventListener('click', function() {
+        csvBannersInput.value = ''; // Xóa dữ liệu file đã chọn
+        document.getElementById('file-name-banners').innerHTML = '📁 Chạm để chọn file Trang_Tri.csv...';
+        designActionBox.style.display = 'none'; // Giấu nút đi
+        designData = [];
     });
-
-    let foundValidData = false;
-    designData.forEach((row, rIdx) => {
-        if (rIdx === 0 || (row.length === 1 && row[0] === "")) return;
-        let bannerCode = (row[0] ?? '').trim(); 
-        let imageFile  = (row[1] ?? '').trim();
-        let status     = (row[3] ?? '1').trim();
-
-        if (positions.includes(bannerCode) && imageFile !== '' && status === '1') {
-            const wrap = document.getElementById('demo-' + bannerCode);
-            if (wrap) {
-                // ĐÃ SỬA THÀNH THƯ MỤC BANNERS
-                wrap.innerHTML = `<img src="../banners/${imageFile}" class="demo-img" alt="${bannerCode}">`;
-                foundValidData = true;
-            }
-        }
-    });
-
-    if (foundValidData) {
-        designPreviewBox.style.display = 'block';
-        document.getElementById('btn_submit_banners_legacy').style.display = 'none';
-    } else {
-        designPreviewBox.style.display = 'none';
-        document.getElementById('btn_submit_banners_legacy').style.display = 'block';
-    }
 }
 
+// KHI BẤM NÚT XEM THỬ GIAO DIỆN
+if (btnPreviewDesign) {
+    btnPreviewDesign.addEventListener('click', function() {
+        if(designData.length < 2) {
+            alert("File CSV không hợp lệ hoặc trống!"); return;
+        }
+        
+        const positions = ['BANNER-CHINH', 'BANNER-PHU-1', 'BANNER-PHU-2', 'BANNER-PHU-3'];
+        
+        // Reset hình cũ thành ảnh mồi
+        positions.forEach(pos => {
+            const wrap = document.getElementById('prev-' + pos);
+            if(wrap) { 
+                wrap.innerHTML = `<img src="https://via.placeholder.com/1200x350/003028/ffffff?text=${pos}+CHƯA+KÊU" style="width:100%; display:block; object-fit:cover;">`; 
+            }
+        });
+
+        // Bơm hình mới từ CSV vào Model
+        designData.forEach((row, rIdx) => {
+            if (rIdx === 0 || (row.length === 1 && row[0] === "")) return;
+            let bannerCode = (row[0] ?? '').trim(); 
+            let imageFile  = (row[1] ?? '').trim();
+            let status     = (row[3] ?? '1').trim();
+
+            if (positions.includes(bannerCode) && imageFile !== '' && status === '1') {
+                const wrap = document.getElementById('prev-' + bannerCode);
+                if (wrap) {
+                    wrap.innerHTML = `<img src="../banners/${imageFile}" alt="${bannerCode}" style="width:100%; display:block; object-fit:cover; border-radius: 8px;">`;
+                }
+            }
+        });
+
+        // Mở popup toàn màn hình lên
+        realPreviewModal.style.display = 'flex';
+    });
+}
+
+// KHI BẤM ĐÓNG XEM THỬ
+if (btnClosePreview) {
+    btnClosePreview.addEventListener('click', () => {
+        realPreviewModal.style.display = 'none';
+    });
+}
+
+// KHI BẤM XÁC NHẬN TẢI LÊN
 if (btnConfirmDesign) {
     btnConfirmDesign.addEventListener('click', () => formCsvBanners.submit());
 }
