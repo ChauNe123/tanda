@@ -1,4 +1,9 @@
 <?php 
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+require_once 'cores/db_config.php';
+// ... code cũ của ông ...
 require_once 'cores/db_config.php';
 
 // 1. Kéo Banners từ Database
@@ -9,9 +14,9 @@ $banners = [];
 foreach ($bannerList as $b) { $banners[$b['banner_code']] = $b; }
 
 // 2. Kéo TẤT CẢ Sản phẩm đang bật lên
-$stmtProds = $conn->prepare("SELECT * FROM products WHERE status = 1 ORDER BY sku DESC");
-$stmtProds->execute();
-$allProducts = $stmtProds->fetchAll();
+$stmtPro = $conn->prepare("SELECT * FROM products WHERE status = 1 ORDER BY sort_order ASC");
+$stmtPro->execute();
+$allProducts = $stmtPro->fetchAll(); // <-- Đổi tên biến ở đây thành $allProducts cho khớp với khúc dưới
 
 // 3. Phân loại sản phẩm vào các nhóm để đẩy ra giao diện TANDA
 $dealHotProds = [];
@@ -222,7 +227,7 @@ if(empty($dauGhiProds)) $dauGhiProds = array_slice($allProducts, 0, 8);
     <section class="banner-section container">
         <a href="<?php echo isset($banners['BANNER-CHINH']) ? htmlspecialchars($banners['BANNER-CHINH']['target_link']) : '#'; ?>" class="banner-top">
             <?php if(isset($banners['BANNER-CHINH'])): ?>
-                <img src="banners/<?php echo htmlspecialchars($banners['BANNER-CHINH']['image_file']); ?>" alt="Banner Chính">
+                <img src="banners/<?php echo htmlspecialchars($banners['BANNER-CHINH']['image_file']); ?>?v=<?php echo time(); ?>" alt="Banner Chính">
             <?php else: ?>
                 <img src="https://via.placeholder.com/1200x350/ff5722/ffffff?text=BANNER-CHINH+(1200x350)" alt="Trống">
             <?php endif; ?>
@@ -230,21 +235,21 @@ if(empty($dauGhiProds)) $dauGhiProds = array_slice($allProducts, 0, 8);
         <div class="banner-bottom-row">
             <a href="<?php echo isset($banners['BANNER-PHU-1']) ? htmlspecialchars($banners['BANNER-PHU-1']['target_link']) : '#'; ?>" class="banner-item">
                 <?php if(isset($banners['BANNER-PHU-1'])): ?>
-                    <img src="banners/<?php echo htmlspecialchars($banners['BANNER-PHU-1']['image_file']); ?>">
+                    <img src="banners/<?php echo htmlspecialchars($banners['BANNER-PHU-1']['image_file']); ?>?v=<?php echo time(); ?>">
                 <?php else: ?>
                     <img src="https://via.placeholder.com/400x150/003028/ffffff?text=BANNER-PHU-1+(400x150)">
                 <?php endif; ?>
             </a>
             <a href="<?php echo isset($banners['BANNER-PHU-2']) ? htmlspecialchars($banners['BANNER-PHU-2']['target_link']) : '#'; ?>" class="banner-item">
                 <?php if(isset($banners['BANNER-PHU-2'])): ?>
-                    <img src="banners/<?php echo htmlspecialchars($banners['BANNER-PHU-2']['image_file']); ?>">
+                    <img src="banners/<?php echo htmlspecialchars($banners['BANNER-PHU-2']['image_file']); ?>?v=<?php echo time(); ?>">
                 <?php else: ?>
                     <img src="https://via.placeholder.com/400x150/003028/ffffff?text=BANNER-PHU-2+(400x150)">
                 <?php endif; ?>
             </a>
             <a href="<?php echo isset($banners['BANNER-PHU-3']) ? htmlspecialchars($banners['BANNER-PHU-3']['target_link']) : '#'; ?>" class="banner-item">
                 <?php if(isset($banners['BANNER-PHU-3'])): ?>
-                    <img src="banners/<?php echo htmlspecialchars($banners['BANNER-PHU-3']['image_file']); ?>">
+                    <img src="banners/<?php echo htmlspecialchars($banners['BANNER-PHU-3']['image_file']); ?>?v=<?php echo time(); ?>">
                 <?php else: ?>
                     <img src="https://via.placeholder.com/400x150/003028/ffffff?text=BANNER-PHU-3+(400x150)">
                 <?php endif; ?>
@@ -252,7 +257,7 @@ if(empty($dauGhiProds)) $dauGhiProds = array_slice($allProducts, 0, 8);
         </div>
     </section>
 
-    <div class="container deal-hot-bg" <?php if(isset($banners['DEAL-HOT-BG'])) echo "style=\"background-image: url('banners/".htmlspecialchars($banners['DEAL-HOT-BG']['image_file'])."');\""; ?>>
+    <div class="container deal-hot-bg" <?php if(isset($banners['DEAL-HOT-BG'])) echo "style=\"background-image: url('banners/".htmlspecialchars($banners['DEAL-HOT-BG']['image_file'])."?v=".time()."');\""; ?>>
         <div class="deal-hot-header">
             <div class="deal-hot-title">DEAL HOT MỖI NGÀY - KHUYẾN MÃI LIỀN TAY</div>
             <div class="hot-sale-badge">HOT SALE</div>

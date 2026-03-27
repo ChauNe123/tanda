@@ -60,15 +60,21 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'upload_products') 
                 if(empty($sku) || empty($name)) continue;
                 $slug = createSlug($name);
 
-                $sql = "INSERT INTO products (sku, cat_code, name, slug, price, sale_price, coupon_code, image_file, frame_file, specs_summary, status) 
-                        VALUES (:sku, :cat, :name, :slug, :price, :sale, :coupon, :img, :frame, :specs, :stt)
+                // CÂU LỆNH SQL MỚI (Đã bổ sung cột sort_order)
+                $sql = "INSERT INTO products (sku, cat_code, name, slug, price, sale_price, coupon_code, image_file, frame_file, specs_summary, status, sort_order) 
+                        VALUES (:sku, :cat, :name, :slug, :price, :sale, :coupon, :img, :frame, :specs, :stt, :sort)
                         ON DUPLICATE KEY UPDATE 
                         cat_code=VALUES(cat_code), name=VALUES(name), slug=VALUES(slug), price=VALUES(price), 
                         sale_price=VALUES(sale_price), coupon_code=VALUES(coupon_code), image_file=VALUES(image_file), 
-                        frame_file=VALUES(frame_file), specs_summary=VALUES(specs_summary), status=VALUES(status)";
+                        frame_file=VALUES(frame_file), specs_summary=VALUES(specs_summary), status=VALUES(status), sort_order=VALUES(sort_order)";
                 
                 $stmt = $conn->prepare($sql);
-                $stmt->execute([':sku'=>$sku, ':cat'=>$cat_code, ':name'=>$name, ':slug'=>$slug, ':price'=>$price, ':sale'=>$sale_price, ':coupon'=>$coupon, ':img'=>$image_file, ':frame'=>$frame_file, ':specs'=>$specs, ':stt'=>$status]);
+                $stmt->execute([
+                    ':sku'=>$sku, ':cat'=>$cat_code, ':name'=>$name, ':slug'=>$slug, 
+                    ':price'=>$price, ':sale'=>$sale_price, ':coupon'=>$coupon, 
+                    ':img'=>$image_file, ':frame'=>$frame_file, ':specs'=>$specs, 
+                    ':stt'=>$status, ':sort'=>$row_num
+                ]);
                 $count_success++;
             }
             fclose($handle);

@@ -240,7 +240,7 @@ if (btnPreviewDesign) {
             if (positions.includes(bannerCode) && imageFile !== '' && status === '1') {
                 const wrap = document.getElementById('prev-' + bannerCode);
                 if (wrap) {
-                    wrap.innerHTML = `<img src="../banners/${imageFile}" alt="${bannerCode}" style="width:100%; display:block; object-fit:cover; border-radius: 8px;">`;
+                    wrap.innerHTML = `<img src="../banners/${imageFile}?v=${new Date().getTime()}" alt="${bannerCode}" style="width:100%; display:block; object-fit:cover; border-radius: 8px;">`;
                 }
             }
         });
