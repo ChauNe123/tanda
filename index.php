@@ -397,6 +397,38 @@ if(empty($thietBiMangProds)) $thietBiMangProds = array_slice($allProducts, 0, 8)
         </div>
     </div>
 
+    <div class="container block-policy-section">
+    <div class="policy-box-wrapper">
+        <div class="policy-box">
+            <div class="policy-item">
+                <i class="fas fa-truck policy-icon"></i>
+                <h4 class="policy-title">GIAO HÀNG TOÀN QUỐC</h4>
+                <p class="policy-desc">Giao hàng trước, trả tiền sau COD</p>
+            </div>
+            <div class="policy-item">
+                <i class="fas fa-box-open policy-icon"></i>
+                <h4 class="policy-title">ĐỔI TRẢ DỄ DÀNG</h4>
+                <p class="policy-desc">Đổi mới trong 30 ngày đầu</p>
+            </div>
+            <div class="policy-item">
+                <i class="fas fa-credit-card policy-icon"></i>
+                <h4 class="policy-title">THANH TOÁN TIỆN LỢI</h4>
+                <p class="policy-desc">Trả tiền mặt, chuyển khoản, trả góp 0%</p>
+            </div>
+            <div class="policy-item">
+                <i class="fas fa-headset policy-icon"></i>
+                <h4 class="policy-title">HỖ TRỢ NHIỆT TÌNH</h4>
+                <p class="policy-desc">Tư vấn tổng đài miễn phí 24/7</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="commitment-text">
+        <p class="cm-subtitle">Trải nghiệm mua sắm tại <span class="cm-brand">TANDA</span></p>
+        <h3 class="cm-title">Cam Kết 100% <span class="cm-highlight">Hài Lòng</span></h3>
+    </div>
+</div>
+
     <script>
         function slideLeft(sliderId) { document.getElementById(sliderId).scrollBy({ left: -232, behavior: 'smooth' }); }
         function slideRight(sliderId) { document.getElementById(sliderId).scrollBy({ left: 232, behavior: 'smooth' }); }
