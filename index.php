@@ -23,12 +23,16 @@ $dealHotProds = [];
 $camWifiProds = [];
 $camBoProds = [];
 $dauGhiProds = [];
+$phuKienProds = [];
+$thietBiMangProds = [];
 
 foreach ($allProducts as $p) {
     if ($p['sale_price'] > 0) { $dealHotProds[] = $p; }
     if (stripos($p['cat_code'], 'WIFI') !== false) { $camWifiProds[] = $p; }
     if (stripos($p['cat_code'], 'BO') !== false || stripos($p['cat_code'], 'DAY') !== false) { $camBoProds[] = $p; }
     if (stripos($p['cat_code'], 'DAU') !== false) { $dauGhiProds[] = $p; }
+    if (stripos($p['cat_code'], 'PHU-KIEN') !== false) { $phuKienProds[] = $p; }
+    if (stripos($p['cat_code'], 'MANG') !== false) { $thietBiMangProds[] = $p; }
 }
 
 // Lấy mồi vài sản phẩm nếu các nhóm bị trống
@@ -36,6 +40,8 @@ if(empty($dealHotProds)) $dealHotProds = array_slice($allProducts, 0, 8);
 if(empty($camWifiProds)) $camWifiProds = array_slice($allProducts, 0, 8);
 if(empty($camBoProds)) $camBoProds = array_slice($allProducts, 0, 8);
 if(empty($dauGhiProds)) $dauGhiProds = array_slice($allProducts, 0, 8);
+if(empty($phuKienProds)) $phuKienProds = array_slice($allProducts, 0, 8);
+if(empty($thietBiMangProds)) $thietBiMangProds = array_slice($allProducts, 0, 8);
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -345,6 +351,52 @@ if(empty($dauGhiProds)) $dauGhiProds = array_slice($allProducts, 0, 8);
         </div>
     </div>
 
+    <div class="container block-section" style="margin-bottom: 60px;">
+        <div class="ribbon-header">
+            <div class="ribbon-title">PHỤ KIỆN CAMERA</div>
+            <div class="ribbon-links">
+                <a href="#">Thẻ Nhớ Sandisk</a>
+                <a href="#">Ổ Cứng Chuyên Dụng</a>
+                <a href="#">Nguồn & Jack</a>
+            </div>
+            <a href="#" class="view-all-link">Xem tất cả &raquo;</a>
+        </div>
+
+        <div class="carousel-wrap">
+            <button class="btn-scroll scroll-left" onclick="slideLeft('slider-phu-kien')"><i class="fas fa-chevron-left"></i></button>
+            <button class="btn-scroll scroll-right" onclick="slideRight('slider-phu-kien')"><i class="fas fa-chevron-right"></i></button>
+            
+            <div class="product-carousel" id="slider-phu-kien">
+                <?php foreach($phuKienProds as $p): ?>
+                    <?php include 'card_template.php'; ?>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+
+    <div class="container block-section" style="margin-bottom: 60px;">
+        <div class="ribbon-header">
+            <div class="ribbon-title">THIẾT BỊ MẠNG</div>
+            <div class="ribbon-links">
+                <a href="#">Bộ Phát Wifi</a>
+                <a href="#">Switch PoE</a>
+                <a href="#">Dây Cáp Mạng</a>
+            </div>
+            <a href="#" class="view-all-link">Xem tất cả &raquo;</a>
+        </div>
+
+        <div class="carousel-wrap">
+            <button class="btn-scroll scroll-left" onclick="slideLeft('slider-mang')"><i class="fas fa-chevron-left"></i></button>
+            <button class="btn-scroll scroll-right" onclick="slideRight('slider-mang')"><i class="fas fa-chevron-right"></i></button>
+            
+            <div class="product-carousel" id="slider-mang">
+                <?php foreach($thietBiMangProds as $p): ?>
+                    <?php include 'card_template.php'; ?>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+
     <script>
         function slideLeft(sliderId) { document.getElementById(sliderId).scrollBy({ left: -232, behavior: 'smooth' }); }
         function slideRight(sliderId) { document.getElementById(sliderId).scrollBy({ left: 232, behavior: 'smooth' }); }
@@ -373,6 +425,8 @@ if(empty($dauGhiProds)) $dauGhiProds = array_slice($allProducts, 0, 8);
             autoSlide('slider-bo');
             autoSlide('slider-wifi');
             autoSlide('slider-dau');
+            autoSlide('slider-phu-kien');
+            autoSlide('slider-mang');
         }
     </script>
 </body>
