@@ -6,6 +6,75 @@ ini_set('display_errors', 1);
 
 require_once '../cores/db_config.php';
 
+// =========================================================
+// HÀM TỐI ƯU DUNG LƯỢNG & KÍCH THƯỚC ẢNH UPLOAD (GD LIBRARY)
+// =========================================================
+function optimizeAndSaveImage($sourcePath, $destPath, $maxWidth = 800, $quality = 80) {
+    $info = getimagesize($sourcePath);
+    if (!$info) return false;
+
+    $width = $info[0];
+    $height = $info[1];
+    $mime = $info['mime'];
+
+    // 1. Tính toán kích thước mới (Giữ nguyên tỉ lệ để không méo hình)
+    if ($width > $maxWidth) {
+        $newWidth = $maxWidth;
+        $newHeight = floor(($height / $width) * $newWidth);
+    } else {
+        $newWidth = $width;
+        $newHeight = $height;
+    }
+
+    // 2. Tạo khung vẽ cho ảnh mới
+    $newImage = imagecreatetruecolor($newWidth, $newHeight);
+
+    // 3. Xử lý kĩ nền trong suốt cho PNG (Quan trọng để up khung viền ngày Lễ Tết không bị đen)
+    if ($mime == 'image/png' || $mime == 'image/webp' || $mime == 'image/gif') {
+        imagealphablending($newImage, false);
+        imagesavealpha($newImage, true);
+        $transparent = imagecolorallocatealpha($newImage, 255, 255, 255, 127);
+        imagefilledrectangle($newImage, 0, 0, $newWidth, $newHeight, $transparent);
+    }
+
+    // 4. Nhúng dữ liệu ảnh gốc vào
+    switch ($mime) {
+        case 'image/jpeg': $sourceImage = imagecreatefromjpeg($sourcePath); break;
+        case 'image/png':  $sourceImage = imagecreatefrompng($sourcePath); break;
+        case 'image/gif':  $sourceImage = imagecreatefromgif($sourcePath); break;
+        case 'image/webp': $sourceImage = imagecreatefromwebp($sourcePath); break;
+        default: return false;
+    }
+
+    // 5. Bắt đầu Resize mượt mà
+    imagecopyresampled($newImage, $sourceImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+
+    // 6. Nén và Xuất file (Giữ nguyên định dạng gốc đuôi file để khớp với file CSV)
+    $success = false;
+    switch ($mime) {
+        case 'image/jpeg':
+            $success = imagejpeg($newImage, $destPath, $quality); // Quality từ 0-100
+            break;
+        case 'image/png':
+            // PNG dùng thang nén từ 0-9 (Tính toán ngược từ 80% về hệ số 9)
+            $pngQuality = round(9 - ($quality / 100 * 9)); 
+            $success = imagepng($newImage, $destPath, $pngQuality);
+            break;
+        case 'image/gif':
+            $success = imagegif($newImage, $destPath);
+            break;
+        case 'image/webp':
+            $success = imagewebp($newImage, $destPath, $quality);
+            break;
+    }
+
+    // 7. Dọn rác RAM máy chủ
+    imagedestroy($newImage);
+    imagedestroy($sourceImage);
+
+    return $success;
+}
+
 // ---------------------------------------------------------
 // XỬ LÝ AJAX 1: NHẬN HÌNH ẢNH (PHÂN LOẠI THƯ MỤC)
 // ---------------------------------------------------------
@@ -20,21 +89,21 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'upload_images') {
 
     $count_success = 0; $count_error = 0;
 
-    if (!empty($_FILES['images']['name'][0])) {
-        foreach ($_FILES['images']['name'] as $key => $val) {
-            $tmp_name = $_FILES['images']['tmp_name'][$key];
-            $new_name = $_POST['new_names'][$key]; 
-            $new_name = preg_replace('/[^a-zA-Z0-9.\-_]/', '', $new_name);
-            $target_file = $target_dir . $new_name;
-            $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
-            $allowed_types = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
-
-            if (in_array($imageFileType, $allowed_types)) {
-                if (move_uploaded_file($tmp_name, $target_file)) { $count_success++; } 
-                else { $count_error++; }
-            } else { $count_error++; }
+    if (in_array($imageFileType, $allowed_types)) {
+    
+    // GỌI HÀM NÉN ẢNH VỚI CHIỀU NGANG MAX 800PX, CHẤT LƯỢNG 80%
+    if (optimizeAndSaveImage($tmp_name, $target_file, 800, 80)) { 
+        $count_success++; 
+    } else {
+        // Fallback: Nếu ảnh bị lỗi cấu trúc không nén được bằng GD, thì copy file gốc
+        if (move_uploaded_file($tmp_name, $target_file)) { 
+            $count_success++; 
+        } else { 
+            $count_error++; 
         }
     }
+    
+} else { $count_error++; }
     echo json_encode(['success' => $count_success, 'error' => $count_error]);
     exit;
 }

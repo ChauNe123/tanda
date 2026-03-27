@@ -13,10 +13,10 @@ $bannerList = $stmtBanners->fetchAll();
 $banners = [];
 foreach ($bannerList as $b) { $banners[$b['banner_code']] = $b; }
 
-// 2. Kéo TẤT CẢ Sản phẩm đang bật lên
-$stmtPro = $conn->prepare("SELECT * FROM products WHERE status = 1 ORDER BY sort_order ASC");
-$stmtPro->execute();
-$allProducts = $stmtPro->fetchAll(); // <-- Đổi tên biến ở đây thành $allProducts cho khớp với khúc dưới
+// 2. Kéo TẤT CẢ Sản phẩm (kể cả hết hàng)
+$stmtProds = $conn->prepare("SELECT * FROM products");
+$stmtProds->execute();
+$allProducts = $stmtProds->fetchAll();
 
 // 3. Phân loại sản phẩm vào các nhóm để đẩy ra giao diện TANDA
 $dealHotProds = [];
