@@ -173,6 +173,94 @@ ul { list-style: none; }
 @media (max-width: 992px) { .footer-grid { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 576px) { .footer-grid { grid-template-columns: 1fr; } }
 
+/* ================= POLICY & COMMITMENT SECTION ================= */
+.block-policy-section {
+    margin-bottom: 60px;
+    padding: 40px 0;
+    border-top: 1px solid #eee;
+}
+
+.policy-box {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+    margin-bottom: 40px;
+}
+
+.policy-item {
+    text-align: center;
+    padding: 10px;
+    transition: 0.3s;
+}
+
+.policy-item:hover {
+    transform: translateY(-5px);
+}
+
+.policy-icon {
+    font-size: 35px;
+    color: var(--orange-brand);
+    margin-bottom: 15px;
+    display: block;
+}
+
+.policy-title {
+    font-size: 15px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    color: var(--black-text);
+    text-transform: uppercase;
+}
+
+.policy-desc {
+    font-size: 13px;
+    color: #666;
+    line-height: 1.4;
+}
+
+/* Phần cam kết cuối trang */
+.commitment-text {
+    text-align: center;
+}
+
+.cm-subtitle {
+    font-size: 16px;
+    color: #555;
+    margin-bottom: 5px;
+}
+
+.cm-brand {
+    font-weight: 900;
+    color: var(--dark-bg);
+}
+
+.cm-title {
+    font-size: 32px;
+    font-weight: 900;
+    color: var(--black-text);
+    text-transform: uppercase;
+}
+
+.cm-highlight {
+    color: var(--orange-brand);
+}
+
+/* Responsive cho Mobile */
+@media (max-width: 768px) {
+    .policy-box {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (max-width: 480px) {
+    .policy-box {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* ================= FOOTER ================= */
 .main-footer {
     background: var(--dark-bg);
