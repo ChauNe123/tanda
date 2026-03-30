@@ -7,12 +7,42 @@
     --white-bg: #ffffff;
     --danger-color: #d70018;
 }
+/* ================= HIỆU ỨNG POP-UP KHI VỪA VÀO WEB ================= */
+@keyframes fadeInDown {
+    from { opacity: 0; transform: translateY(-30px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.main-header {
+    animation: fadeInDown 0.8s ease-out forwards;
+    transition: transform 0.3s ease-in-out; /* Tạo độ mượt khi ẩn/hiện */
+}
+
+/* ================= HIỆU ỨNG MENU TRƯỢT THEO (SMART STICKY) ================= */
+.main-header.sticky {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 9999;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    background: #ffffff; 
+}
+
+/* Thêm padding cho body để web không bị giật cụp khi header thành Fixed */
+body.has-sticky-header {
+    padding-top: 100px; /* Bằng khoảng chiều cao của header */
+}
+
+/* Lăn xuống thì giấu đi cho khách coi hàng */
+.main-header.hidden {
+    transform: translateY(-100%);
+}
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Roboto', sans-serif; }
 body { background-color: var(--bg-body); color: var(--black-text); overflow-x: hidden; }
 a { text-decoration: none; color: inherit; }
 ul { list-style: none; }
 .container { max-width: 1200px; margin: 0 auto; padding: 0 10px; }
-
 /* ================= TOP BAR & HEADER ================= */
 .top-bar { background: var(--dark-bg); color: #fff; padding: 6px 0; font-size: 13px; font-weight: 500; }
 .top-bar .container { display: flex; align-items: center; justify-content: flex-start; gap: 15px; }

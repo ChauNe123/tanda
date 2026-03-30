@@ -22,10 +22,12 @@
             <div class="logo">
                 <a href="index.php"><h1 class="logo-text">TANDA</h1></a>
             </div>
-            <div class="search-box">
-                <input type="text" placeholder="Bạn cần tìm camera, thẻ nhớ, đầu ghi...?">
-                <button>🔍 Tìm kiếm</button>
-            </div>
+            
+            <form class="search-box" action="search.php" method="GET">
+                <input type="text" name="q" placeholder="Bạn cần tìm camera, thẻ nhớ, đầu ghi...?" required>
+                <button type="submit">🔍 Tìm kiếm</button>
+            </form>
+            
             <div class="contact-info">
                 <span class="hotline-text">Gọi mua hàng & Lắp đặt</span>
                 <a href="https://zalo.me/09xxxxxxxx" target="_blank" class="hotline-number">09xx.xxx.xxx</a>

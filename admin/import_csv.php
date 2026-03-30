@@ -145,23 +145,27 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'upload_products') 
                 $price      = (int)($row[3] ?? 0); $sale_price = (int)($row[4] ?? 0); 
                 $coupon     = trim($row[5] ?? ''); $image_file = trim($row[6] ?? ''); 
                 $frame_file = trim($row[7] ?? ''); $specs = trim($row[8] ?? ''); 
-                $status     = (int)($row[9] ?? 0);
+                // Thêm dòng lấy dữ liệu description (Cột số 10 trong mảng, do mảng bắt đầu từ 0)
+                $description = trim($row[9] ?? ''); 
+                // Status lùi lại thành cột số 11 (Index 10)
+                $status     = (int)($row[10] ?? 0);
                 
                 if(empty($sku) || empty($name)) continue;
                 $slug = createSlug($name);
 
-                // CÂU LỆNH SQL MỚI (Đã bổ sung cột sort_order)
-                $sql = "INSERT INTO products (sku, cat_code, name, slug, price, sale_price, coupon_code, image_file, frame_file, specs_summary, status, sort_order) 
-                        VALUES (:sku, :cat, :name, :slug, :price, :sale, :coupon, :img, :frame, :specs, :stt, :sort)
+                // CẬP NHẬT CÂU LỆNH SQL: Thêm cột description
+                $sql = "INSERT INTO products (sku, cat_code, name, slug, price, sale_price, coupon_code, image_file, frame_file, specs_summary, description, status, sort_order) 
+                        VALUES (:sku, :cat, :name, :slug, :price, :sale, :coupon, :img, :frame, :specs, :desc, :stt, :sort)
                         ON DUPLICATE KEY UPDATE cat_code=VALUES(cat_code), name=VALUES(name), slug=VALUES(slug), price=VALUES(price), sale_price=VALUES(sale_price), 
                         coupon_code=VALUES(coupon_code), image_file=IF(VALUES(image_file) != '', VALUES(image_file), image_file), frame_file=VALUES(frame_file), 
-                        specs_summary=VALUES(specs_summary), status=VALUES(status), sort_order=VALUES(sort_order)";
+                        specs_summary=VALUES(specs_summary), description=VALUES(description), status=VALUES(status), sort_order=VALUES(sort_order)";
                 
                 $stmt = $conn->prepare($sql);
                 $stmt->execute([
                     ':sku'=>$sku, ':cat'=>$cat_code, ':name'=>$name, ':slug'=>$slug, 
                     ':price'=>$price, ':sale'=>$sale_price, ':coupon'=>$coupon, 
                     ':img'=>$image_file, ':frame'=>$frame_file, ':specs'=>$specs, 
+                    ':desc'=>$description, // Truyền biến mới vào đây
                     ':stt'=>$status, ':sort'=>$row_num
                 ]);
                 $count_success++;

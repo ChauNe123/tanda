@@ -22,3 +22,38 @@ function orderViaZalo(productName, price) {
     // Mở Zalo trong tab mới
     window.open(zaloLink, '_blank');
 }
+document.addEventListener("DOMContentLoaded", function() {
+    const header = document.querySelector('.main-header');
+    let lastScrollTop = 0;
+    
+    // Khoảng cách bắt đầu tính hiệu ứng (qua khỏi top banner)
+    const scrollThreshold = 100; 
+
+    if (header) {
+        window.addEventListener('scroll', function() {
+            let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            
+            if (scrollTop > scrollThreshold) {
+                // Thêm class sticky và đệm cho body
+                header.classList.add('sticky');
+                document.body.classList.add('has-sticky-header');
+                
+                // Xác định chiều lăn chuột
+                if (scrollTop > lastScrollTop) {
+                    // Lăn CẮM XUỐNG DƯỚI -> Ẩn menu để xem SP
+                    header.classList.add('hidden');
+                } else {
+                    // Lăn NGƯỢC LÊN TRÊN -> Hiện menu lại để tìm đồ khác
+                    header.classList.remove('hidden');
+                }
+            } else {
+                // Về sát mép trên cùng -> Trả lại như cũ
+                header.classList.remove('sticky');
+                header.classList.remove('hidden');
+                document.body.classList.remove('has-sticky-header');
+            }
+            
+            lastScrollTop = scrollTop;
+        });
+    }
+});
