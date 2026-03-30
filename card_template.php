@@ -1,6 +1,6 @@
 <div class="product-card <?php echo ($p['status'] == 0) ? 'out-of-stock' : ''; ?>">
     <div class="card-img">
-        <a href="san-pham/<?php echo htmlspecialchars($p['slug']); ?>">
+        <a href="product-detail.php?slug=<?php echo htmlspecialchars($p['slug']); ?>">
             <img src="uploads/<?php echo htmlspecialchars($p['image_file']); ?>" alt="<?php echo htmlspecialchars($p['name']); ?>">
         </a>
         <?php if($p['sale_price'] > 0 && $p['price'] > $p['sale_price']): ?>
@@ -9,7 +9,7 @@
         <?php endif; ?>
     </div>
     
-    <a href="san-pham/<?php echo htmlspecialchars($p['slug']); ?>">
+    <a href="product-detail.php?slug=<?php echo htmlspecialchars($p['slug']); ?>">
         <div class="card-title" title="<?php echo htmlspecialchars($p['name']); ?>"><?php echo htmlspecialchars($p['name']); ?></div>
     </a>
     
