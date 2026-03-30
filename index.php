@@ -118,14 +118,13 @@ $thietBiMangProds = $stmt->fetchAll();
                 <i class="fas fa-bars"></i> DANH MỤC SẢN PHẨM
             </div>
             <div class="nav-links">
-                <a href="#"><i class="fas fa-video"></i> CAMERA WIFI KHÔNG DÂY</a>
-                <a href="#"><i class="fas fa-camera"></i> CAMERA TRỌN BỘ</a>
-                <a href="#"><i class="fas fa-server"></i> ĐẦU GHI HÌNH</a>
-                <a href="#"><i class="fas fa-hdd"></i> THẺ NHỚ & Ổ CỨNG</a>
-                <a href="#"><i class="fas fa-network-wired"></i> THIẾT BỊ MẠNG</a>
-                <a href="#"><i class="fas fa-tools"></i> DỊCH VỤ LẮP ĐẶT</a>
+                <a href="category.php?slug=camera-wifi"><i class="fas fa-video"></i> CAMERA WIFI KHÔNG DÂY</a>
+                <a href="category.php?slug=camera-tron-bo"><i class="fas fa-camera"></i> CAMERA TRỌN BỘ</a>
+                <a href="category.php?slug=dau-ghi-hinh"><i class="fas fa-server"></i> ĐẦU GHI HÌNH</a>
+                <a href="category.php?slug=phu-kien"><i class="fas fa-hdd"></i> THẺ NHỚ & PHỤ KIỆN</a>
+                <a href="category.php?slug=thiet-bi-mang"><i class="fas fa-network-wired"></i> THIẾT BỊ MẠNG</a>
+                <a href="#"><i class="fas fa-tools"></i> DỊCH VỤ LẮP ĐẶT</a> </div>
             </div>
-        </div>
     </nav>
 
     <section class="banner-section container">
@@ -182,14 +181,14 @@ $thietBiMangProds = $stmt->fetchAll();
 
     <div class="container block-section">
         <div class="ribbon-header">
-            <div class="ribbon-title">CAMERA TRỌN BỘ CÓ DÂY</div>
-            <div class="ribbon-links">
-                <a href="#">Trọn Bộ Dahua 2.0MP</a>
-                <a href="#">Trọn Bộ KBVision</a>
-                <a href="#">Trọn Bộ Hikvision</a>
-            </div>
-            <a href="#" class="view-all-link">Xem tất cả &raquo;</a>
+        <div class="ribbon-title">CAMERA TRỌN BỘ CÓ DÂY</div>
+        <div class="ribbon-links">
+            <a href="search.php?q=Dahua">Trọn Bộ Dahua</a>
+            <a href="search.php?q=KBVision">Trọn Bộ KBVision</a>
+            <a href="search.php?q=Hikvision">Trọn Bộ Hikvision</a>
         </div>
+            <a href="category.php?slug=camera-tron-bo" class="view-all-link">Xem tất cả &raquo;</a>
+    </div>
 
         <div class="carousel-wrap">
             <button class="btn-scroll scroll-left" onclick="slideLeft('slider-bo')"><i class="fas fa-chevron-left"></i></button>
@@ -205,14 +204,14 @@ $thietBiMangProds = $stmt->fetchAll();
 
     <div class="container block-section">
         <div class="ribbon-header">
-            <div class="ribbon-title">CAMERA WIFI GIÁ RẺ</div>
-            <div class="ribbon-links">
-                <a href="#">Ezviz Trong Nhà</a>
-                <a href="#">Imou Xoay 360</a>
-                <a href="#">Tapo Giá Rẻ</a>
-            </div>
-            <a href="#" class="view-all-link">Xem tất cả &raquo;</a>
-        </div>
+    <div class="ribbon-title">CAMERA WIFI GIÁ RẺ</div>
+    <div class="ribbon-links">
+        <a href="search.php?q=Ezviz">Ezviz Trong Nhà</a>
+        <a href="search.php?q=Imou">Imou Xoay 360</a>
+        <a href="search.php?q=Tapo">Tapo Giá Rẻ</a>
+    </div>
+    <a href="category.php?slug=camera-wifi" class="view-all-link">Xem tất cả &raquo;</a>
+</div>
 
         <div class="carousel-wrap">
             <button class="btn-scroll scroll-left" onclick="slideLeft('slider-wifi')"><i class="fas fa-chevron-left"></i></button>
@@ -228,14 +227,14 @@ $thietBiMangProds = $stmt->fetchAll();
 
     <div class="container block-section" style="margin-bottom: 60px;">
         <div class="ribbon-header">
-            <div class="ribbon-title">ĐẦU GHI HÌNH CAMERA</div>
-            <div class="ribbon-links">
-                <a href="#">Đầu Ghi 4 Kênh</a>
-                <a href="#">Đầu Ghi 8 Kênh</a>
-                <a href="#">Đầu Ghi IP NVR</a>
-            </div>
-            <a href="#" class="view-all-link">Xem tất cả &raquo;</a>
-        </div>
+    <div class="ribbon-title">ĐẦU GHI HÌNH CAMERA</div>
+    <div class="ribbon-links">
+        <a href="search.php?q=4 kênh">Đầu Ghi 4 Kênh</a>
+        <a href="search.php?q=8 kênh">Đầu Ghi 8 Kênh</a>
+        <a href="search.php?q=IP">Đầu Ghi IP NVR</a>
+    </div>
+    <a href="category.php?slug=dau-ghi-hinh" class="view-all-link">Xem tất cả &raquo;</a>
+</div>
 
         <div class="carousel-wrap">
             <button class="btn-scroll scroll-left" onclick="slideLeft('slider-dau')"><i class="fas fa-chevron-left"></i></button>
@@ -251,14 +250,14 @@ $thietBiMangProds = $stmt->fetchAll();
 
     <div class="container block-section" style="margin-bottom: 60px;">
         <div class="ribbon-header">
-            <div class="ribbon-title">PHỤ KIỆN CAMERA</div>
-            <div class="ribbon-links">
-                <a href="#">Thẻ Nhớ Sandisk</a>
-                <a href="#">Ổ Cứng Chuyên Dụng</a>
-                <a href="#">Nguồn & Jack</a>
-            </div>
-            <a href="#" class="view-all-link">Xem tất cả &raquo;</a>
-        </div>
+    <div class="ribbon-title">PHỤ KIỆN CAMERA</div>
+    <div class="ribbon-links">
+        <a href="search.php?q=Thẻ nhớ">Thẻ Nhớ Sandisk</a>
+        <a href="search.php?q=Ổ cứng">Ổ Cứng Chuyên Dụng</a>
+        <a href="search.php?q=Nguồn">Nguồn & Jack</a>
+    </div>
+    <a href="category.php?slug=phu-kien" class="view-all-link">Xem tất cả &raquo;</a>
+</div>
 
         <div class="carousel-wrap">
             <button class="btn-scroll scroll-left" onclick="slideLeft('slider-phu-kien')"><i class="fas fa-chevron-left"></i></button>
@@ -274,14 +273,14 @@ $thietBiMangProds = $stmt->fetchAll();
 
     <div class="container block-section" style="margin-bottom: 60px;">
         <div class="ribbon-header">
-            <div class="ribbon-title">THIẾT BỊ MẠNG</div>
-            <div class="ribbon-links">
-                <a href="#">Bộ Phát Wifi</a>
-                <a href="#">Switch PoE</a>
-                <a href="#">Dây Cáp Mạng</a>
-            </div>
-            <a href="#" class="view-all-link">Xem tất cả &raquo;</a>
-        </div>
+    <div class="ribbon-title">THIẾT BỊ MẠNG</div>
+    <div class="ribbon-links">
+        <a href="search.php?q=Router">Bộ Phát Wifi</a>
+        <a href="search.php?q=Switch">Switch PoE</a>
+        <a href="search.php?q=Cáp">Dây Cáp Mạng</a>
+    </div>
+    <a href="category.php?slug=thiet-bi-mang" class="view-all-link">Xem tất cả &raquo;</a>
+</div>
 
         <div class="carousel-wrap">
             <button class="btn-scroll scroll-left" onclick="slideLeft('slider-mang')"><i class="fas fa-chevron-left"></i></button>
@@ -324,6 +323,48 @@ $thietBiMangProds = $stmt->fetchAll();
         <div class="commitment-text">
             <p class="cm-subtitle">Trải nghiệm mua sắm tại <span class="cm-brand">TANDA</span></p>
             <h3 class="cm-title">Cam Kết 100% <span class="cm-highlight">Hài Lòng</span></h3>
+        </div>
+    </div>
+
+    <div class="showroom-full-wrapper">
+        <div class="container showroom-inner">
+            
+            <div class="sr-left">
+                <h2 class="sr-title">[ ĐIỀN TÊN SHOWROOM / CHI NHÁNH ]</h2>
+                <div class="sr-details">
+                    <div class="sr-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <div>
+                            <strong>Địa chỉ:</strong> [ Điền địa chỉ chi tiết của showroom vào đây ]
+                        </div>
+                    </div>
+                    <div class="sr-item">
+                        <i class="fas fa-phone-alt"></i>
+                        <div>
+                            <strong>Hotline:</strong> [ Điền số điện thoại ]
+                        </div>
+                    </div>
+                    <div class="sr-item">
+                        <i class="fas fa-envelope"></i>
+                        <div>
+                            <strong>Email:</strong> [ Điền địa chỉ email ]
+                        </div>
+                    </div>
+                    <div class="sr-item">
+                        <i class="fas fa-clock"></i>
+                        <div>
+                            <strong>Giờ làm việc:</strong> [ VD: 08:00 - 21:00 các ngày trong tuần ]
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sr-right">
+                <div class="map-placeholder">
+                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d62701.244470137026!2d106.54703874863284!3d10.824488199999994!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752bda2710fe85%3A0x14ff4876e299de9c!2zQ8O0bmcgVHkgVG5oaCBLQiBWaeG7h3QgTmFt!5e0!3m2!1svi!2s!4v1774908956197!5m2!1svi!2s" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                    </div>
+            </div>
+
         </div>
     </div>
 

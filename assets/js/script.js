@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", function() {
     let lastScrollTop = 0;
     
     // Khoảng cách bắt đầu tính hiệu ứng (qua khỏi top banner)
-    const scrollThreshold = 100; 
+    const scrollThreshold = 150; 
 
     if (header) {
         window.addEventListener('scroll', function() {
@@ -40,11 +40,11 @@ document.addEventListener("DOMContentLoaded", function() {
                 
                 // Xác định chiều lăn chuột
                 if (scrollTop > lastScrollTop) {
-                    // Lăn CẮM XUỐNG DƯỚI -> Ẩn menu để xem SP
-                    header.classList.add('hidden');
-                } else {
-                    // Lăn NGƯỢC LÊN TRÊN -> Hiện menu lại để tìm đồ khác
+                    // 1. Lăn CẮM XUỐNG DƯỚI -> Hiện menu đi theo
                     header.classList.remove('hidden');
+                } else if (scrollTop < lastScrollTop - 5) { 
+                    // 2. Lăn NGƯỢC LÊN TRÊN (nhích nhẹ 5px) -> Giấu menu đi ngay lập tức
+                    header.classList.add('hidden');
                 }
             } else {
                 // Về sát mép trên cùng -> Trả lại như cũ
@@ -53,7 +53,8 @@ document.addEventListener("DOMContentLoaded", function() {
                 document.body.classList.remove('has-sticky-header');
             }
             
-            lastScrollTop = scrollTop;
+            // Cập nhật vị trí cuộn
+            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
         });
     }
 });

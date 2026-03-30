@@ -37,7 +37,6 @@ include 'includes/header.php';
     </div>
 
     <div class="pd-layout">
-        
         <div class="pd-left">
             <div class="pd-img-wrap">
                 <img src="uploads/<?php echo htmlspecialchars($p['image_file']); ?>" alt="<?php echo htmlspecialchars($p['name']); ?>" class="pd-img-main">
@@ -105,15 +104,10 @@ include 'includes/header.php';
         <div class="pd-full-specs-content">
             <?php 
                 if(!empty($p['description'])) {
-                    // HÀM AUTO-FORMAT: Biến Text thường từ CSV thành HTML đẹp
-                    // Hoặc render luôn nếu khách dùng tool copy HTML dán vào CSV
                     $text = trim($p['description']);
-                    
-                    // Nếu phát hiện có thẻ HTML (khách dùng tool) thì in thẳng ra luôn
                     if (strpos($text, '<') !== false && strpos($text, '>') !== false) {
                         echo $text;
                     } else {
-                        // Nếu khách gõ text chay thì dùng tool dịch
                         $lines = explode("\n", $text);
                         $inList = false;
 
@@ -150,7 +144,109 @@ include 'includes/header.php';
             ?>
         </div>
     </div>
+
+    <?php
+    $stmtRelated = $conn->prepare("SELECT * FROM products WHERE cat_code = :cat AND sku != :sku AND status = 1 ORDER BY sort_order ASC, sku DESC LIMIT 5");
+    $stmtRelated->execute(['cat' => $p['cat_code'], 'sku' => $p['sku']]);
+    $relatedProds = $stmtRelated->fetchAll();
+    
+    if(count($relatedProds) > 0): 
+        // Xác định link xem tất cả theo danh mục
+        $cat_slug = 'camera-wifi';
+        if($p['cat_code'] === 'CAM-WIFI') $cat_slug = 'camera-wifi';
+        elseif($p['cat_code'] === 'CAM-DAY') $cat_slug = 'camera-tron-bo';
+        elseif($p['cat_code'] === 'DAU-GHI') $cat_slug = 'dau-ghi-hinh';
+        elseif($p['cat_code'] === 'PHU-KIEN') $cat_slug = 'phu-kien';
+        elseif($p['cat_code'] === 'THIET-BI-MANG') $cat_slug = 'thiet-bi-mang';
+    ?>
+    <div class="block-section" style="margin-top: 40px; padding: 30px;">
+        <div class="ribbon-header">
+            <div class="ribbon-title">CÓ THỂ BẠN CŨNG THÍCH</div>
+            <a href="category.php?slug=<?php echo $cat_slug; ?>" class="view-all-link">Xem thêm &raquo;</a>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 15px; padding-top: 10px;">
+            <?php 
+            $p_backup = $p; 
+            foreach($relatedProds as $p) {
+                include 'card_template.php'; 
+            }
+            $p = $p_backup; 
+            ?>
+        </div>
+    </div>
+    <?php endif; ?>
 </main>
 
+<div class="container block-policy-section" style="margin-top: 20px;">
+    <div class="policy-box-wrapper">
+        <div class="policy-box">
+            <div class="policy-item">
+                <i class="fas fa-truck policy-icon"></i>
+                <h4 class="policy-title">GIAO HÀNG TOÀN QUỐC</h4>
+                <p class="policy-desc">Giao hàng trước, trả tiền sau COD</p>
+            </div>
+            <div class="policy-item">
+                <i class="fas fa-box-open policy-icon"></i>
+                <h4 class="policy-title">ĐỔI TRẢ DỄ DÀNG</h4>
+                <p class="policy-desc">Đổi mới trong 30 ngày đầu</p>
+            </div>
+            <div class="policy-item">
+                <i class="fas fa-credit-card policy-icon"></i>
+                <h4 class="policy-title">THANH TOÁN TIỆN LỢI</h4>
+                <p class="policy-desc">Trả tiền mặt, chuyển khoản, trả góp 0%</p>
+            </div>
+            <div class="policy-item">
+                <i class="fas fa-headset policy-icon"></i>
+                <h4 class="policy-title">HỖ TRỢ NHIỆT TÌNH</h4>
+                <p class="policy-desc">Tư vấn tổng đài miễn phí 24/7</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="commitment-text">
+        <p class="cm-subtitle">Trải nghiệm mua sắm tại <span class="cm-brand">TANDA</span></p>
+        <h3 class="cm-title">Cam Kết 100% <span class="cm-highlight">Hài Lòng</span></h3>
+    </div>
+</div>
+
+<div class="showroom-full-wrapper">
+    <div class="container showroom-inner">
+        <div class="sr-left">
+            <h2 class="sr-title">[ ĐIỀN TÊN SHOWROOM / CHI NHÁNH ]</h2>
+            <div class="sr-details">
+                <div class="sr-item">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <div>
+                        <strong>Địa chỉ:</strong> [ Điền địa chỉ chi tiết của showroom vào đây ]
+                    </div>
+                </div>
+                <div class="sr-item">
+                    <i class="fas fa-phone-alt"></i>
+                    <div>
+                        <strong>Hotline:</strong> [ Điền số điện thoại ]
+                    </div>
+                </div>
+                <div class="sr-item">
+                    <i class="fas fa-envelope"></i>
+                    <div>
+                        <strong>Email:</strong> [ Điền địa chỉ email ]
+                    </div>
+                </div>
+                <div class="sr-item">
+                    <i class="fas fa-clock"></i>
+                    <div>
+                        <strong>Giờ làm việc:</strong> [ VD: 08:00 - 21:00 các ngày trong tuần ]
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sr-right">
+            <div class="map-placeholder">
+                <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d62701.244470137026!2d106.54703874863284!3d10.824488199999994!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752bda2710fe85%3A0x14ff4876e299de9c!2zQ8O0bmcgVHkgVG5oaCBLQiBWaeG7h3QgTmFt!5e0!3m2!1svi!2s!4v1774908956197!5m2!1svi!2s" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
 
 <?php include 'includes/footer.php'; ?>

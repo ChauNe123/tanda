@@ -56,5 +56,8 @@
             </div>
         </div>
     </footer>
+
+    <script src="assets/js/script.js?v=<?php echo time(); ?>"></script>
+
 </body>
 </html>
