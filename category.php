@@ -1,65 +1,52 @@
 <?php
-/**
- * card_template.php
- * Template thẻ sản phẩm dùng cho TANDA Orange/Black Theme
- */
+// category.php
+require_once 'cores/db_config.php';
+
+$slug = isset($_GET['slug']) ? trim($_GET['slug']) : '';
+if (empty($slug)) {
+    header("Location: index.php");
+    exit;
+}
+
+// 1. Kéo thông tin Danh Mục từ bảng `categories`
+$stmtCat = $conn->prepare("SELECT * FROM categories WHERE slug = :slug AND status = 1 LIMIT 1");
+$stmtCat->execute(['slug' => $slug]);
+$category = $stmtCat->fetch();
+
+if (!$category) {
+    die("LỖI 404: Danh mục không tồn tại hoặc đã bị ẩn.");
+}
+
+// 2. Kéo Sản Phẩm thuộc danh mục này
+$stmtProds = $conn->prepare("SELECT * FROM products WHERE cat_code = :cat_code AND status = 1 ORDER BY sort_order ASC, sku DESC");
+$stmtProds->execute(['cat_code' => $category['cat_code']]);
+$products = $stmtProds->fetchAll();
+
+include 'includes/header.php';
 ?>
-<style>
-    /* CSS RIÊNG CHO THE SAN PHAM (Để dán vào card_template.php cho gọn) */
-    .product-card { background: var(--white-bg); border: 1px solid #eee; border-radius: 6px; padding: 12px; position: relative; transition: all 0.3s ease; display: flex; flex-direction: column; min-width: 220px; max-width: 220px; flex: 0 0 auto; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-    
-    /* Hiệu ứng nổi lên khi di chuột */
-    .product-card:hover { border-color: var(--orange-brand); box-shadow: 0 8px 25px rgba(0,0,0,0.12); transform: translateY(-5px); z-index: 2; }
-    
-    /* Hiệu ứng Zoom ảnh */
-    .card-img { width: 100%; height: 180px; position: relative; display: flex; align-items: center; justify-content: center; margin-bottom: 12px; overflow: hidden; background: #fff; }
-    .card-img img { max-width: 100%; max-height: 100%; object-fit: contain; transition: transform 0.4s ease; }
-    .product-card:hover .card-img img { transform: scale(1.12); } 
-    
-    /* Badge giảm giá Cam */
-    .discount-badge { position: absolute; top: 0; left: 0; background: var(--orange-brand); color: #fff; font-size: 12px; font-weight: bold; padding: 4px 8px; border-radius: 4px; z-index: 3; clip-path: polygon(0 0, 100% 0, 85% 100%, 0% 100%); }
 
-    /* Font chữ màu đen cơ bản */
-    .card-title { font-size: 14px; color: var(--black-text); line-height: 1.4; margin-bottom: 8px; font-weight: 600; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 38px; }
-    .product-card:hover .card-title { color: var(--orange-brand); }
-
-    .price-box { margin-bottom: 15px; flex-grow: 1; }
-    .price-new { display: block; color: var(--danger-color); font-size: 19px; font-weight: 800; margin-bottom: 2px; }
-    .price-old { display: block; color: #999; font-size: 13px; text-decoration: line-through; }
-
-    /* Nút chốt đơn có hiệu ứng màu Cam */
-    .btn-buy { width: 100%; background: #fff; color: var(--orange-brand); border: 2px solid var(--orange-brand); padding: 9px 0; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; transition: all 0.2s ease; display: flex; justify-content: center; align-items: center; gap: 8px; text-transform: uppercase; }
-    
-    .product-card:hover .btn-buy { background: var(--orange-brand); color: #fff; }
-    .btn-buy:active { transform: scale(0.95); }
-
-    .status-badge { position: absolute; bottom: 22px; right: 12px; font-size: 11px; color: #28a745; font-weight: 600; pointer-events: none; }
-</style>
-
-<div class="product-card">
-    <div class="card-img">
-        <a href="san-pham/<?php echo htmlspecialchars($p['slug']); ?>">
-            <img src="uploads/<?php echo htmlspecialchars($p['image_file']); ?>" alt="<?php echo htmlspecialchars($p['name']); ?>">
-        </a>
-        <?php if($p['sale_price'] > 0 && $p['price'] > $p['sale_price']): ?>
-            <?php $percent = round((($p['price'] - $p['sale_price']) / $p['price']) * 100); ?>
-            <span class="discount-badge">-<?php echo $percent; ?>%</span>
-        <?php endif; ?>
+<main class="container" style="margin-top: 30px; margin-bottom: 60px;">
+    <div class="breadcrumb" style="margin-bottom: 25px; color: #666; font-size: 14px;">
+        <a href="index.php" style="color: #ff5722; font-weight: bold;">Trang chủ</a> / 
+        <span>Danh mục</span> / 
+        <strong><?php echo htmlspecialchars($category['name']); ?></strong>
     </div>
-    
-    <a href="san-pham/<?php echo htmlspecialchars($p['slug']); ?>">
-        <div class="card-title" title="<?php echo htmlspecialchars($p['name']); ?>"><?php echo htmlspecialchars($p['name']); ?></div>
-    </a>
-    
-    <div class="price-box">
-        <?php if($p['sale_price'] > 0): ?>
-            <span class="price-new"><?php echo number_format($p['sale_price'], 0, ',', '.'); ?>đ</span>
-            <span class="price-old"><?php echo number_format($p['price'], 0, ',', '.'); ?>đ</span>
+
+    <div class="block-section">
+        <div class="ribbon-header">
+            <div class="ribbon-title"><?php echo htmlspecialchars($category['name']); ?></div>
+        </div>
+
+        <?php if (count($products) > 0): ?>
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; padding-top: 10px;">
+                <?php foreach($products as $p): ?>
+                    <?php include 'card_template.php'; ?>
+                <?php endforeach; ?>
+            </div>
         <?php else: ?>
-            <span class="price-new"><?php echo number_format($p['price'], 0, ',', '.'); ?>đ</span>
+            <p>Hiện chưa có sản phẩm nào trong danh mục này.</p>
         <?php endif; ?>
     </div>
+</main>
 
-    <button class="btn-buy"><i class="fas fa-cart-plus"></i> Thêm vào giỏ</button>
-    <span class="status-badge">Còn hàng</span>
-</div>
+<?php include 'includes/footer.php'; ?>

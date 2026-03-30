@@ -80,30 +80,51 @@ function optimizeAndSaveImage($sourcePath, $destPath, $maxWidth = 800, $quality 
 // ---------------------------------------------------------
 if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'upload_images') {
     
-    // Bắt lấy lựa chọn của khách hàng (mặc định là uploads cho sản phẩm)
     $folder_name = (isset($_POST['target_folder']) && $_POST['target_folder'] == 'banners') ? 'banners' : 'uploads';
-    
-    // Đường dẫn tới đúng thư mục
     $target_dir = "../" . $folder_name . "/";
     if (!is_dir($target_dir)) { mkdir($target_dir, 0777, true); }
 
     $count_success = 0; $count_error = 0;
+    $allowed_types = ['jpg', 'jpeg', 'png', 'gif', 'webp']; // Khai báo đuôi file hợp lệ
 
-    if (in_array($imageFileType, $allowed_types)) {
-    
-    // GỌI HÀM NÉN ẢNH VỚI CHIỀU NGANG MAX 800PX, CHẤT LƯỢNG 80%
-    if (optimizeAndSaveImage($tmp_name, $target_file, 800, 80)) { 
-        $count_success++; 
-    } else {
-        // Fallback: Nếu ảnh bị lỗi cấu trúc không nén được bằng GD, thì copy file gốc
-        if (move_uploaded_file($tmp_name, $target_file)) { 
-            $count_success++; 
-        } else { 
-            $count_error++; 
+    // Kiểm tra xem có file nào được up lên không
+    if (!empty($_FILES['images']['name'][0])) {
+        foreach ($_FILES['images']['name'] as $key => $name) {
+            $tmp_name = $_FILES['images']['tmp_name'][$key];
+            $error = $_FILES['images']['error'][$key];
+            
+            if ($error === UPLOAD_ERR_OK) {
+                $imageFileType = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+                
+                // Lấy tên mới từ input hoặc giữ tên gốc
+                $new_name_post = isset($_POST['new_names'][$key]) ? trim($_POST['new_names'][$key]) : '';
+                $final_name = ($new_name_post !== '') ? $new_name_post : pathinfo($name, PATHINFO_FILENAME);
+                
+                // Gắn lại đuôi file nếu m quên gõ
+                if (!preg_match('/\.[a-zA-Z0-9]+$/', $final_name)) {
+                    $final_name .= '.' . $imageFileType;
+                }
+                
+                $target_file = $target_dir . $final_name;
+
+                if (in_array($imageFileType, $allowed_types)) {
+                    // GỌI HÀM NÉN ẢNH VỚI CHIỀU NGANG MAX 800PX, CHẤT LƯỢNG 80%
+                    if (optimizeAndSaveImage($tmp_name, $target_file, 800, 80)) { 
+                        $count_success++; 
+                    } else {
+                        // Fallback: copy file gốc nếu lỗi
+                        if (move_uploaded_file($tmp_name, $target_file)) { $count_success++; } 
+                        else { $count_error++; }
+                    }
+                } else {
+                    $count_error++; // Sai định dạng
+                }
+            } else {
+                $count_error++; // Lỗi file
+            }
         }
     }
     
-} else { $count_error++; }
     echo json_encode(['success' => $count_success, 'error' => $count_error]);
     exit;
 }
@@ -132,10 +153,9 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'upload_products') 
                 // CÂU LỆNH SQL MỚI (Đã bổ sung cột sort_order)
                 $sql = "INSERT INTO products (sku, cat_code, name, slug, price, sale_price, coupon_code, image_file, frame_file, specs_summary, status, sort_order) 
                         VALUES (:sku, :cat, :name, :slug, :price, :sale, :coupon, :img, :frame, :specs, :stt, :sort)
-                        ON DUPLICATE KEY UPDATE 
-                        cat_code=VALUES(cat_code), name=VALUES(name), slug=VALUES(slug), price=VALUES(price), 
-                        sale_price=VALUES(sale_price), coupon_code=VALUES(coupon_code), image_file=VALUES(image_file), 
-                        frame_file=VALUES(frame_file), specs_summary=VALUES(specs_summary), status=VALUES(status), sort_order=VALUES(sort_order)";
+                        ON DUPLICATE KEY UPDATE cat_code=VALUES(cat_code), name=VALUES(name), slug=VALUES(slug), price=VALUES(price), sale_price=VALUES(sale_price), 
+                        coupon_code=VALUES(coupon_code), image_file=IF(VALUES(image_file) != '', VALUES(image_file), image_file), frame_file=VALUES(frame_file), 
+                        specs_summary=VALUES(specs_summary), status=VALUES(status), sort_order=VALUES(sort_order)";
                 
                 $stmt = $conn->prepare($sql);
                 $stmt->execute([
