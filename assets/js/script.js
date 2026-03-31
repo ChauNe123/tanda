@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
-/* ================= LOGIC GIỎ HÀNG (LOCALSTORAGE) & POP-UP ================= */
+/* ================= LOGIC GIỎ HÀNG & POP-UP TỰ BIẾN MẤT 1.5s ================= */
 function addToCart(sku, name, price, image) {
     let cart = JSON.parse(localStorage.getItem('tanda_cart')) || [];
     let existingItem = cart.find(item => item.sku === sku);
@@ -46,17 +46,42 @@ function addToCart(sku, name, price, image) {
     }
     
     localStorage.setItem('tanda_cart', JSON.stringify(cart));
-    updateCartBadge();
+    updateCartBadge(); // Cho số giỏ hàng nhảy lên
     
-    // GỌI POP-UP VÀ RESET ANIMATION DẤU TÍCH XANH
+    // --- TỰ TẠO HTML POPUP NẾU THIẾU ---
     let notifyEl = document.getElementById('cart-notification');
-    let nameEl = document.getElementById('added-product-name');
     
+    if (!notifyEl) {
+        const popupHTML = `
+        <div id="cart-notification" class="cart-msg-overlay" style="display: none;">
+            <div class="cart-msg-box" style="padding-bottom: 20px;">
+                <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+                    <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+                    <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                </svg>
+                <div class="cart-msg-content">
+                    <h4>Thêm vào giỏ hàng thành công!</h4>
+                    <p id="added-product-name" style="margin-bottom: 0; color: #d70018; font-weight: bold;"></p>
+                </div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', popupHTML);
+        notifyEl = document.getElementById('cart-notification'); 
+    }
+    
+    // --- GỌI POP-UP HIỆN RA RỒI TỰ TẮT ---
+    let nameEl = document.getElementById('added-product-name');
     if (notifyEl && nameEl) {
-        notifyEl.style.display = 'none'; // Tắt đi bật lại để dấu tích tự vẽ lại từ đầu
+        notifyEl.style.display = 'none'; // Tắt đi trước để reset animation
         setTimeout(() => {
-            nameEl.innerText = name;
-            notifyEl.style.display = 'flex';
+            nameEl.innerText = name; 
+            notifyEl.style.display = 'flex'; // Hiện Pop-up
+            
+            // ĐỒNG HỒ ĐẾM NGƯỢC: Đúng 1.5 giây (1500ms) là tự động giấu đi
+            setTimeout(() => {
+                notifyEl.style.display = 'none';
+            }, 1500);
+            
         }, 10);
     }
 }

@@ -175,9 +175,7 @@ include 'includes/header.php';
         </div>
     </div>
     <?php endif; ?>
-</main>
-
-<div class="container block-policy-section" style="margin-top: 20px;">
+    <div class="container block-policy-section" style="margin-top: 20px;">
     <div class="policy-box-wrapper">
         <div class="policy-box">
             <div class="policy-item">
@@ -203,13 +201,7 @@ include 'includes/header.php';
         </div>
     </div>
 
-    <div class="commitment-text">
-        <p class="cm-subtitle">Trải nghiệm mua sắm tại <span class="cm-brand">TANDA</span></p>
-        <h3 class="cm-title">Cam Kết 100% <span class="cm-highlight">Hài Lòng</span></h3>
-    </div>
-</div>
-
-<div class="showroom-full-wrapper">
+    <div class="showroom-full-wrapper">
     <div class="container showroom-inner">
         <div class="sr-left">
             <h2 class="sr-title">[ ĐIỀN TÊN SHOWROOM / CHI NHÁNH ]</h2>
@@ -248,5 +240,5 @@ include 'includes/header.php';
         </div>
     </div>
 </div>
-
+</main>
 <?php include 'includes/footer.php'; ?>

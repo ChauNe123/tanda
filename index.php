@@ -294,110 +294,66 @@ $thietBiMangProds = $stmt->fetchAll();
         </div>
     </div>
 
-    <div class="container block-policy-section">
-        <div class="policy-box-wrapper">
-            <div class="policy-box">
-                <div class="policy-item">
-                    <i class="fas fa-truck policy-icon"></i>
-                    <h4 class="policy-title">GIAO HÀNG TOÀN QUỐC</h4>
-                    <p class="policy-desc">Giao hàng trước, trả tiền sau COD</p>
-                </div>
-                <div class="policy-item">
-                    <i class="fas fa-box-open policy-icon"></i>
-                    <h4 class="policy-title">ĐỔI TRẢ DỄ DÀNG</h4>
-                    <p class="policy-desc">Đổi mới trong 30 ngày đầu</p>
-                </div>
-                <div class="policy-item">
-                    <i class="fas fa-credit-card policy-icon"></i>
-                    <h4 class="policy-title">THANH TOÁN TIỆN LỢI</h4>
-                    <p class="policy-desc">Trả tiền mặt, chuyển khoản, trả góp 0%</p>
-                </div>
-                <div class="policy-item">
-                    <i class="fas fa-headset policy-icon"></i>
-                    <h4 class="policy-title">HỖ TRỢ NHIỆT TÌNH</h4>
-                    <p class="policy-desc">Tư vấn tổng đài miễn phí 24/7</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="commitment-text">
-            <p class="cm-subtitle">Trải nghiệm mua sắm tại <span class="cm-brand">TANDA</span></p>
-            <h3 class="cm-title">Cam Kết 100% <span class="cm-highlight">Hài Lòng</span></h3>
-        </div>
-    </div>
-
-    <div class="showroom-full-wrapper">
-        <div class="container showroom-inner">
-            
-            <div class="sr-left">
-                <h2 class="sr-title">[ ĐIỀN TÊN SHOWROOM / CHI NHÁNH ]</h2>
-                <div class="sr-details">
-                    <div class="sr-item">
-                        <i class="fas fa-map-marker-alt"></i>
-                        <div>
-                            <strong>Địa chỉ:</strong> [ Điền địa chỉ chi tiết của showroom vào đây ]
-                        </div>
-                    </div>
-                    <div class="sr-item">
-                        <i class="fas fa-phone-alt"></i>
-                        <div>
-                            <strong>Hotline:</strong> [ Điền số điện thoại ]
-                        </div>
-                    </div>
-                    <div class="sr-item">
-                        <i class="fas fa-envelope"></i>
-                        <div>
-                            <strong>Email:</strong> [ Điền địa chỉ email ]
-                        </div>
-                    </div>
-                    <div class="sr-item">
-                        <i class="fas fa-clock"></i>
-                        <div>
-                            <strong>Giờ làm việc:</strong> [ VD: 08:00 - 21:00 các ngày trong tuần ]
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="sr-right">
-                <div class="map-placeholder">
-                    <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d62701.244470137026!2d106.54703874863284!3d10.824488199999994!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752bda2710fe85%3A0x14ff4876e299de9c!2zQ8O0bmcgVHkgVG5oaCBLQiBWaeG7h3QgTmFt!5e0!3m2!1svi!2s!4v1774908956197!5m2!1svi!2s" width="600" height="450" style="border:0;" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-                    </div>
-            </div>
-
-        </div>
-    </div>
-
     <script>
-        function slideLeft(sliderId) { document.getElementById(sliderId).scrollBy({ left: -232, behavior: 'smooth' }); }
-        function slideRight(sliderId) { document.getElementById(sliderId).scrollBy({ left: 232, behavior: 'smooth' }); }
-
-        function autoSlide(sliderId) {
+        // Hàm cài đặt thanh cuộn chạy ngang từ từ, vô tận và siêu mượt
+        function setupContinuousSlider(sliderId) {
             const slider = document.getElementById(sliderId);
-            if(!slider) return;
-            let isHovered = false;
-            slider.addEventListener('mouseenter', () => isHovered = true);
-            slider.addEventListener('mouseleave', () => isHovered = false);
+            if (!slider) return;
 
-            setInterval(() => {
-                if(!isHovered) {
-                    let maxScroll = slider.scrollWidth - slider.clientWidth;
-                    if(slider.scrollLeft >= maxScroll - 10) {
-                        slider.scrollBy({ left: -maxScroll, behavior: 'smooth' }); 
-                    } else {
-                        slider.scrollBy({ left: 232, behavior: 'smooth' }); 
+            // 1. Tắt chế độ "cuộn mượt" mặc định của CSS để JS tự điều khiển từng pixel
+            slider.style.scrollBehavior = 'auto';
+
+            // 2. Bí quyết Vòng lặp vô tận: Nhân bản nội dung lên gấp đôi
+            const originalHTML = slider.innerHTML;
+            slider.innerHTML += originalHTML;
+
+            let isHovered = false;
+            let scrollSpeed = 1; // Chỉnh số này để tăng/giảm tốc độ (1 là trôi từ từ êm nhất)
+
+            // 3. Khách rà chuột vào là tự động phanh lại để xem/mua hàng
+            slider.addEventListener('mouseenter', () => { isHovered = true; });
+            slider.addEventListener('mouseleave', () => { isHovered = false; });
+
+            // 4. Động cơ băng chuyền (60fps)
+            function play() {
+                if (!isHovered) {
+                    slider.scrollLeft += scrollSpeed;
+                    
+                    // Khi cuộn hết phần nội dung thật, tự động lặp lại từ đầu (Khách không nhận ra sự đứt quãng)
+                    if (slider.scrollLeft >= slider.scrollWidth / 2) {
+                        slider.scrollLeft = 0;
                     }
                 }
-            }, 3500); 
+                requestAnimationFrame(play); // Yêu cầu trình duyệt vẽ khung hình tiếp theo liên tục
+            }
+
+            // Khởi động động cơ
+            requestAnimationFrame(play);
         }
 
+        // Xử lý 2 nút bấm trái/phải thủ công cho mượt
+        function slideLeft(sliderId) { 
+            const slider = document.getElementById(sliderId);
+            slider.style.scrollBehavior = 'smooth';
+            slider.scrollLeft -= 250;
+            setTimeout(() => slider.style.scrollBehavior = 'auto', 400); // Trả lại chế độ tự cuộn
+        }
+        function slideRight(sliderId) { 
+            const slider = document.getElementById(sliderId);
+            slider.style.scrollBehavior = 'smooth';
+            slider.scrollLeft += 250;
+            setTimeout(() => slider.style.scrollBehavior = 'auto', 400);
+        }
+
+        // Bật công tắc cho TẤT CẢ các slider trên web khi trang tải xong
         window.onload = () => {
-            autoSlide('slider-deal');
-            autoSlide('slider-bo');
-            autoSlide('slider-wifi');
-            autoSlide('slider-dau');
-            autoSlide('slider-phu-kien');
-            autoSlide('slider-mang');
+            setupContinuousSlider('slider-deal');
+            setupContinuousSlider('slider-bo');
+            setupContinuousSlider('slider-wifi');
+            setupContinuousSlider('slider-dau');
+            setupContinuousSlider('slider-phu-kien');
+            setupContinuousSlider('slider-mang');
+            setupContinuousSlider('slider-thiet-bi-mang');
         }
     </script>
 
