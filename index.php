@@ -295,65 +295,76 @@ $thietBiMangProds = $stmt->fetchAll();
     </div>
 
     <script>
-        // Hàm cài đặt thanh cuộn chạy ngang từ từ, vô tận và siêu mượt
-        function setupContinuousSlider(sliderId) {
+        // HÀM TRƯỢT SIÊU MƯỢT (Dùng chung cho cả Tự động và Bấm nút)
+        function smoothScrollTo(slider, target, duration) {
+            const start = slider.scrollLeft;
+            const distance = target - start;
+            let startTime = null;
+
+            function animation(currentTime) {
+                if (startTime === null) startTime = currentTime;
+                const timeElapsed = currentTime - startTime;
+                
+                // Công thức tính độ mượt (chậm dần ở cuối)
+                let progress = Math.min(timeElapsed / duration, 1);
+                const ease = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
+                
+                slider.scrollLeft = start + distance * ease;
+
+                if (timeElapsed < duration) {
+                    requestAnimationFrame(animation);
+                }
+            }
+            requestAnimationFrame(animation);
+        }
+
+        // ĐỘNG CƠ BĂNG CHUYỀN
+        function setupPremiumSlider(sliderId) {
             const slider = document.getElementById(sliderId);
             if (!slider) return;
 
-            // 1. Tắt chế độ "cuộn mượt" mặc định của CSS để JS tự điều khiển từng pixel
-            slider.style.scrollBehavior = 'auto';
+            slider.style.scrollBehavior = 'auto'; // Tắt cuộn mặc định
 
-            // 2. Bí quyết Vòng lặp vô tận: Nhân bản nội dung lên gấp đôi
+            // Nhân bản nội dung để lặp vô tận
             const originalHTML = slider.innerHTML;
             slider.innerHTML += originalHTML;
 
             let isHovered = false;
-            let scrollSpeed = 1; // Chỉnh số này để tăng/giảm tốc độ (1 là trôi từ từ êm nhất)
-
-            // 3. Khách rà chuột vào là tự động phanh lại để xem/mua hàng
             slider.addEventListener('mouseenter', () => { isHovered = true; });
             slider.addEventListener('mouseleave', () => { isHovered = false; });
 
-            // 4. Động cơ băng chuyền (60fps)
-            function play() {
+            // Tự động chạy sau mỗi 3 giây
+            setInterval(() => {
                 if (!isHovered) {
-                    slider.scrollLeft += scrollSpeed;
-                    
-                    // Khi cuộn hết phần nội dung thật, tự động lặp lại từ đầu (Khách không nhận ra sự đứt quãng)
-                    if (slider.scrollLeft >= slider.scrollWidth / 2) {
-                        slider.scrollLeft = 0;
+                    const originalWidth = slider.scrollWidth / 2;
+                    if (slider.scrollLeft >= originalWidth) {
+                        slider.scrollLeft -= originalWidth;
                     }
+                    // Tự động trượt trong 800ms
+                    smoothScrollTo(slider, slider.scrollLeft + 232, 2000); 
                 }
-                requestAnimationFrame(play); // Yêu cầu trình duyệt vẽ khung hình tiếp theo liên tục
-            }
-
-            // Khởi động động cơ
-            requestAnimationFrame(play);
+            }, 3000);
         }
 
-        // Xử lý 2 nút bấm trái/phải thủ công cho mượt
+        // XỬ LÝ NÚT BẤM (Cũng trượt mượt mà trong 500ms)
         function slideLeft(sliderId) { 
             const slider = document.getElementById(sliderId);
-            slider.style.scrollBehavior = 'smooth';
-            slider.scrollLeft -= 250;
-            setTimeout(() => slider.style.scrollBehavior = 'auto', 400); // Trả lại chế độ tự cuộn
+            if (slider) smoothScrollTo(slider, slider.scrollLeft - 232, 500);
         }
         function slideRight(sliderId) { 
             const slider = document.getElementById(sliderId);
-            slider.style.scrollBehavior = 'smooth';
-            slider.scrollLeft += 250;
-            setTimeout(() => slider.style.scrollBehavior = 'auto', 400);
+            if (slider) smoothScrollTo(slider, slider.scrollLeft + 232, 500);
         }
 
-        // Bật công tắc cho TẤT CẢ các slider trên web khi trang tải xong
+        // Khởi động mọi dải sản phẩm
         window.onload = () => {
-            setupContinuousSlider('slider-deal');
-            setupContinuousSlider('slider-bo');
-            setupContinuousSlider('slider-wifi');
-            setupContinuousSlider('slider-dau');
-            setupContinuousSlider('slider-phu-kien');
-            setupContinuousSlider('slider-mang');
-            setupContinuousSlider('slider-thiet-bi-mang');
+            setupPremiumSlider('slider-deal');
+            setupPremiumSlider('slider-bo');
+            setupPremiumSlider('slider-wifi');
+            setupPremiumSlider('slider-dau');
+            setupPremiumSlider('slider-phu-kien');
+            setupPremiumSlider('slider-mang');
+            setupPremiumSlider('slider-thiet-bi-mang');
         }
     </script>
 
