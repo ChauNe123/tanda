@@ -83,16 +83,19 @@
         </div>
     </nav>
 
-    <div id="cart-notification" class="cart-msg-overlay">
+    <div id="cart-notification" class="cart-msg-overlay" style="display: none;">
     <div class="cart-msg-box">
-        <div class="cart-msg-icon"><i class="fas fa-check-circle"></i></div>
+        <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
+            <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+            <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+        </svg>
         <div class="cart-msg-content">
-            <h4>Đã thêm vào giỏ hàng!</h4>
+            <h4>Thêm vào giỏ hàng thành công!</h4>
             <p id="added-product-name"></p>
             <div class="cart-msg-actions">
-                <button onclick="closeCartNotify()" class="btn-continue">Tiếp tục</button>
-                <a href="cart.php" class="btn-go-cart">Xem giỏ hàng</a>
+                <a href="cart.php" class="btn-go-cart">Xem giỏ hàng và thanh toán</a>
+                <button onclick="closeCartNotify()" class="btn-continue">Tiếp tục mua hàng</button>
             </div>
         </div>
     </div>
-</div>
+    </div>

@@ -48,19 +48,16 @@ function addToCart(sku, name, price, image) {
     localStorage.setItem('tanda_cart', JSON.stringify(cart));
     updateCartBadge();
     
-    // BẬT POPUP THÔNG BÁO (THAY VÌ DÙNG ALERT)
+    // GỌI POP-UP VÀ RESET ANIMATION DẤU TÍCH XANH
     let notifyEl = document.getElementById('cart-notification');
     let nameEl = document.getElementById('added-product-name');
     
     if (notifyEl && nameEl) {
-        nameEl.innerText = name;
-        notifyEl.style.display = 'flex'; // Hiển thị popup
-        
-        // Tự động đóng popup sau 4 giây
-        setTimeout(closeCartNotify, 4000);
-    } else {
-        // Dự phòng nếu lỗi HTML
-        alert('✅ Đã thêm "' + name + '" vào giỏ hàng!');
+        notifyEl.style.display = 'none'; // Tắt đi bật lại để dấu tích tự vẽ lại từ đầu
+        setTimeout(() => {
+            nameEl.innerText = name;
+            notifyEl.style.display = 'flex';
+        }, 10);
     }
 }
 
