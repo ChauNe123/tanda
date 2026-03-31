@@ -27,7 +27,7 @@ document.addEventListener("DOMContentLoaded", function() {
     let lastScrollTop = 0;
     
     // Khoảng cách bắt đầu tính hiệu ứng (qua khỏi top banner)
-    const scrollThreshold = 150; 
+    const scrollThreshold = 100; 
 
     if (header) {
         window.addEventListener('scroll', function() {
@@ -40,11 +40,11 @@ document.addEventListener("DOMContentLoaded", function() {
                 
                 // Xác định chiều lăn chuột
                 if (scrollTop > lastScrollTop) {
-                    // 1. Lăn CẮM XUỐNG DƯỚI -> Hiện menu đi theo
-                    header.classList.remove('hidden');
-                } else if (scrollTop < lastScrollTop - 5) { 
-                    // 2. Lăn NGƯỢC LÊN TRÊN (nhích nhẹ 5px) -> Giấu menu đi ngay lập tức
+                    // Lăn CẮM XUỐNG DƯỚI -> Ẩn menu để xem SP
                     header.classList.add('hidden');
+                } else {
+                    // Lăn NGƯỢC LÊN TRÊN -> Hiện menu lại để tìm đồ khác
+                    header.classList.remove('hidden');
                 }
             } else {
                 // Về sát mép trên cùng -> Trả lại như cũ
@@ -53,23 +53,53 @@ document.addEventListener("DOMContentLoaded", function() {
                 document.body.classList.remove('has-sticky-header');
             }
             
-            // Cập nhật vị trí cuộn
-            lastScrollTop = scrollTop <= 0 ? 0 : scrollTop;
+            lastScrollTop = scrollTop;
         });
     }
 });
 
+/* ================= LOGIC GIỎ HÀNG (LOCALSTORAGE) ================= */
+function addToCart(sku, name, price, image) {
+    let cart = JSON.parse(localStorage.getItem('tanda_cart')) || [];
+    let existingItem = cart.find(item => item.sku === sku);
+    
+    if (existingItem) {
+        existingItem.qty += 1;
+    } else {
+        cart.push({ sku: sku, name: name, price: price, image: image, qty: 1 });
+    }
+    
+    localStorage.setItem('tanda_cart', JSON.stringify(cart));
+    updateCartBadge();
+    
+    // Tạo thông báo xịn sò góc màn hình (Toast)
+    alert('✅ Đã thêm "' + name + '" vào giỏ hàng!'); 
+}
+
 function updateCartBadge() {
     let cart = JSON.parse(localStorage.getItem('tanda_cart')) || [];
     let totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
-    // Tìm đúng ID em vừa đặt ở Bước 1
-    let badge = document.getElementById('cart-count-display');
-    if (badge) {
-        badge.innerText = '(' + totalQty + ')';
-    }
+    let badge = document.querySelector('.cart-box .count');
+    if (badge) badge.innerText = '(' + totalQty + ')';
 }
 
-// Gọi hàm này ngay khi trang web vừa tải xong
+// Chạy hàm đếm số lượng ngay khi load web
 document.addEventListener("DOMContentLoaded", function() {
     updateCartBadge();
+});
+
+/* ================= ÉP CHUYỂN TRANG GIỎ HÀNG CHO TOÀN WEB ================= */
+document.addEventListener("DOMContentLoaded", function() {
+    // Tìm TẤT CẢ các nút giỏ hàng trên mọi trang
+    let cartButtons = document.querySelectorAll('.cart-box');
+    
+    cartButtons.forEach(function(btn) {
+        // Đổi con trỏ chuột thành hình bàn tay cho khách biết là bấm được
+        btn.style.cursor = 'pointer'; 
+        
+        // Ép lệnh click chuyển trang
+        btn.addEventListener('click', function() {
+            window.location.href = 'cart.php';
+        });
+    });
 });

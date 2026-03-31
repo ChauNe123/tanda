@@ -58,14 +58,14 @@
         </div>
     </div>
 
-        <a href="cart.php" class="cart-box">
-            <i class="fas fa-shopping-cart"></i>
-            <span>Giỏ hàng</span>
-            <span class="count" id="cart-count-display">(0)</span>
-        </a>
+        <a href="cart.php" style="text-decoration: none;">
+                    <div class="cart-box" onclick="window.location.href='cart.php'" style="cursor: pointer; transition: 0.3s;">
+    <i class="fas fa-shopping-cart"></i> Giỏ hàng <span class="count">(0)</span>
+</div>
+                </a>
+            </div>
     </div>
-        </div>
-    </header>
+</header>
 
     <nav class="nav-bar">
         <div class="container">
