@@ -82,10 +82,10 @@ include 'includes/header.php';
 
             <?php $chot_gia = ($p['sale_price'] > 0) ? $p['sale_price'] : $p['price']; ?>
             <div class="pd-action-box">
-                <button type="button" class="btn-pd-zalo" onclick="addToCart('<?php echo $p['sku']; ?>', '<?php echo addslashes($p['name']); ?>', <?php echo $chot_gia; ?>, '<?php echo $p['image_file']; ?>'); window.location.href='cart.php';">
-                    <i class="fas fa-shopping-cart"></i> MUA NGAY (XEM GIỎ HÀNG)
-                    <span>Thêm vào giỏ và tiến hành điền thông tin</span>
-                </button>
+                <button type="button" class="btn-pd-zalo" onclick="addToCart('<?php echo $p['sku']; ?>', '<?php echo addslashes($p['name']); ?>', <?php echo $chot_gia; ?>, '<?php echo $p['image_file']; ?>')">
+    <i class="fas fa-shopping-cart"></i> THÊM VÀO GIỎ HÀNG
+    <span>Xem thông báo và tiến hành thanh toán</span>
+</button>
             </div>
 
             <div class="pd-trust">

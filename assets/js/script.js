@@ -1,64 +1,40 @@
-// assets/js/script.js
-
 // Khai báo số Zalo tiếp nhận đơn hàng của công ty
 const ZALO_PHONE = "0123456789"; 
 
 function orderViaZalo(productName, price) {
-    // Định dạng lại giá tiền cho đẹp (VD: 1500000 -> 1.500.000)
     let formattedPrice = new Intl.NumberFormat('vi-VN').format(price) + 'đ';
-    
-    // Soạn sẵn nội dung tin nhắn
-    let message = `Chào bộ phận kinh doanh KB Tech, mình muốn tư vấn mua sản phẩm:\n\n`;
-    message += `👉 Tên SP: ${productName}\n`;
-    message += `💰 Giá tham khảo: ${formattedPrice}\n\n`;
-    message += `Nhờ shop báo giá và lên lịch lắp đặt giúp mình nhé!`;
-
-    // Mã hóa tin nhắn thành định dạng URL
+    let message = `Chào bộ phận kinh doanh KB Tech, mình muốn tư vấn mua sản phẩm:\n\n👉 Tên SP: ${productName}\n💰 Giá tham khảo: ${formattedPrice}\n\nNhờ shop báo giá và lên lịch lắp đặt giúp mình nhé!`;
     let encodedMessage = encodeURIComponent(message);
-
-    // Tạo link mở app Zalo (hoạt động cả trên Mobile và PC)
-    let zaloLink = `https://zalo.me/${ZALO_PHONE}?text=${encodedMessage}`;
-
-    // Mở Zalo trong tab mới
-    window.open(zaloLink, '_blank');
+    window.open(`https://zalo.me/${ZALO_PHONE}?text=${encodedMessage}`, '_blank');
 }
+
+// Xử lý hiệu ứng Sticky Header
 document.addEventListener("DOMContentLoaded", function() {
     const header = document.querySelector('.main-header');
     let lastScrollTop = 0;
-    
-    // Khoảng cách bắt đầu tính hiệu ứng (qua khỏi top banner)
     const scrollThreshold = 100; 
 
     if (header) {
         window.addEventListener('scroll', function() {
             let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            
             if (scrollTop > scrollThreshold) {
-                // Thêm class sticky và đệm cho body
                 header.classList.add('sticky');
                 document.body.classList.add('has-sticky-header');
-                
-                // Xác định chiều lăn chuột
                 if (scrollTop > lastScrollTop) {
-                    // Lăn CẮM XUỐNG DƯỚI -> Ẩn menu để xem SP
                     header.classList.add('hidden');
                 } else {
-                    // Lăn NGƯỢC LÊN TRÊN -> Hiện menu lại để tìm đồ khác
                     header.classList.remove('hidden');
                 }
             } else {
-                // Về sát mép trên cùng -> Trả lại như cũ
-                header.classList.remove('sticky');
-                header.classList.remove('hidden');
+                header.classList.remove('sticky', 'hidden');
                 document.body.classList.remove('has-sticky-header');
             }
-            
             lastScrollTop = scrollTop;
         });
     }
 });
 
-/* ================= LOGIC GIỎ HÀNG (LOCALSTORAGE) ================= */
+/* ================= LOGIC GIỎ HÀNG (LOCALSTORAGE) & POP-UP ================= */
 function addToCart(sku, name, price, image) {
     let cart = JSON.parse(localStorage.getItem('tanda_cart')) || [];
     let existingItem = cart.find(item => item.sku === sku);
@@ -72,8 +48,20 @@ function addToCart(sku, name, price, image) {
     localStorage.setItem('tanda_cart', JSON.stringify(cart));
     updateCartBadge();
     
-    // Tạo thông báo xịn sò góc màn hình (Toast)
-    alert('✅ Đã thêm "' + name + '" vào giỏ hàng!'); 
+    // BẬT POPUP THÔNG BÁO (THAY VÌ DÙNG ALERT)
+    let notifyEl = document.getElementById('cart-notification');
+    let nameEl = document.getElementById('added-product-name');
+    
+    if (notifyEl && nameEl) {
+        nameEl.innerText = name;
+        notifyEl.style.display = 'flex'; // Hiển thị popup
+        
+        // Tự động đóng popup sau 4 giây
+        setTimeout(closeCartNotify, 4000);
+    } else {
+        // Dự phòng nếu lỗi HTML
+        alert('✅ Đã thêm "' + name + '" vào giỏ hàng!');
+    }
 }
 
 function updateCartBadge() {
@@ -83,7 +71,11 @@ function updateCartBadge() {
     if (badge) badge.innerText = '(' + totalQty + ')';
 }
 
-// Chạy hàm đếm số lượng ngay khi load web
+function closeCartNotify() {
+    let notifyEl = document.getElementById('cart-notification');
+    if (notifyEl) notifyEl.style.display = 'none';
+}
+
 document.addEventListener("DOMContentLoaded", function() {
     updateCartBadge();
 });
