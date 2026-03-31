@@ -82,9 +82,9 @@ include 'includes/header.php';
 
             <?php $chot_gia = ($p['sale_price'] > 0) ? $p['sale_price'] : $p['price']; ?>
             <div class="pd-action-box">
-                <button class="btn-pd-zalo" onclick="orderViaZalo('<?php echo htmlspecialchars($p['name']); ?>', '<?php echo $chot_gia; ?>')">
-                    💬 ĐẶT HÀNG & TƯ VẤN QUA ZALO
-                    <span>Phản hồi siêu tốc, khảo sát tận nơi miễn phí</span>
+                <button type="button" class="btn-pd-zalo" onclick="addToCart('<?php echo $p['sku']; ?>', '<?php echo addslashes($p['name']); ?>', <?php echo $chot_gia; ?>, '<?php echo $p['image_file']; ?>'); window.location.href='cart.php';">
+                    <i class="fas fa-shopping-cart"></i> MUA NGAY (XEM GIỎ HÀNG)
+                    <span>Thêm vào giỏ và tiến hành điền thông tin</span>
                 </button>
             </div>
 

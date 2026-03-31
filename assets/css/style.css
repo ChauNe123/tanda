@@ -46,7 +46,7 @@ body.has-sticky-header {
 body { background-color: var(--bg-body); color: var(--black-text); overflow-x: hidden; }
 a { text-decoration: none; color: inherit; }
 ul { list-style: none; }
-.container { max-width: 1200px; margin: 0 auto; padding: 0 10px; }
+.container { max-width: 1440px; margin: 0 auto; padding: 0 15px; }
 /* ================= TOP BAR & HEADER ================= */
 .top-bar { background: var(--dark-bg); color: #fff; padding: 6px 0; font-size: 13px; font-weight: 500; }
 .top-bar .container { display: flex; align-items: center; justify-content: flex-start; gap: 15px; }
@@ -551,4 +551,45 @@ ul { list-style: none; }
     .category-product-grid { grid-template-columns: repeat(2, 1fr); }
     .category-toolbar { flex-direction: column; gap: 15px; align-items: flex-start; }
     .category-banner { text-align: center; border-left: none; border-bottom: 5px solid var(--orange-brand); }
+}
+
+/* ================= HIỆU ỨNG HÀO QUANG SỐ HOTLINE / ZALO ================= */
+@keyframes breathingGlow {
+    0% {
+        text-shadow: 0 0 2px rgba(255, 87, 34, 0.1);
+        transform: scale(1);
+    }
+    50% {
+        /* Tỏa hào quang cam rực rỡ */
+        text-shadow: 0 0 15px rgba(255, 87, 34, 0.9), 0 0 25px rgba(255, 87, 34, 0.6);
+        transform: scale(1.08); /* Phóng to số điện thoại lên một chút cho hút mắt */
+    }
+    100% {
+        text-shadow: 0 0 2px rgba(255, 87, 34, 0.1);
+        transform: scale(1);
+    }
+}
+
+/* Tắt hiệu ứng ở logo cũ đi (Nếu sếp chưa xóa code cũ) */
+.logo-text {
+    animation: none !important; 
+}
+
+/* Áp dụng nhịp thở cho số điện thoại */
+.contact-info .phone {
+    animation: breathingGlow 3.5s infinite ease-in-out; /* Cho nhịp đập nhanh hơn (1.5s) để gây chú ý */
+    display: inline-block;
+    color: var(--orange-brand); /* Đổi số điện thoại sang màu cam thương hiệu luôn cho tông xuyệt tông */
+}
+
+/* Cho cái icon tai nghe kế bên cũng lắc lư nhẹ theo */
+@keyframes ringRing {
+    0%, 100% { transform: rotate(0deg); }
+    10%, 30%, 50% { transform: rotate(-15deg); }
+    20%, 40% { transform: rotate(15deg); }
+    60% { transform: rotate(0deg); }
+}
+.contact-box i {
+    animation: ringRing 3s infinite;
+    transform-origin: center;
 }

@@ -31,8 +31,13 @@
     </div>
 
     <?php if($p['status'] == 1): ?>
-        <button class="btn-buy" style="width: 100%; background: #fff; color: #ff5722; border: 2px solid #ff5722; padding: 9px 0; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px;"><i class="fas fa-cart-plus"></i> CHỐT ĐƠN</button>
+        <?php $chot_gia = ($p['sale_price'] > 0) ? $p['sale_price'] : $p['price']; ?>
+        <button type="button" class="btn-buy" onclick="addToCart('<?php echo $p['sku']; ?>', '<?php echo addslashes($p['name']); ?>', <?php echo $chot_gia; ?>, '<?php echo $p['image_file']; ?>')" style="width: 100%; background: #fff; color: #ff5722; border: 2px solid #ff5722; padding: 9px 0; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px;">
+            <i class="fas fa-cart-plus"></i> THÊM VÀO GIỎ
+        </button>
     <?php else: ?>
-        <button class="btn-buy btn-disabled" disabled style="width: 100%; background: #f0f0f0; color: #888; border: 2px solid #ddd; padding: 9px 0; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: not-allowed; display: flex; justify-content: center; align-items: center; gap: 8px;"><i class="fas fa-phone-slash"></i> ĐẶT TRƯỚC</button>
+        <button type="button" class="btn-buy btn-disabled" disabled style="width: 100%; background: #f0f0f0; color: #888; border: 2px solid #ddd; padding: 9px 0; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: not-allowed; display: flex; justify-content: center; align-items: center; gap: 8px;">
+            <i class="fas fa-phone-slash"></i> ĐẶT TRƯỚC
+        </button>
     <?php endif; ?>
 </div>
