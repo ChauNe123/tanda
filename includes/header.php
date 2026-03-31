@@ -50,17 +50,20 @@
             </div>
             
             <div class="header-actions">
-                <div class="contact-box">
-                    <i class="fas fa-headset"></i>
-                    <div class="contact-info">
-                        <span class="title">Hotline & Zalo (24/7)</span>
-                        <span class="phone">098.655.xxxx</span>
-                    </div>
-                </div>
-                <div class="cart-box" onclick="window.location.href='cart.php'" style="cursor: pointer; transition: 0.3s;">
-                    <i class="fas fa-shopping-cart"></i> Giỏ hàng <span class="count">(0)</span>
-                </div>
-            </div>
+    <div class="contact-box">
+        <i class="fas fa-headset"></i>
+        <div class="contact-info">
+            <span class="title">Hotline & Zalo (24/7)</span>
+            <span class="phone">098.655.xxxx</span>
+        </div>
+    </div>
+
+        <a href="cart.php" class="cart-box">
+            <i class="fas fa-shopping-cart"></i>
+            <span>Giỏ hàng</span>
+            <span class="count" id="cart-count-display">(0)</span>
+        </a>
+    </div>
         </div>
     </header>
 

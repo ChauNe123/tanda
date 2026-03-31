@@ -593,3 +593,39 @@ ul { list-style: none; }
     animation: ringRing 3s infinite;
     transform-origin: center;
 }
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    position: relative;
+    z-index: 99; /* Đảm bảo nằm trên thanh tìm kiếm */
+}
+
+.cart-box {
+    display: flex !important; /* Hiện ra dạng khối */
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 87, 34, 0.1);
+    padding: 8px 15px;
+    border-radius: 50px;
+    color: var(--black-text);
+    text-decoration: none; /* Bỏ gạch chân của thẻ a */
+    font-weight: bold;
+    transition: 0.3s;
+    border: 1px solid transparent;
+}
+
+.cart-box:hover {
+    background: var(--orange-brand);
+    color: #fff !important;
+    border-color: var(--orange-brand);
+}
+
+.cart-box .count {
+    color: var(--orange-brand);
+}
+
+.cart-box:hover .count {
+    color: #fff;
+}

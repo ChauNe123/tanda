@@ -59,3 +59,17 @@ document.addEventListener("DOMContentLoaded", function() {
     }
 });
 
+function updateCartBadge() {
+    let cart = JSON.parse(localStorage.getItem('tanda_cart')) || [];
+    let totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
+    // Tìm đúng ID em vừa đặt ở Bước 1
+    let badge = document.getElementById('cart-count-display');
+    if (badge) {
+        badge.innerText = '(' + totalQty + ')';
+    }
+}
+
+// Gọi hàm này ngay khi trang web vừa tải xong
+document.addEventListener("DOMContentLoaded", function() {
+    updateCartBadge();
+});
