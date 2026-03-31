@@ -82,3 +82,17 @@
             </div>
         </div>
     </nav>
+
+    <div id="cart-notification" class="cart-msg-overlay">
+    <div class="cart-msg-box">
+        <div class="cart-msg-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="cart-msg-content">
+            <h4>Đã thêm vào giỏ hàng!</h4>
+            <p id="added-product-name"></p>
+            <div class="cart-msg-actions">
+                <button onclick="closeCartNotify()" class="btn-continue">Tiếp tục</button>
+                <a href="cart.php" class="btn-go-cart">Xem giỏ hàng</a>
+            </div>
+        </div>
+    </div>
+</div>
