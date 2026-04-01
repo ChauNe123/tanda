@@ -689,3 +689,104 @@ ul { list-style: none; }
 }
 .btn-continue:hover { background: #f9f9f9; }
 
+/* ================= LỘT XÁC TRANG CHI TIẾT SẢN PHẨM ================= */
+/* Khung Giá Premium */
+.premium-price-box {
+    background: linear-gradient(135deg, #fff5f5 0%, #ffe8e8 100%);
+    border: 1px solid #ffcccc;
+    padding: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 25px;
+    box-shadow: 0 4px 15px rgba(215, 0, 24, 0.05);
+}
+.premium-price-box .price-header {
+    background: linear-gradient(90deg, #d70018, #ff5722);
+    color: #fff;
+    padding: 8px 15px;
+    font-size: 14px;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+.premium-price-box .price-content {
+    padding: 15px 20px 5px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+.premium-price-box .pd-price-main {
+    font-size: 38px;
+    font-weight: 900;
+    color: #d70018;
+    text-shadow: 1px 1px 0px rgba(215,0,24,0.1);
+}
+.premium-price-box .old-price-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.premium-price-box .pd-price-old {
+    font-size: 16px;
+    color: #888;
+    text-decoration: line-through;
+}
+.premium-price-box .discount-percent {
+    background: #d70018;
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 900;
+}
+.premium-price-box .pd-coupon-tag {
+    margin: 0 20px 15px;
+    display: inline-block;
+    color: #007bff;
+    background: #e6f2ff;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: bold;
+    font-size: 13px;
+    border: 1px dashed #007bff;
+}
+
+/* Khung Thông số cơ bản */
+.modern-summary h3 {
+    font-size: 15px; color: #333; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;
+}
+.modern-summary h3 i { color: var(--orange-brand); }
+.modern-summary-content {
+    background: #f8f9fa; border-left: 4px solid var(--orange-brand);
+    padding: 15px; border-radius: 0 8px 8px 0; font-size: 14.5px; line-height: 1.6; color: #444;
+}
+
+/* 2 Nút Action Mua Hàng */
+.modern-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 30px; }
+.btn-add-cart-pro, .btn-zalo-pro {
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    padding: 15px; border-radius: 8px; border: none; cursor: pointer; transition: 0.3s;
+    color: #fff; text-align: left; box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.btn-add-cart-pro { background: linear-gradient(90deg, #d70018, #ff5722); }
+.btn-add-cart-pro:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(215,0,24,0.3); }
+.btn-zalo-pro { background: linear-gradient(90deg, #0068ff, #0088ff); }
+.btn-zalo-pro:hover { transform: translateY(-3px); box-shadow: 0 6px 15px rgba(0,104,255,0.3); }
+
+.btn-add-cart-pro i, .btn-zalo-pro i { font-size: 28px; }
+.btn-text strong { display: block; font-size: 16px; font-weight: 900; }
+.btn-text span { display: block; font-size: 12px; opacity: 0.9; font-weight: 400; }
+
+/* Các thẻ Cam kết Uy tín */
+.modern-trust { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.modern-trust .trust-item {
+    background: #f4f6f9; padding: 10px 15px; border-radius: 6px; font-size: 13px;
+    font-weight: 600; color: #333; display: flex; align-items: center; gap: 8px; border: 1px solid #eee;
+}
+.modern-trust .trust-item i { color: #28a745; font-size: 16px; }
+
+/* Reponsive trên điện thoại */
+@media (max-width: 576px) {
+    .modern-actions { grid-template-columns: 1fr; }
+    .modern-trust { grid-template-columns: 1fr; }
+}

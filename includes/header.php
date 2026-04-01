@@ -29,25 +29,28 @@
             </a>
             
             <div class="search-area">
-                <form class="search-box" action="search.php" method="GET">
-                    <select name="cat">
-                        <option value="">Tất cả danh mục</option>
-                        <option value="CAM-WIFI">Camera Wifi</option>
-                        <option value="CAM-DAY">Camera Trọn Bộ</option>
-                        <option value="DAU-GHI">Đầu Ghi Hình</option>
-                        <option value="PHU-KIEN">Phụ Kiện</option>
-                        <option value="THIET-BI-MANG">Thiết Bị Mạng</option>
-                    </select>
-                    <input type="text" name="q" placeholder="Tìm kiếm mã camera, đầu ghi, thẻ nhớ..." required>
-                    <button type="submit"><i class="fas fa-search"></i></button>
-                </form>
-                <div class="search-suggest">
-                    <a href="search.php?q=Ezviz">Camera Ezviz</a>
-                    <a href="search.php?q=Imou">Camera Imou</a>
-                    <a href="search.php?q=Dahua">Trọn bộ Dahua</a>
-                    <a href="search.php?q=Ổ cứng">Ổ cứng chuyên dụng</a>
-                </div>
-            </div>
+    <form class="search-box" action="search.php" method="GET">
+        <select name="cat">
+            <option value="">Tất cả danh mục</option>
+            <option value="CAM-WIFI">Camera Wifi</option>
+            <option value="CAM-DAY">Camera Trọn Bộ</option>
+            <option value="DAU-GHI">Đầu Ghi Hình</option>
+            <option value="PHU-KIEN">Phụ Kiện</option>
+            <option value="THIET-BI-MANG">Thiết Bị Mạng</option>
+        </select>
+        
+        <input type="text" name="q" placeholder="Tìm kiếm mã camera, đầu ghi, thẻ nhớ..." required>
+        
+        <button type="submit"><i class="fas fa-search"></i></button>
+    </form>
+    
+    <div class="search-suggest">
+        <a href="search.php?q=Ezviz">Camera Ezviz</a>
+        <a href="search.php?q=Imou">Camera Imou</a>
+        <a href="search.php?q=Dahua">Trọn bộ Dahua</a>
+        <a href="search.php?q=Ổ cứng">Ổ cứng chuyên dụng</a>
+    </div>
+</div>
             
             <div class="header-actions">
     <div class="contact-box">

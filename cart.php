@@ -48,7 +48,7 @@ include 'includes/header.php';
             <button onclick="copyMessage()" style="flex: 1; padding: 12px; background: #ff5722; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px;">
                 <i class="fas fa-copy"></i> COPY TIN NHẮN
             </button>
-            <a href="https://zalo.me/09xxxxxxxx" target="_blank" style="flex: 1; padding: 12px; background: #0068ff; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; text-decoration: none; text-align: center;">
+            <a href="https://zalo.me/0938440781" target="_blank" style="flex: 1; padding: 12px; background: #0068ff; color: #fff; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; text-decoration: none; text-align: center;">
                 <i class="fas fa-external-link-alt"></i> MỞ ZALO NGAY
             </a>
         </div>

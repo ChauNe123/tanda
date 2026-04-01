@@ -48,6 +48,11 @@ include 'includes/header.php';
         </div>
 
         <div class="pd-right">
+            <?php 
+            // KHAI BÁO GIÁ CHỐT NGAY TỪ ĐẦU ĐỂ KHÔNG BỊ LỖI
+            $chot_gia = ($p['sale_price'] > 0) ? $p['sale_price'] : $p['price']; 
+            ?>
+
             <h1 class="pd-title"><?php echo htmlspecialchars($p['name']); ?></h1>
             
             <div class="pd-meta">
@@ -56,44 +61,60 @@ include 'includes/header.php';
                 Tình trạng: <span class="pd-status-on">Còn hàng</span>
             </div>
 
-            <div class="pd-price-box">
-                <?php if($p['sale_price'] > 0): ?>
-                    <span class="pd-price-main"><?php echo number_format($p['sale_price'], 0, ',', '.'); ?>đ</span>
-                    <span class="pd-price-old"><?php echo number_format($p['price'], 0, ',', '.'); ?>đ</span>
+            <div class="pd-price-box premium-price-box">
+                <div class="price-header"><i class="fas fa-fire"></i> GIÁ ƯU ĐÃI ĐẶC BIỆT</div>
+                <div class="price-content">
+                    <span class="pd-price-main"><?php echo number_format($chot_gia, 0, ',', '.'); ?>đ</span>
                     
-                    <?php if(!empty($p['coupon_code'])): ?>
-                        <div class="pd-coupon-tag">
-                            🎁 Mã giảm giá: <?php echo htmlspecialchars($p['coupon_code']); ?>
+                    <?php if ($p['sale_price'] > 0 && $p['price'] > $chot_gia): ?>
+                        <div class="old-price-group">
+                            <span class="pd-price-old"><?php echo number_format($p['price'], 0, ',', '.'); ?>đ</span>
+                            <span class="discount-percent">-<?php echo round((($p['price'] - $chot_gia) / $p['price']) * 100); ?>%</span>
                         </div>
                     <?php endif; ?>
+                </div>
+                
+                <?php if(!empty($p['coupon_code'])): ?>
+                    <div class="pd-coupon-tag" style="color: #d70018; border-color: #d70018;"><i class="fas fa-gift"></i> Mã giảm giá: <?php echo htmlspecialchars($p['coupon_code']); ?></div>
                 <?php else: ?>
-                    <span class="pd-price-main"><?php echo number_format($p['price'], 0, ',', '.'); ?>đ</span>
+                    <div class="pd-coupon-tag"><i class="fas fa-shipping-fast"></i> Miễn phí giao hàng toàn quốc (Freeship)</div>
                 <?php endif; ?>
             </div>
 
             <?php if(!empty($p['specs_summary'])): ?>
-            <div class="pd-summary">
-                <h3>THÔNG SỐ NỔI BẬT</h3>
+            <div class="pd-summary modern-summary">
+                <h3><i class="fas fa-info-circle"></i> THÔNG SỐ CƠ BẢN</h3>
                 <div class="pd-summary-content">
                     <?php echo nl2br(htmlspecialchars($p['specs_summary'])); ?>
                 </div>
             </div>
             <?php endif; ?>
 
-            <?php $chot_gia = ($p['sale_price'] > 0) ? $p['sale_price'] : $p['price']; ?>
-            <div class="pd-action-box">
-                <button type="button" class="btn-pd-zalo" onclick="addToCart('<?php echo $p['sku']; ?>', '<?php echo addslashes($p['name']); ?>', <?php echo $chot_gia; ?>, '<?php echo $p['image_file']; ?>')">
-    <i class="fas fa-shopping-cart"></i> THÊM VÀO GIỎ HÀNG
-    <span>Xem thông báo và tiến hành thanh toán</span>
-</button>
+            <div class="pd-action-box modern-actions">
+                <button type="button" class="btn-add-cart-pro" onclick="addToCart('<?php echo $p['sku']; ?>', '<?php echo addslashes($p['name']); ?>', <?php echo $chot_gia; ?>, '<?php echo $p['image_file']; ?>')">
+                    <i class="fas fa-cart-plus"></i>
+                    <div class="btn-text">
+                        <strong>THÊM VÀO GIỎ HÀNG</strong>
+                        <span>Tiến hành thanh toán ngay</span>
+                    </div>
+                </button>
+                
+                <button type="button" class="btn-zalo-pro" onclick="orderViaZalo('<?php echo addslashes($p['name']); ?>', <?php echo $chot_gia; ?>)">
+                    <i class="fas fa-comment-dots"></i>
+                    <div class="btn-text">
+                        <strong>TƯ VẤN QUA ZALO</strong>
+                        <span>Hỗ trợ kỹ thuật 24/7</span>
+                    </div>
+                </button>
             </div>
 
-            <div class="pd-trust">
-                <span class="pd-trust-item">🛡️ Bảo hành chính hãng 24T</span>
-                <span class="pd-trust-item">⚙️ Hỗ trợ kỹ thuật 24/7</span>
-                <span class="pd-trust-item">📍 Lắp đặt tận nơi TP.HCM</span>
+            <div class="pd-trust modern-trust">
+                <div class="trust-item"><i class="fas fa-shield-alt"></i> Hàng chính hãng 100%</div>
+                <div class="trust-item"><i class="fas fa-tools"></i> Bảo hành 24 tháng</div>
+                <div class="trust-item"><i class="fas fa-exchange-alt"></i> Lỗi 1 đổi 1 (30 ngày)</div>
+                <div class="trust-item"><i class="fas fa-headset"></i> Hỗ trợ trọn đời</div>
             </div>
-        </div> 
+        </div>
     </div>
 
     <div class="block-section" style="margin-top: 40px; padding: 30px;">
