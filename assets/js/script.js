@@ -8,32 +8,6 @@ function orderViaZalo(productName, price) {
     window.open(`https://zalo.me/${ZALO_PHONE}?text=${encodedMessage}`, '_blank');
 }
 
-// Xử lý hiệu ứng Sticky Header
-document.addEventListener("DOMContentLoaded", function() {
-    const header = document.querySelector('.main-header');
-    let lastScrollTop = 0;
-    const scrollThreshold = 100; 
-
-    if (header) {
-        window.addEventListener('scroll', function() {
-            let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            if (scrollTop > scrollThreshold) {
-                header.classList.add('sticky');
-                document.body.classList.add('has-sticky-header');
-                if (scrollTop > lastScrollTop) {
-                    header.classList.add('hidden');
-                } else {
-                    header.classList.remove('hidden');
-                }
-            } else {
-                header.classList.remove('sticky', 'hidden');
-                document.body.classList.remove('has-sticky-header');
-            }
-            lastScrollTop = scrollTop;
-        });
-    }
-});
-
 /* ================= LOGIC GIỎ HÀNG & POP-UP TỰ BIẾN MẤT 1.5s ================= */
 function addToCart(sku, name, price, image) {
     let cart = JSON.parse(localStorage.getItem('tanda_cart')) || [];
