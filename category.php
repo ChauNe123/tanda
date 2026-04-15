@@ -39,6 +39,25 @@ $products = $stmtProds->fetchAll();
 
 include 'includes/header.php';
 ?>
+<main class="container" style="margin-top: 20px; margin-bottom: 40px;">
+    <div style="background: #fff; padding: 15px; border-radius: 8px;">
+        <h2 style="font-size: 20px; text-transform: uppercase; margin-bottom: 15px; color: #ff5722;">
+            <?php echo htmlspecialchars($category['name']); ?>
+        </h2>
+        
+        <?php if (count($products) > 0): ?>
+            <div class="product-grid-5">
+                <?php foreach($products as $p): ?>
+                    <?php include 'card_template.php'; ?>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <p style="text-align: center; padding: 50px 0; color: #888;">Chưa có sản phẩm nào trong danh mục này.</p>
+        <?php endif; ?>
+    </div>
+</main>
+
+<?php include 'includes/footer.php'; ?>
     <?php if (count($products) > 0): ?>
             <?php foreach($products as $p): ?>
                 <?php include 'card_template.php'; ?>

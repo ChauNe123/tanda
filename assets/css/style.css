@@ -21,15 +21,51 @@ body { background-color: var(--bg-gray); margin: 0; padding: 0; font-family: Rob
 .tgdd-search button { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 16px; color: #666; cursor: pointer; }
 
 /* Header Actions */
-.tgdd-actions { display: flex; gap: 15px; }
-.tgdd-action-btn { background: rgba(255,255,255,0.2); color: #fff; padding: 8px 12px; border-radius: 4px; text-decoration: none; font-size: 13px; display: flex; align-items: center; gap: 5px; transition: 0.2s; cursor: pointer; }
-.tgdd-action-btn:hover { background: rgba(255,255,255,0.3); }
+.tgdd-actions { display: flex; gap: 10px; align-items: center; }
+.tgdd-action-btn { 
+    background: rgba(0,0,0,0.1); 
+    color: #fff; 
+    padding: 8px 12px; 
+    border-radius: 4px; 
+    text-decoration: none; 
+    font-size: 13px; 
+    display: flex; 
+    align-items: center; 
+    gap: 5px; 
+    transition: 0.2s;
+    font-family: Arial, Helvetica, sans-serif;
+}
+.tgdd-action-btn:hover { background: rgba(0,0,0,0.2); }
 
-/* Menu Bar */
-.tgdd-nav { background-color: var(--primary-orange); border-top: 1px solid rgba(255,255,255,0.2); }
+/* Nút Chi Nhánh / Tỉnh Thành bo tròn 2 bên giống TGDD */
+.tgdd-action-btn.location-btn {
+    background: rgba(255,255,255,0.2);
+    border-radius: 20px;
+    padding: 8px 15px;
+    font-weight: 500;
+}
+.tgdd-action-btn.location-btn:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+/* Menu Bar - Chỉnh lại chữ màu đen, font nhỏ gọn theo chuẩn TGDD */
+.tgdd-nav { background-color: var(--primary-orange); padding-bottom: 5px; }
 .tgdd-nav-list { display: flex; list-style: none; margin: 0; padding: 0; justify-content: space-between; }
-.tgdd-nav-list li a { color: #fff; text-decoration: none; font-size: 13px; display: flex; align-items: center; gap: 5px; padding: 12px 10px; transition: 0.2s; }
-.tgdd-nav-list li a:hover { background: rgba(255,255,255,0.2); }
+.tgdd-nav-list li a { 
+    color: #000; /* CHỮ ĐEN */
+    text-decoration: none; 
+    font-size: 14px; /* Font nhỏ gọn */
+    font-weight: 400; /* Mỏng, thanh thoát */
+    font-family: Arial, Helvetica, sans-serif;
+    display: flex; 
+    align-items: center; 
+    gap: 6px; 
+    padding: 8px 10px; 
+    transition: 0.2s; 
+    border-radius: 4px;
+}
+.tgdd-nav-list li a i { font-size: 15px; color: #000; opacity: 0.8; } /* Icon đen */
+.tgdd-nav-list li a:hover { background: rgba(0,0,0,0.05); } /* Hover lên xám nhẹ */
 
 /* =========================================
    KHUNG FLASH SALE (KHUYẾN MÃI ONLINE)
