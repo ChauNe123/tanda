@@ -8,6 +8,32 @@ function orderViaZalo(productName, price) {
     window.open(`https://zalo.me/${ZALO_PHONE}?text=${encodedMessage}`, '_blank');
 }
 
+// Xử lý hiệu ứng Sticky Header
+document.addEventListener("DOMContentLoaded", function() {
+    const header = document.querySelector('.main-header');
+    let lastScrollTop = 0;
+    const scrollThreshold = 100; 
+
+    if (header) {
+        window.addEventListener('scroll', function() {
+            let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            if (scrollTop > scrollThreshold) {
+                header.classList.add('sticky');
+                document.body.classList.add('has-sticky-header');
+                if (scrollTop > lastScrollTop) {
+                    header.classList.add('hidden');
+                } else {
+                    header.classList.remove('hidden');
+                }
+            } else {
+                header.classList.remove('sticky', 'hidden');
+                document.body.classList.remove('has-sticky-header');
+            }
+            lastScrollTop = scrollTop;
+        });
+    }
+});
+
 /* ================= LOGIC GIỎ HÀNG & POP-UP TỰ BIẾN MẤT 1.5s ================= */
 function addToCart(sku, name, price, image) {
     let cart = JSON.parse(localStorage.getItem('tanda_cart')) || [];
@@ -92,50 +118,3 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-document.addEventListener("DOMContentLoaded", function() {
-    // 1. CHỨC NĂNG ẨN/HIỆN MENU KHI SCROLL (HỤT VÔ 1 PHẦN)
-    const header = document.getElementById('mainHeader');
-    let lastScrollTop = 0;
-    const delta = 10; // Cần cuộn ít nhất 10px mới kích hoạt để tránh giật lag
-
-    window.addEventListener('scroll', function() {
-        // Lấy vị trí cuộn hiện tại
-        let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-
-        // Nếu cuộn chưa qua 10px thì bỏ qua
-        if (Math.abs(lastScrollTop - scrollTop) <= delta) return;
-
-        // Kiểm tra xem đã cuộn qua 65px (chiều cao của phần nền trắng) chưa
-        if (scrollTop > 65) {
-            if (scrollTop > lastScrollTop) {
-                // Đang cuộn xuống -> Ẩn phần trắng (bơm class hide-top vào)
-                header.classList.add('hide-top');
-            } else {
-                // Đang vuốt lên -> Hiện lại phần trắng
-                header.classList.remove('hide-top');
-            }
-        } else {
-            // Đang ở tuốt trên đỉnh trang -> Trả về trạng thái gốc
-            header.classList.remove('hide-top');
-        }
-
-        lastScrollTop = scrollTop;
-    });
-
-    // 2. TỰ ĐỘNG CẬP NHẬT SỐ LƯỢNG GIỎ HÀNG
-    updateCartBadge();
-});
-
-function updateCartBadge() {
-    let cart = JSON.parse(localStorage.getItem('tanda_cart')) || [];
-    let totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
-    let badge = document.querySelector('.action-btn.cart .count');
-    if (badge) badge.innerText = '(' + totalQty + ')';
-}
-
-// Giữ lại hàm đặt hàng qua Zalo của bạn
-function orderViaZalo(productName, price) {
-    let formattedPrice = new Intl.NumberFormat('vi-VN').format(price) + 'đ';
-    let message = `Chào bộ phận kinh doanh KB Tech, mình muốn mua:\n\n👉 ${productName}\n💰 Giá: ${formattedPrice}`;
-    window.open(`https://zalo.me/0123456789?text=${encodeURIComponent(message)}`, '_blank');
-}
