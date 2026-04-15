@@ -92,33 +92,50 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
-// Hiệu ứng "hụt vô" cho Sticky Header
 document.addEventListener("DOMContentLoaded", function() {
-    let lastScrollTop = 0;
+    // 1. CHỨC NĂNG ẨN/HIỆN MENU KHI SCROLL (HỤT VÔ 1 PHẦN)
     const header = document.getElementById('mainHeader');
-    
-    // Khoảng cách cuộn tối thiểu trước khi bắt đầu ẩn (giúp đỡ giật lag khi vừa cuộn nhẹ)
-    const delta = 5; 
+    let lastScrollTop = 0;
+    const delta = 10; // Cần cuộn ít nhất 10px mới kích hoạt để tránh giật lag
 
     window.addEventListener('scroll', function() {
+        // Lấy vị trí cuộn hiện tại
         let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        
+
+        // Nếu cuộn chưa qua 10px thì bỏ qua
         if (Math.abs(lastScrollTop - scrollTop) <= delta) return;
 
-        // Nếu cuộn xuống dưới 70px (vượt qua khu vực màu trắng)
-        if (scrollTop > 70) {
+        // Kiểm tra xem đã cuộn qua 65px (chiều cao của phần nền trắng) chưa
+        if (scrollTop > 65) {
             if (scrollTop > lastScrollTop) {
-                // Kéo chuột xuống -> Ẩn phần trắng, giữ thanh menu cam
-                header.classList.add('scroll-down');
+                // Đang cuộn xuống -> Ẩn phần trắng (bơm class hide-top vào)
+                header.classList.add('hide-top');
             } else {
-                // Vuốt chuột lên -> Hiện lại toàn bộ
-                header.classList.remove('scroll-down');
+                // Đang vuốt lên -> Hiện lại phần trắng
+                header.classList.remove('hide-top');
             }
         } else {
-            // Đang ở tuốt trên cùng màn hình
-            header.classList.remove('scroll-down');
+            // Đang ở tuốt trên đỉnh trang -> Trả về trạng thái gốc
+            header.classList.remove('hide-top');
         }
-        
+
         lastScrollTop = scrollTop;
     });
+
+    // 2. TỰ ĐỘNG CẬP NHẬT SỐ LƯỢNG GIỎ HÀNG
+    updateCartBadge();
 });
+
+function updateCartBadge() {
+    let cart = JSON.parse(localStorage.getItem('tanda_cart')) || [];
+    let totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
+    let badge = document.querySelector('.action-btn.cart .count');
+    if (badge) badge.innerText = '(' + totalQty + ')';
+}
+
+// Giữ lại hàm đặt hàng qua Zalo của bạn
+function orderViaZalo(productName, price) {
+    let formattedPrice = new Intl.NumberFormat('vi-VN').format(price) + 'đ';
+    let message = `Chào bộ phận kinh doanh KB Tech, mình muốn mua:\n\n👉 ${productName}\n💰 Giá: ${formattedPrice}`;
+    window.open(`https://zalo.me/0123456789?text=${encodeURIComponent(message)}`, '_blank');
+}
