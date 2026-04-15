@@ -8,31 +8,7 @@ function orderViaZalo(productName, price) {
     window.open(`https://zalo.me/${ZALO_PHONE}?text=${encodedMessage}`, '_blank');
 }
 
-// Xử lý hiệu ứng Sticky Header
-document.addEventListener("DOMContentLoaded", function() {
-    const header = document.querySelector('.main-header');
-    let lastScrollTop = 0;
-    const scrollThreshold = 100; 
-
-    if (header) {
-        window.addEventListener('scroll', function() {
-            let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            if (scrollTop > scrollThreshold) {
-                header.classList.add('sticky');
-                document.body.classList.add('has-sticky-header');
-                if (scrollTop > lastScrollTop) {
-                    header.classList.add('hidden');
-                } else {
-                    header.classList.remove('hidden');
-                }
-            } else {
-                header.classList.remove('sticky', 'hidden');
-                document.body.classList.remove('has-sticky-header');
-            }
-            lastScrollTop = scrollTop;
-        });
-    }
-});
+// Sticky header behavior removed (handled by new header/menu CSS/JS).
 
 /* ================= LOGIC GIỎ HÀNG & POP-UP TỰ BIẾN MẤT 1.5s ================= */
 function addToCart(sku, name, price, image) {
@@ -48,41 +24,54 @@ function addToCart(sku, name, price, image) {
     localStorage.setItem('tanda_cart', JSON.stringify(cart));
     updateCartBadge(); // Cho số giỏ hàng nhảy lên
     
-    // --- TỰ TẠO HTML POPUP NẾU THIẾU ---
+    // --- TẠO/HIỆN POPUP (MARKUP MỚI, CSS NHẸ ĐƯỢC CHÈN NẾU CẦN) ---
     let notifyEl = document.getElementById('cart-notification');
-    
+
     if (!notifyEl) {
+        // Chèn style tối thiểu nếu file CSS chưa có lớp tương ứng
+        if (!document.getElementById('tanda-cart-notify-styles')) {
+            const css = `
+#cart-notification { position: fixed; right: 20px; bottom: 20px; z-index: 10000; display: none; }
+#cart-notification .tanda-cart-notify__box { background: #27ae60; color: #fff; display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,0.12); min-width:240px; max-width:360px; }
+#cart-notification .tanda-cart-notify__icon { width:40px; height:40px; display:flex; align-items:center; justify-content:center; background: rgba(255,255,255,0.12); border-radius:8px; }
+#cart-notification .tanda-cart-notify__title { font-weight:700; font-size:14px; }
+#cart-notification .tanda-cart-notify__product { font-size:13px; opacity:0.95; margin-top:2px; }
+#cart-notification .tanda-cart-notify__close { border: none; background: transparent; color: #fff; font-size:18px; cursor:pointer; margin-left:8px; }
+@media (max-width:480px) { #cart-notification { right:12px; left:12px; bottom:12px; } }
+            `;
+            const style = document.createElement('style');
+            style.id = 'tanda-cart-notify-styles';
+            style.appendChild(document.createTextNode(css));
+            document.head.appendChild(style);
+        }
+
         const popupHTML = `
-        <div id="cart-notification" class="cart-msg-overlay" style="display: none;">
-            <div class="cart-msg-box" style="padding-bottom: 20px;">
-                <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-                    <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
-                    <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
-                </svg>
-                <div class="cart-msg-content">
-                    <h4>Thêm vào giỏ hàng thành công!</h4>
-                    <p id="added-product-name" style="margin-bottom: 0; color: #d70018; font-weight: bold;"></p>
-                </div>
-            </div>
-        </div>`;
+<div id="cart-notification" class="tanda-cart-notify" aria-live="polite">
+  <div class="tanda-cart-notify__box" role="status" aria-atomic="true">
+    <div class="tanda-cart-notify__icon" aria-hidden="true">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M20 6L9 17l-5-5" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+    <div class="tanda-cart-notify__body">
+      <div class="tanda-cart-notify__title">Đã thêm vào giỏ hàng</div>
+      <div id="added-product-name" class="tanda-cart-notify__product"></div>
+    </div>
+    <button type="button" class="tanda-cart-notify__close" aria-label="Đóng">&times;</button>
+  </div>
+</div>`;
         document.body.insertAdjacentHTML('beforeend', popupHTML);
-        notifyEl = document.getElementById('cart-notification'); 
+        notifyEl = document.getElementById('cart-notification');
+
+        // Đăng ký sự kiện cho nút đóng
+        const closeBtn = notifyEl.querySelector('.tanda-cart-notify__close');
+        if (closeBtn) closeBtn.addEventListener('click', closeCartNotify);
     }
-    
-    // --- GỌI POP-UP HIỆN RA RỒI TỰ TẮT ---
-    let nameEl = document.getElementById('added-product-name');
+
+    // Hiện popup rồi tự tắt sau 1.5s
+    const nameEl = document.getElementById('added-product-name');
     if (notifyEl && nameEl) {
-        notifyEl.style.display = 'none'; // Tắt đi trước để reset animation
-        setTimeout(() => {
-            nameEl.innerText = name; 
-            notifyEl.style.display = 'flex'; // Hiện Pop-up
-            
-            // ĐỒNG HỒ ĐẾM NGƯỢC: Đúng 1.5 giây (1500ms) là tự động giấu đi
-            setTimeout(() => {
-                notifyEl.style.display = 'none';
-            }, 1500);
-            
-        }, 10);
+        nameEl.innerText = name;
+        notifyEl.style.display = 'flex';
+        setTimeout(() => { if (notifyEl) notifyEl.style.display = 'none'; }, 1500);
     }
 }
 
@@ -98,12 +87,12 @@ function closeCartNotify() {
     if (notifyEl) notifyEl.style.display = 'none';
 }
 
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener(\"DOMContentLoaded\", function() {
     updateCartBadge();
 });
 
 /* ================= ÉP CHUYỂN TRANG GIỎ HÀNG CHO TOÀN WEB ================= */
-document.addEventListener("DOMContentLoaded", function() {
+document.addEventListener(\"DOMContentLoaded\", function() {
     // Tìm TẤT CẢ các nút giỏ hàng trên mọi trang
     let cartButtons = document.querySelectorAll('.cart-box');
     
@@ -117,4 +106,3 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 });
-
