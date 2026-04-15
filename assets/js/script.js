@@ -92,3 +92,33 @@ document.addEventListener("DOMContentLoaded", function() {
     });
 });
 
+// Hiệu ứng "hụt vô" cho Sticky Header
+document.addEventListener("DOMContentLoaded", function() {
+    let lastScrollTop = 0;
+    const header = document.getElementById('mainHeader');
+    
+    // Khoảng cách cuộn tối thiểu trước khi bắt đầu ẩn (giúp đỡ giật lag khi vừa cuộn nhẹ)
+    const delta = 5; 
+
+    window.addEventListener('scroll', function() {
+        let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        
+        if (Math.abs(lastScrollTop - scrollTop) <= delta) return;
+
+        // Nếu cuộn xuống dưới 70px (vượt qua khu vực màu trắng)
+        if (scrollTop > 70) {
+            if (scrollTop > lastScrollTop) {
+                // Kéo chuột xuống -> Ẩn phần trắng, giữ thanh menu cam
+                header.classList.add('scroll-down');
+            } else {
+                // Vuốt chuột lên -> Hiện lại toàn bộ
+                header.classList.remove('scroll-down');
+            }
+        } else {
+            // Đang ở tuốt trên cùng màn hình
+            header.classList.remove('scroll-down');
+        }
+        
+        lastScrollTop = scrollTop;
+    });
+});
