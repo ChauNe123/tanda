@@ -24,11 +24,10 @@ function addToCart(sku, name, price, image) {
     localStorage.setItem('tanda_cart', JSON.stringify(cart));
     updateCartBadge(); // Cho số giỏ hàng nhảy lên
     
-    // --- TẠO/HIỆN POPUP (MARKUP MỚI, CSS NHẸ ĐƯỢC CHÈN NẾU CẦN) ---
+    // --- TẠO/HIỆN POPUP (markup mới, style nhẹ) ---
     let notifyEl = document.getElementById('cart-notification');
 
     if (!notifyEl) {
-        // Chèn style tối thiểu nếu file CSS chưa có lớp tương ứng
         if (!document.getElementById('tanda-cart-notify-styles')) {
             const css = `
 #cart-notification { position: fixed; right: 20px; bottom: 20px; z-index: 10000; display: none; }
@@ -38,7 +37,7 @@ function addToCart(sku, name, price, image) {
 #cart-notification .tanda-cart-notify__product { font-size:13px; opacity:0.95; margin-top:2px; }
 #cart-notification .tanda-cart-notify__close { border: none; background: transparent; color: #fff; font-size:18px; cursor:pointer; margin-left:8px; }
 @media (max-width:480px) { #cart-notification { right:12px; left:12px; bottom:12px; } }
-            `;
+    `;
             const style = document.createElement('style');
             style.id = 'tanda-cart-notify-styles';
             style.appendChild(document.createTextNode(css));
@@ -60,13 +59,10 @@ function addToCart(sku, name, price, image) {
 </div>`;
         document.body.insertAdjacentHTML('beforeend', popupHTML);
         notifyEl = document.getElementById('cart-notification');
-
-        // Đăng ký sự kiện cho nút đóng
         const closeBtn = notifyEl.querySelector('.tanda-cart-notify__close');
         if (closeBtn) closeBtn.addEventListener('click', closeCartNotify);
     }
 
-    // Hiện popup rồi tự tắt sau 1.5s
     const nameEl = document.getElementById('added-product-name');
     if (notifyEl && nameEl) {
         nameEl.innerText = name;
@@ -78,7 +74,7 @@ function addToCart(sku, name, price, image) {
 function updateCartBadge() {
     let cart = JSON.parse(localStorage.getItem('tanda_cart')) || [];
     let totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
-    let badge = document.querySelector('.cart-box .count');
+    let badge = document.querySelector('.tgdd-action-btn .count') || document.querySelector('.cart-box .count');
     if (badge) badge.innerText = '(' + totalQty + ')';
 }
 
@@ -87,22 +83,4 @@ function closeCartNotify() {
     if (notifyEl) notifyEl.style.display = 'none';
 }
 
-document.addEventListener(\"DOMContentLoaded\", function() {
-    updateCartBadge();
-});
-
-/* ================= ÉP CHUYỂN TRANG GIỎ HÀNG CHO TOÀN WEB ================= */
-document.addEventListener(\"DOMContentLoaded\", function() {
-    // Tìm TẤT CẢ các nút giỏ hàng trên mọi trang
-    let cartButtons = document.querySelectorAll('.cart-box');
-    
-    cartButtons.forEach(function(btn) {
-        // Đổi con trỏ chuột thành hình bàn tay cho khách biết là bấm được
-        btn.style.cursor = 'pointer'; 
-        
-        // Ép lệnh click chuyển trang
-        btn.addEventListener('click', function() {
-            window.location.href = 'cart.php';
-        });
-    });
-});
+let cartButtons = document.querySelectorAll('.tgdd-action-btn, .cart-box');
