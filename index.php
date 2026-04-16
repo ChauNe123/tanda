@@ -51,139 +51,108 @@ $stmt = $conn->prepare("SELECT * FROM products WHERE cat_code = 'THIET-BI-MANG' 
 $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
 $stmt->execute();
 $thietBiMangProds = $stmt->fetchAll();
+
+// Lấy toàn bộ sản phẩm đang hoạt động để phân loại cho Tab
+$stmt = $conn->prepare("SELECT * FROM products WHERE status = 1 ORDER BY sort_order ASC");
+$stmt->execute();
+$allProds = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Phân loại sản phẩm theo cat_code để gửi cho JS
+$categorizedData = [
+    'wifi' => [],
+    'tronbo' => [],
+    'daughi' => [],
+    'phukien' => [],
+    'mang' => []
+];
+
+foreach ($allProds as $p) {
+    if ($p['cat_code'] == 'CAM-WIFI') $categorizedData['wifi'][] = $p;
+    elseif ($p['cat_code'] == 'CAM-DAY') $categorizedData['tronbo'][] = $p;
+    elseif ($p['cat_code'] == 'DAU-GHI') $categorizedData['daughi'][] = $p;
+    elseif ($p['cat_code'] == 'PHU-KIEN') $categorizedData['phukien'][] = $p;
+    elseif ($p['cat_code'] == 'THIET-BI-MANG') $categorizedData['mang'][] = $p;
+}
 ?>
 
 <?php include 'includes/header.php'; ?>
 <main class="container">
-    
     <section class="flash-sale-wrap">
-        <div class="fs-title">Khuyến mãi online</div>
+        <h2 style="font-size: 22px; font-weight: 700; text-transform: uppercase; margin-bottom: 20px; color: #ff5722;">
+            Sản Phẩm Nổi Bật Tanda
+        </h2>
         
-        <div class="fs-tabs">
-            <div class="fs-tab active">FLASH SALE GIÁ SỐC</div>
-            <div class="fs-tab">GIẢM ĐẾN 50%</div>
-            <div class="fs-tab">Camera Wifi</div>
-            <div class="fs-tab">Đầu Ghi</div>
-            <div class="fs-tab">Phụ Kiện</div>
+        <div class="fs-tabs" id="fs-tabs">
+            <div class="fs-tab active" data-tab="wifi">Camera Wifi</div>
+            <div class="fs-tab" data-tab="tronbo">Trọn bộ Camera</div>
+            <div class="fs-tab" data-tab="daughi">Đầu Ghi Hình</div>
+            <div class="fs-tab" data-tab="phukien">Phụ Kiện</div>
+            <div class="fs-tab" data-tab="mang">Thiết Bị Mạng</div>
         </div>
 
-        <div class="product-grid-5">
-            <?php if(!empty($dealHotProds)): ?>
-                <?php foreach($dealHotProds as $p): ?>
-                    
-                    <?php include 'card_template.php'; ?>
-
-                <?php endforeach; ?>
-            <?php else: ?>
-                <p style="grid-column: 1 / -1; text-align:center; padding: 30px;">Hiện tại chưa có sản phẩm Flash Sale.</p>
-            <?php endif; ?>
-        </div>
-        <div class="product-grid-5">
-            <?php if(!empty($dealHotProds)): ?>
-                <?php foreach($dealHotProds as $p): ?>
-                    
-                    <?php include 'card_template.php'; ?>
-
-                <?php endforeach; ?>
-            <?php else: ?>
-                <p style="grid-column: 1 / -1; text-align:center; padding: 30px;">Hiện tại chưa có sản phẩm Flash Sale.</p>
-            <?php endif; ?>
-        </div>
-
-        <?php if(!empty($dealHotProds)): ?>
-        <div class="view-all-box">
-            <a href="category.php?slug=flash-sale" class="btn-view-all">Xem tất cả khuyến mãi <i class="fas fa-caret-right"></i></a>
-        </div>
-        <?php endif; ?>
+        <div id="fs-grid" class="fs-grid"></div>
     </section>
-
 </main>
-<main class="container">
-    
-    <section class="flash-sale-wrap">
-        <div class="fs-title">Khuyến mãi online</div>
+
+<script>
+const dbProducts = <?php echo json_encode($categorizedData); ?>;
+
+document.addEventListener('DOMContentLoaded', function() {
+    const grid = document.getElementById('fs-grid');
+    const tabs = document.querySelectorAll('.fs-tab');
+
+    function renderProducts(tabId) {
+        const items = dbProducts[tabId] || [];
         
-        <div class="fs-tabs">
-            <div class="fs-tab active">FLASH SALE GIÁ SỐC</div>
-            <div class="fs-tab">GIẢM ĐẾN 50%</div>
-            <div class="fs-tab">Camera Wifi</div>
-            <div class="fs-tab">Đầu Ghi</div>
-            <div class="fs-tab">Phụ Kiện</div>
-        </div>
+        grid.classList.add('fade-out');
+        grid.classList.remove('fade-in');
 
-        <div class="product-grid-5">
-            <?php if(!empty($dealHotProds)): ?>
-                <?php foreach($dealHotProds as $p): ?>
+        setTimeout(() => {
+            if(items.length === 0) {
+                grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; padding:50px; color:#999;">Đang cập nhật sản phẩm cho mục này...</p>';
+            } else {
+                grid.innerHTML = items.map(p => {
+                    const hasSale = p.sale_price > 0 && p.sale_price < p.price;
+                    const displayPrice = hasSale ? p.sale_price : p.price;
+                    const percent = hasSale ? Math.round(((p.price - p.sale_price) / p.price) * 100) : 0;
                     
-                    <?php include 'card_template.php'; ?>
+                    return `
+                        <div class="fs-card">
+                            <div class="fs-img-wrap" onclick="window.location.href='product-detail.php?slug=${p.slug}'">
+                                <img src="uploads/${p.image_file}" alt="${p.name}" loading="lazy">
+                            </div>
+                            <div class="fs-title" onclick="window.location.href='product-detail.php?slug=${p.slug}'">${p.name}</div>
+                            <div class="fs-price-row">
+                                <span class="fs-price-new">${parseInt(displayPrice).toLocaleString('vi-VN')}₫</span>
+                                ${hasSale ? `<span class="fs-price-old">${parseInt(p.price).toLocaleString('vi-VN')}₫</span>` : ''}
+                                ${hasSale ? `<span class="fs-discount">-${percent}%</span>` : ''}
+                            </div>
+                            <div class="fs-progress">
+                                <div class="fs-progress-bar" style="width: ${Math.floor(Math.random() * 60) + 30}%"></div>
+                                <span>Mới về kho</span>
+                            </div>
+                            <button class="btn-fs-buy" onclick="addToCart('${p.sku}', '${p.name.replace(/'/g, "\\'")}', ${displayPrice}, '${p.image_file}')">
+                                MUA NGAY
+                            </button>
+                        </div>
+                    `;
+                }).join('');
+            }
 
-                <?php endforeach; ?>
-            <?php else: ?>
-                <p style="grid-column: 1 / -1; text-align:center; padding: 30px;">Hiện tại chưa có sản phẩm Flash Sale.</p>
-            <?php endif; ?>
-        </div>
-        <div class="product-grid-5">
-            <?php if(!empty($dealHotProds)): ?>
-                <?php foreach($dealHotProds as $p): ?>
-                    
-                    <?php include 'card_template.php'; ?>
+            grid.classList.remove('fade-out');
+            grid.classList.add('fade-in');
+        }, 150);
+    }
 
-                <?php endforeach; ?>
-            <?php else: ?>
-                <p style="grid-column: 1 / -1; text-align:center; padding: 30px;">Hiện tại chưa có sản phẩm Flash Sale.</p>
-            <?php endif; ?>
-        </div>
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            tabs.forEach(t => t.classList.remove('active'));
+            this.classList.add('active');
+            renderProducts(this.getAttribute('data-tab'));
+        });
+    });
 
-        <?php if(!empty($dealHotProds)): ?>
-        <div class="view-all-box">
-            <a href="category.php?slug=flash-sale" class="btn-view-all">Xem tất cả khuyến mãi <i class="fas fa-caret-right"></i></a>
-        </div>
-        <?php endif; ?>
-    </section>
-
-</main>
-<main class="container">
-    
-    <section class="flash-sale-wrap">
-        <div class="fs-title">Khuyến mãi online</div>
-        
-        <div class="fs-tabs">
-            <div class="fs-tab active">FLASH SALE GIÁ SỐC</div>
-            <div class="fs-tab">GIẢM ĐẾN 50%</div>
-            <div class="fs-tab">Camera Wifi</div>
-            <div class="fs-tab">Đầu Ghi</div>
-            <div class="fs-tab">Phụ Kiện</div>
-        </div>
-
-        <div class="product-grid-5">
-            <?php if(!empty($dealHotProds)): ?>
-                <?php foreach($dealHotProds as $p): ?>
-                    
-                    <?php include 'card_template.php'; ?>
-
-                <?php endforeach; ?>
-            <?php else: ?>
-                <p style="grid-column: 1 / -1; text-align:center; padding: 30px;">Hiện tại chưa có sản phẩm Flash Sale.</p>
-            <?php endif; ?>
-        </div>
-        <div class="product-grid-5">
-            <?php if(!empty($dealHotProds)): ?>
-                <?php foreach($dealHotProds as $p): ?>
-                    
-                    <?php include 'card_template.php'; ?>
-
-                <?php endforeach; ?>
-            <?php else: ?>
-                <p style="grid-column: 1 / -1; text-align:center; padding: 30px;">Hiện tại chưa có sản phẩm Flash Sale.</p>
-            <?php endif; ?>
-        </div>
-
-        <?php if(!empty($dealHotProds)): ?>
-        <div class="view-all-box">
-            <a href="category.php?slug=flash-sale" class="btn-view-all">Xem tất cả khuyến mãi <i class="fas fa-caret-right"></i></a>
-        </div>
-        <?php endif; ?>
-    </section>
-
-</main>
+    renderProducts('wifi');
+});
+</script>
     <?php include 'includes/footer.php'; ?>
