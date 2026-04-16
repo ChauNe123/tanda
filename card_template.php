@@ -1,10 +1,14 @@
 <?php
 // card_template.php
 ?>
-<div class="tgdd-card <?php echo ($p['status'] == 0) ? 'out-of-stock' : ''; ?>">
-    <a href="product-detail.php?slug=<?php echo htmlspecialchars($p['slug']); ?>">
-        <img src="uploads/<?php echo htmlspecialchars($p['image_file']); ?>" alt="<?php echo htmlspecialchars($p['name']); ?>" class="tgdd-card-img">
-    </a>
+<div class="tgdd-card reveal <?php echo ($p['status'] == 0) ? 'out-of-stock' : ''; ?>">
+    <div class="card-img-wrap">
+        <a href="product-detail.php?slug=<?php echo htmlspecialchars($p['slug']); ?>">
+            <img src="uploads/<?php echo htmlspecialchars($p['image_file']); ?>" 
+                 alt="<?php echo htmlspecialchars($p['name']); ?>"
+                 loading="lazy">
+        </a>
+    </div>
     
     <a href="product-detail.php?slug=<?php echo htmlspecialchars($p['slug']); ?>" class="tgdd-card-title" title="<?php echo htmlspecialchars($p['name']); ?>">
         <?php echo htmlspecialchars($p['name']); ?>
@@ -32,12 +36,12 @@
 
     <?php if($p['status'] == 1): ?>
         <?php $chot_gia = ($p['sale_price'] > 0) ? $p['sale_price'] : $p['price']; ?>
-        <button type="button" class="btn-mua-ngay" onclick="addToCart('<?php echo $p['sku']; ?>', '<?php echo addslashes($p['name']); ?>', <?php echo $chot_gia; ?>, '<?php echo $p['image_file']; ?>')">
-            Mua ngay
+        <button type="button" class="btn-card-action" onclick="addToCart('<?php echo $p['sku']; ?>', '<?php echo addslashes($p['name']); ?>', <?php echo $chot_gia; ?>, '<?php echo $p['image_file']; ?>')">
+            <i class="fas fa-shopping-cart"></i> XEM CHI TIẾT
         </button>
     <?php else: ?>
-        <button type="button" class="btn-mua-ngay" style="background: #e0e0e0; color: #888; border-color: #ccc; cursor: not-allowed;" disabled>
-            Tạm hết hàng
+        <button type="button" class="btn-card-action" style="background: #e0e0e0; color: #888; border-color: #ccc; cursor: not-allowed;" disabled>
+            <i class="fas fa-ban"></i> Tạm hết hàng
         </button>
     <?php endif; ?>
 </div>

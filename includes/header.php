@@ -14,31 +14,37 @@
 </head>
 <body>
 
-<header class="tgdd-header">
-    <div class="container tgdd-header-inner">
-        <a href="index.php" class="tgdd-logo">TAN<span>DA</span></a>
+<header class="main-header">
+    <div class="container header-inner">
+        <a href="index.php" class="logo-area">TAN<span>DA</span></a>
         
-        <form class="tgdd-search" action="search.php" method="GET">
-            <input type="text" name="q" placeholder="Bạn tìm gì hôm nay?" required>
+        <form class="search-area" action="search.php" method="GET">
             <button type="submit"><i class="fas fa-search"></i></button>
+            <input type="text" name="q" placeholder="Bạn tìm camera, đầu ghi gì..." required>
         </form>
         
-        <div class="tgdd-actions">
-            <a href="cart.php" class="tgdd-action-btn"><i class="fas fa-shopping-cart"></i> Giỏ hàng <span class="count" style="background:#fff; color:#ff5722; padding:1px 5px; border-radius:10px; font-size:12px; font-weight:bold; margin-left:3px;">0</span></a>
-            <a href="#" class="tgdd-action-btn location-btn"><i class="fas fa-map-marker-alt"></i> Hồ Chí Minh <i class="fas fa-chevron-right" style="font-size:10px; margin-left:200px;"></i></a>
-        </div>
+        <a href="cart.php" class="cart-box">
+            <i class="fas fa-shopping-cart"></i>
+            <span>Giỏ hàng (0)</span>
+        </a>
     </div>
 </header>
 
-<nav class="tgdd-nav">
+<nav class="nav-bar">
     <div class="container">
-        <ul class="tgdd-nav-list">
-            <li><a href="category.php?slug=camera-wifi"><i class="fas fa-video"></i> Camera Wifi</a></li>
-            <li><a href="category.php?slug=camera-tron-bo"><i class="fas fa-camera"></i> Trọn bộ Camera</a></li>
-            <li><a href="category.php?slug=dau-ghi-hinh"><i class="fas fa-server"></i> Đầu Ghi Hình</a></li>
-            <li><a href="category.php?slug=phu-kien"><i class="fas fa-hdd"></i> Phụ kiện, Thẻ nhớ <i class="fas fa-chevron-down" style="font-size:10px; margin-left:3px;"></i></a></li>
-            <li><a href="category.php?slug=thiet-bi-mang"><i class="fas fa-network-wired"></i> Thiết Bị Mạng</a></li>
-            <li><a href="#"><i class="fas fa-tools"></i> Dịch vụ tiện ích <i class="fas fa-chevron-down" style="font-size:10px; margin-left:3px;"></i></a></li>
+        <ul class="nav-list">
+            <li class="nav-item">
+                <a href="category.php?slug=camera-wifi" class="nav-link"><i class="fas fa-video"></i> CAMERA WIFI</a>
+                <div class="dropdown">
+                    <a href="category.php?slug=camera-wifi-ezviz">Ezviz chính hãng</a>
+                    <a href="category.php?slug=camera-wifi-imou">Imou giá rẻ</a>
+                    <a href="category.php?slug=camera-wifi-kbone">Kbone cao cấp</a>
+                </div>
+            </li>
+            <li class="nav-item"><a href="category.php?slug=camera-tron-bo" class="nav-link"><i class="fas fa-camera"></i> CAMERA TRỌN BỘ</a></li>
+            <li class="nav-item"><a href="category.php?slug=dau-ghi-hinh" class="nav-link"><i class="fas fa-server"></i> ĐẦU GHI HÌNH</a></li>
+            <li class="nav-item"><a href="category.php?slug=phu-kien" class="nav-link"><i class="fas fa-hdd"></i> PHỤ KIỆN</a></li>
+            <li class="nav-item"><a href="category.php?slug=thiet-bi-mang" class="nav-link"><i class="fas fa-network-wired"></i> THIẾT BỊ MẠNG</a></li>
         </ul>
     </div>
 </nav>
