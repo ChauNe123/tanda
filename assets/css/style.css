@@ -184,3 +184,48 @@ body { background-color: var(--bg-gray); margin: 0; padding: 0; font-family: Rob
 
 /* GHI ĐÈ MÀU POPUP (JS đang set màu xanh lá, dùng CSS ép thành màu Cam) */
 #cart-notification .tanda-cart-notify__box { background: var(--primary-orange) !important; }
+
+/* =========================================
+   HIỆU ỨNG MENU & NÚT XEM THÊM
+========================================= */
+/* Hiệu ứng sáng nhẹ khi di chuột vào mục menu */
+.tgdd-nav-list li a {
+    transition: all 0.3s ease; /* Chuyển đổi mượt mà */
+}
+
+.tgdd-nav-list li a:hover {
+    background: rgba(255, 255, 255, 0.2); /* Sáng nền nhẹ */
+    color: #fff; /* Chữ chuyển màu trắng nếu đang đen */
+    border-radius: 4px; /* Giữ góc bo tròn */
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.3); /* Viền sáng nhẹ */
+}
+/* Đổi màu icon khi hover */
+.tgdd-nav-list li a:hover i {
+    color: #fff;
+}
+
+/* Nút Xem Tất Cả Sản Phẩm */
+.view-all-box {
+    text-align: center;
+    margin-top: 25px;
+    margin-bottom: 10px;
+}
+
+.btn-view-all {
+    display: inline-block;
+    background-color: #fff;
+    color: var(--primary-orange);
+    border: 1px solid var(--primary-orange);
+    padding: 10px 40px;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.btn-view-all:hover {
+    background-color: var(--primary-orange);
+    color: #fff;
+    box-shadow: 0 4px 8px rgba(255, 87, 34, 0.3); /* Bóng đổ màu cam */
+}

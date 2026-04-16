@@ -24,9 +24,8 @@
         </form>
         
         <div class="tgdd-actions">
-            <a href="#" class="tgdd-action-btn"><i class="fas fa-user"></i> Đăng nhập</a>
             <a href="cart.php" class="tgdd-action-btn"><i class="fas fa-shopping-cart"></i> Giỏ hàng <span class="count" style="background:#fff; color:#ff5722; padding:1px 5px; border-radius:10px; font-size:12px; font-weight:bold; margin-left:3px;">0</span></a>
-            <a href="#" class="tgdd-action-btn location-btn"><i class="fas fa-map-marker-alt"></i> Hồ Chí Minh <i class="fas fa-chevron-right" style="font-size:10px; margin-left:3px;"></i></a>
+            <a href="#" class="tgdd-action-btn location-btn"><i class="fas fa-map-marker-alt"></i> Hồ Chí Minh <i class="fas fa-chevron-right" style="font-size:10px; margin-left:200px;"></i></a>
         </div>
     </div>
 </header>

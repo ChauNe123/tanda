@@ -78,6 +78,23 @@ $thietBiMangProds = $stmt->fetchAll();
                 <p style="grid-column: 1 / -1; text-align:center; padding: 30px;">Hiện tại chưa có sản phẩm Flash Sale.</p>
             <?php endif; ?>
         </div>
+        <div class="product-grid-5">
+            <?php if(!empty($dealHotProds)): ?>
+                <?php foreach($dealHotProds as $p): ?>
+                    
+                    <?php include 'card_template.php'; ?>
+
+                <?php endforeach; ?>
+            <?php else: ?>
+                <p style="grid-column: 1 / -1; text-align:center; padding: 30px;">Hiện tại chưa có sản phẩm Flash Sale.</p>
+            <?php endif; ?>
+        </div>
+
+        <?php if(!empty($dealHotProds)): ?>
+        <div class="view-all-box">
+            <a href="category.php?slug=flash-sale" class="btn-view-all">Xem tất cả khuyến mãi <i class="fas fa-caret-right"></i></a>
+        </div>
+        <?php endif; ?>
     </section>
 
 </main>
