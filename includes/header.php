@@ -1,100 +1,55 @@
 <?php
-// Bật hiển thị lỗi nếu cần test
-// error_reporting(E_ALL); ini_set('display_errors', 1);
+// Đảm bảo đã gọi file kết nối DB trước khi gọi header
+require_once __DIR__ . '/../cores/db_config.php';
+global $sys_settings;
 ?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TANDA - Hệ Thống Phân Phối Camera & An Ninh Chính Hãng</title>
+    <title><?php echo isset($sys_settings['seo_title']) ? $sys_settings['seo_title'] : 'TANDA - Phân Phối Camera'; ?></title>
     
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <link rel="stylesheet" href="assets/css/style.css?v=<?php echo time(); ?>">
 </head>
 <body>
 
-    <div class="top-bar">
-        <div class="container">
-            <div class="top-badge"><i class="fas fa-map-marker-alt"></i> Hệ thống showroom</div>
-            <div class="top-badge" style="background: transparent;"><i class="fas fa-phone-alt"></i> Mua hàng trực tuyến</div>
-        </div>
-    </div>
-
-    <header class="main-header">
-        <div class="container">
-            <a href="index.php" class="logo-area">
-                <div class="logo-text">TAN<span>DA</span></div>
-            </a>
+    <header>
+        <div class="container header-wrap">
+            <a href="index.php" class="logo">TAN<span>DA</span></a>
             
-            <div class="search-area">
-    <form class="search-box" action="search.php" method="GET">
-        <select name="cat">
-            <option value="">Tất cả danh mục</option>
-            <option value="CAM-WIFI">Camera Wifi</option>
-            <option value="CAM-DAY">Camera Trọn Bộ</option>
-            <option value="DAU-GHI">Đầu Ghi Hình</option>
-            <option value="PHU-KIEN">Phụ Kiện</option>
-            <option value="THIET-BI-MANG">Thiết Bị Mạng</option>
-        </select>
-        
-        <input type="text" name="q" placeholder="Tìm kiếm mã camera, đầu ghi, thẻ nhớ..." required>
-        
-        <button type="submit"><i class="fas fa-search"></i></button>
-    </form>
-    
-    <div class="search-suggest">
-        <a href="search.php?q=Ezviz">Camera Ezviz</a>
-        <a href="search.php?q=Imou">Camera Imou</a>
-        <a href="search.php?q=Dahua">Trọn bộ Dahua</a>
-        <a href="search.php?q=Ổ cứng">Ổ cứng chuyên dụng</a>
-    </div>
-</div>
+            <div class="search-box">
+                <input type="text" placeholder="Bạn tìm camera gì...">
+                <button><i class="fas fa-search"></i></button>
+            </div>
             
-            <div class="header-actions">
-    <div class="contact-box">
-        <i class="fas fa-headset"></i>
-        <div class="contact-info">
-            <span class="title">Hotline & Zalo (24/7)</span>
-            <span class="phone">098.655.xxxx</span>
+            <div style="display: flex; gap: 10px;">
+                <div class="header-btn hotline-btn">
+                    <i class="fas fa-phone-alt"></i> <?php echo isset($sys_settings['hotline']) ? $sys_settings['hotline'] : '09xx.xxx.xxx'; ?>
+                </div>
+                <div class="header-btn cart-btn" onclick="window.location.href='cart.php'">
+                    <i class="fas fa-shopping-cart"></i> Giỏ hàng
+                    <span class="cart-badge" id="cartBadge">0</span>
+                </div>
+            </div>
         </div>
-    </div>
+    </header>
 
-        <a href="cart.php" style="text-decoration: none;">
-                    <div class="cart-box" onclick="window.location.href='cart.php'" style="cursor: pointer; transition: 0.3s;">
-    <i class="fas fa-shopping-cart"></i> Giỏ hàng <span class="count">(0)</span>
-</div>
-                </a>
-            </div>
-    </div>
-</header>
-
-    <nav class="nav-bar">
+    <nav class="main-menu">
         <div class="container">
-            <div class="nav-category">
-                <i class="fas fa-bars"></i> DANH MỤC SẢN PHẨM
-            </div>
-            <div class="nav-links">
-                <a href="category.php?slug=camera-wifi"><i class="fas fa-video"></i> CAMERA WIFI KHÔNG DÂY</a>
-                <a href="category.php?slug=camera-tron-bo"><i class="fas fa-camera"></i> CAMERA TRỌN BỘ</a>
-                <a href="category.php?slug=dau-ghi-hinh"><i class="fas fa-server"></i> ĐẦU GHI HÌNH</a>
-                <a href="category.php?slug=phu-kien"><i class="fas fa-hdd"></i> THẺ NHỚ & PHỤ KIỆN</a>
-                <a href="category.php?slug=thiet-bi-mang"><i class="fas fa-network-wired"></i> THIẾT BỊ MẠNG</a>
-                <a href="#"><i class="fas fa-tools"></i> DỊCH VỤ LẮP ĐẶT</a> 
-            </div>
+            <ul class="menu-list">
+                <li class="menu-item">Camera Wifi
+                    <ul class="dropdown"><li>Ezviz Trong Nhà</li><li>Imou Ngoài Trời</li></ul>
+                </li>
+                <li class="menu-item">Camera Trọn Bộ
+                    <ul class="dropdown"><li>Bộ 4 Mắt Dahua</li><li>Bộ 8 Mắt Hikvision</li></ul>
+                </li>
+                <li class="menu-item">Đầu Ghi Hình</li>
+                <li class="menu-item">Thiết Bị Mạng</li>
+                <li class="menu-item">Phụ Kiện</li>
+            </ul>
         </div>
     </nav>
-
-    <div id="cart-notification" class="cart-msg-overlay" style="display: none;">
-        <div class="cart-msg-box" style="padding-bottom: 20px;">
-            <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-                <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
-                <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
-            </svg>
-            <div class="cart-msg-content">
-                <h4>Thêm vào giỏ hàng thành công!</h4>
-                <p id="added-product-name" style="margin-bottom: 0; color: #d70018; font-weight: bold;"></p>
-            </div>
-        </div>
-    </div>

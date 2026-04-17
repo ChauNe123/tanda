@@ -1,120 +1,55 @@
-// Khai báo số Zalo tiếp nhận đơn hàng của công ty
-const ZALO_PHONE = "0123456789"; 
+// Hàm format tiền
+const formatMoney = (num) => new Intl.NumberFormat('vi-VN').format(num) + '₫';
 
-function orderViaZalo(productName, price) {
-    let formattedPrice = new Intl.NumberFormat('vi-VN').format(price) + 'đ';
-    let message = `Chào bộ phận kinh doanh KB Tech, mình muốn tư vấn mua sản phẩm:\n\n👉 Tên SP: ${productName}\n💰 Giá tham khảo: ${formattedPrice}\n\nNhờ shop báo giá và lên lịch lắp đặt giúp mình nhé!`;
-    let encodedMessage = encodeURIComponent(message);
-    window.open(`https://zalo.me/${ZALO_PHONE}?text=${encodedMessage}`, '_blank');
+// === GIỎ HÀNG (LocalStorage) ===
+function updateCart() {
+    let cart = JSON.parse(localStorage.getItem('tanda_cart')) || [];
+    let badge = document.getElementById('cartBadge');
+    if (badge) badge.innerText = cart.reduce((sum, i) => sum + i.qty, 0);
 }
 
-// Xử lý hiệu ứng Sticky Header
-document.addEventListener("DOMContentLoaded", function() {
-    const header = document.querySelector('.main-header');
-    let lastScrollTop = 0;
-    const scrollThreshold = 100; 
-
-    if (header) {
-        window.addEventListener('scroll', function() {
-            let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            if (scrollTop > scrollThreshold) {
-                header.classList.add('sticky');
-                document.body.classList.add('has-sticky-header');
-                if (scrollTop > lastScrollTop) {
-                    header.classList.add('hidden');
-                } else {
-                    header.classList.remove('hidden');
-                }
-            } else {
-                header.classList.remove('sticky', 'hidden');
-                document.body.classList.remove('has-sticky-header');
-            }
-            lastScrollTop = scrollTop;
-        });
-    }
-});
-
-/* ================= LOGIC GIỎ HÀNG & POP-UP TỰ BIẾN MẤT 1.5s ================= */
+// Thêm vào giỏ (Nhận đủ thông tin để hiển thị bên trang cart.php)
 function addToCart(sku, name, price, image) {
     let cart = JSON.parse(localStorage.getItem('tanda_cart')) || [];
-    let existingItem = cart.find(item => item.sku === sku);
+    let item = cart.find(i => i.sku === sku);
     
-    if (existingItem) {
-        existingItem.qty += 1;
+    if (item) {
+        item.qty++;
     } else {
-        cart.push({ sku: sku, name: name, price: price, image: image, qty: 1 });
+        cart.push({
+            sku: sku, 
+            name: name, 
+            price: price, 
+            image: image, 
+            qty: 1
+        });
     }
     
     localStorage.setItem('tanda_cart', JSON.stringify(cart));
-    updateCartBadge(); // Cho số giỏ hàng nhảy lên
+    updateCart();
     
-    // --- TỰ TẠO HTML POPUP NẾU THIẾU ---
-    let notifyEl = document.getElementById('cart-notification');
-    
-    if (!notifyEl) {
-        const popupHTML = `
-        <div id="cart-notification" class="cart-msg-overlay" style="display: none;">
-            <div class="cart-msg-box" style="padding-bottom: 20px;">
-                <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-                    <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
-                    <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
-                </svg>
-                <div class="cart-msg-content">
-                    <h4>Thêm vào giỏ hàng thành công!</h4>
-                    <p id="added-product-name" style="margin-bottom: 0; color: #d70018; font-weight: bold;"></p>
-                </div>
-            </div>
-        </div>`;
-        document.body.insertAdjacentHTML('beforeend', popupHTML);
-        notifyEl = document.getElementById('cart-notification'); 
-    }
-    
-    // --- GỌI POP-UP HIỆN RA RỒI TỰ TẮT ---
-    let nameEl = document.getElementById('added-product-name');
-    if (notifyEl && nameEl) {
-        notifyEl.style.display = 'none'; // Tắt đi trước để reset animation
-        setTimeout(() => {
-            nameEl.innerText = name; 
-            notifyEl.style.display = 'flex'; // Hiện Pop-up
-            
-            // ĐỒNG HỒ ĐẾM NGƯỢC: Đúng 1.5 giây (1500ms) là tự động giấu đi
-            setTimeout(() => {
-                notifyEl.style.display = 'none';
-            }, 1500);
-            
-        }, 10);
+    // Bật Popup dấu tick xanh báo thành công
+    let popup = document.getElementById('cartPopup');
+    if (popup) {
+        popup.classList.remove('show');
+        void popup.offsetWidth; // Force reflow
+        popup.classList.add('show');
+        setTimeout(() => popup.classList.remove('show'), 1500);
     }
 }
 
-function updateCartBadge() {
-    let cart = JSON.parse(localStorage.getItem('tanda_cart')) || [];
-    let totalQty = cart.reduce((sum, item) => sum + item.qty, 0);
-    let badge = document.querySelector('.cart-box .count');
-    if (badge) badge.innerText = '(' + totalQty + ')';
-}
-
-function closeCartNotify() {
-    let notifyEl = document.getElementById('cart-notification');
-    if (notifyEl) notifyEl.style.display = 'none';
-}
-
-document.addEventListener("DOMContentLoaded", function() {
-    updateCartBadge();
-});
-
-/* ================= ÉP CHUYỂN TRANG GIỎ HÀNG CHO TOÀN WEB ================= */
-document.addEventListener("DOMContentLoaded", function() {
-    // Tìm TẤT CẢ các nút giỏ hàng trên mọi trang
-    let cartButtons = document.querySelectorAll('.cart-box');
-    
-    cartButtons.forEach(function(btn) {
-        // Đổi con trỏ chuột thành hình bàn tay cho khách biết là bấm được
-        btn.style.cursor = 'pointer'; 
-        
-        // Ép lệnh click chuyển trang
-        btn.addEventListener('click', function() {
-            window.location.href = 'cart.php';
+// === OBSERVER ANIMATION (Cuộn đến đâu hiện ra đến đó) ===
+function initScrollAnim() {
+    const obs = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+            if(e.isIntersecting) { e.target.classList.add('show'); obs.unobserve(e.target); }
         });
-    });
-});
+    }, {threshold: 0.1});
+    document.querySelectorAll('.fade-in').forEach(el => obs.observe(el));
+}
 
+// === INIT KHI LOAD XONG ===
+window.addEventListener('DOMContentLoaded', () => {
+    updateCart();
+    initScrollAnim();
+});

@@ -1,0 +1,66 @@
+/* ====== HỆ THỐNG LƯỚI (GRID SYSTEM) ====== */
+
+/* 1. Vùng chứa nội dung tiêu chuẩn (Max 1200px) */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 10px;
+}
+
+/* 2. Block vỏ bọc ngoài chứa các Card của Thế Giới Di Động */
+.product-section {
+    background: #fff;
+    border-radius: 8px;
+    margin-bottom: 30px;
+    overflow: hidden;
+    /* Box shadow nhẹ cho nguyên khối danh mục */
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.section-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #f1f1f1;
+}
+
+.section-header .section-title {
+    font-size: 22px;
+    font-weight: bold;
+    color: #333;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+/* 3. HỆ THỐNG LƯỚI 5 CỘT CHUẨN CÓ KHOẢNG CÁCH GAP */
+.product-grid {
+    display: grid;
+    /* Yêu cầu 5 cột bằng nhau */
+    grid-template-columns: repeat(5, 1fr);
+    /* Cách nhau 2px theo yêu cầu để tạo rãnh */
+    gap: 2px;
+    background: #f1f1f1; /* Nền mờ để hắt màu hở lên khe gap */
+    padding: 2px; /* Đệm xung quanh tổng thể khối để đồng bộ khe hở */
+}
+
+/* --- Responsive (Thích ứng Màn hình di động) --- */
+
+@media (max-width: 1024px) {
+    .product-grid {
+        grid-template-columns: repeat(4, 1fr); /* Tablet ngang hiện 4 cột */
+    }
+}
+
+@media (max-width: 768px) {
+    .product-grid {
+        grid-template-columns: repeat(3, 1fr); /* Tablet dọc hiện 3 cột */
+    }
+}
+
+@media (max-width: 576px) {
+    .product-grid {
+        grid-template-columns: repeat(2, 1fr); /* Điện thoại hiện 2 cột */
+    }
+    
+    /* Gọt bớt xíu cho màn điện thoại đỡ cồng kềnh */
+    .product-section { margin-bottom: 15px; }
+    .section-header .section-title { font-size: 18px; }
+}

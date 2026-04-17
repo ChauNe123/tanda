@@ -1,43 +1,72 @@
-<div class="product-card <?php echo ($p['status'] == 0) ? 'out-of-stock' : ''; ?>">
-    <div class="card-img">
-        <a href="product-detail.php?slug=<?php echo htmlspecialchars($p['slug']); ?>">
-            <img src="uploads/<?php echo htmlspecialchars($p['image_file']); ?>" alt="<?php echo htmlspecialchars($p['name']); ?>">
-        </a>
-        <?php if($p['sale_price'] > 0 && $p['price'] > $p['sale_price']): ?>
-            <?php $percent = round((($p['price'] - $p['sale_price']) / $p['price']) * 100); ?>
-            <span class="discount-badge">-<?php echo $percent; ?>%</span>
+<?php 
+// Tiền xử lý dữ liệu
+$outOfStock = ($p['status'] == 0);
+$chot_gia = ($p['sale_price'] > 0) ? $p['sale_price'] : $p['price'];
+$hasDiscount = ($p['sale_price'] > 0 && $p['price'] > $p['sale_price']);
+$pct = $hasDiscount ? round((($p['price'] - $p['sale_price']) / $p['price']) * 100) : 0;
+
+// Render thông số kỹ thuật (Cắt chuỗi Specs nếu có, ví dụ "2MP, Trong nhà, Xoay 360")
+$specsList = [];
+if (!empty($p['specs_summary'])) {
+    $specsList = array_map('trim', explode(',', $p['specs_summary']));
+}
+?>
+<div class="tgdd-product-card <?php echo $outOfStock ? 'out-of-stock' : ''; ?>">
+    
+    <!-- Badge Góc (Trả góp / Giảm giá) -->
+    <div class="tgdd-badge-wrap">
+        <?php if($hasDiscount): ?>
+            <span class="tgdd-badge badge-discount">Giảm <?php echo $pct; ?>%</span>
+        <?php else: ?>
+            <span class="tgdd-badge badge-installment">Trả góp 0%</span>
         <?php endif; ?>
     </div>
-    
-    <a href="product-detail.php?slug=<?php echo htmlspecialchars($p['slug']); ?>">
-        <div class="card-title" title="<?php echo htmlspecialchars($p['name']); ?>"><?php echo htmlspecialchars($p['name']); ?></div>
+
+    <!-- Hình ảnh nguyên bản -->
+    <a href="product-detail.php?slug=<?php echo htmlspecialchars($p['slug']); ?>" class="tgdd-card-img">
+        <img src="uploads/<?php echo htmlspecialchars($p['image_file']); ?>" alt="<?php echo htmlspecialchars($p['name']); ?>">
     </a>
     
-    <div class="price-box" style="position: relative; margin-bottom: 15px; flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-end;">
-        <div>
-            <?php if($p['sale_price'] > 0): ?>
-                <span class="price-new" style="display: block; color: #d70018; font-size: 19px; font-weight: 800; margin-bottom: 2px;"><?php echo number_format($p['sale_price'], 0, ',', '.'); ?>đ</span>
-                <span class="price-old" style="display: block; color: #999; font-size: 13px; text-decoration: line-through;"><?php echo number_format($p['price'], 0, ',', '.'); ?>đ</span>
-            <?php else: ?>
-                <span class="price-new" style="display: block; color: #d70018; font-size: 19px; font-weight: 800; margin-bottom: 2px;"><?php echo number_format($p['price'], 0, ',', '.'); ?>đ</span>
-            <?php endif; ?>
-        </div>
-
-        <?php if($p['status'] == 1): ?>
-            <span style="position: absolute; right: 0; top: 0; background: #e8f5e9; color: #28a745; font-size: 11px; font-weight: bold; padding: 4px 8px; border-radius: 4px;">Còn hàng</span>
-        <?php else: ?>
-            <span style="position: absolute; right: 0; top: 0; background: #ffebee; color: #d70018; font-size: 11px; font-weight: bold; padding: 4px 8px; border-radius: 4px;">Tạm hết</span>
+    <!-- Tên Sản Phẩm Giới Hạn 2 Dòng -->
+    <a href="product-detail.php?slug=<?php echo htmlspecialchars($p['slug']); ?>" style="text-decoration: none;">
+        <h3 class="tgdd-card-title" title="<?php echo htmlspecialchars($p['name']); ?>">
+            <?php echo htmlspecialchars($p['name']); ?>
+        </h3>
+    </a>
+    
+    <!-- Thông Số Kỹ Thuật (Ô vuông xám nhỏ) -->
+    <div class="tgdd-card-specs">
+        <?php if(count($specsList) > 0): ?>
+            <?php foreach(array_slice($specsList, 0, 3) as $spec): // Lấy tối đa 3 specs ?>
+                <span class="tgdd-spec-item"><?php echo htmlspecialchars($spec); ?></span>
+            <?php endforeach; ?>
         <?php endif; ?>
     </div>
 
-    <?php if($p['status'] == 1): ?>
-        <?php $chot_gia = ($p['sale_price'] > 0) ? $p['sale_price'] : $p['price']; ?>
-        <button type="button" class="btn-buy" onclick="addToCart('<?php echo $p['sku']; ?>', '<?php echo addslashes($p['name']); ?>', <?php echo $chot_gia; ?>, '<?php echo $p['image_file']; ?>')" style="width: 100%; background: #fff; color: #ff5722; border: 2px solid #ff5722; padding: 9px 0; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; justify-content: center; align-items: center; gap: 8px;">
-            <i class="fas fa-cart-plus"></i> THÊM VÀO GIỎ
-        </button>
-    <?php else: ?>
-        <button type="button" class="btn-buy btn-disabled" disabled style="width: 100%; background: #f0f0f0; color: #888; border: 2px solid #ddd; padding: 9px 0; border-radius: 6px; font-size: 14px; font-weight: bold; cursor: not-allowed; display: flex; justify-content: center; align-items: center; gap: 8px;">
-            <i class="fas fa-phone-slash"></i> ĐẶT TRƯỚC
-        </button>
-    <?php endif; ?>
+    <!-- Group Giá TGDD -->
+    <div class="tgdd-card-price">
+        <span class="tgdd-price-new"><?php echo number_format($chot_gia, 0, ',', '.'); ?>đ</span>
+        <?php if($hasDiscount): ?>
+            <span class="tgdd-price-old"><?php echo number_format($p['price'], 0, ',', '.'); ?>đ</span>
+            <span class="tgdd-price-percent">-<?php echo $pct; ?>%</span>
+        <?php endif; ?>
+    </div>
+    
+    <!-- Promo text (Giả lập để không gian đỡ trống) -->
+    <div class="tgdd-card-promo">
+        <?php echo $outOfStock ? '<span class="tgdd-status-label tgdd-status-out">Tạm hết hàng</span>' : '<span class="tgdd-status-label tgdd-status-in">Còn hàng</span>'; ?>
+    </div>
+
+    <!-- Cụm Hành Động (Chỉ hiện khi Hover) -->
+    <div class="tgdd-card-actions">
+        <?php if(!$outOfStock): ?>
+            <button type="button" class="tgdd-btn-add" onclick="addToCart('<?php echo $p['sku']; ?>', '<?php echo addslashes($p['name']); ?>', <?php echo $chot_gia; ?>, '<?php echo $p['image_file']; ?>')">
+                THÊM VÀO GIỎ
+            </button>
+        <?php else: ?>
+            <button type="button" class="tgdd-btn-add" disabled style="opacity:0.5; cursor:not-allowed;">
+                ĐẶT TRƯỚC
+            </button>
+        <?php endif; ?>
+    </div>
 </div>
