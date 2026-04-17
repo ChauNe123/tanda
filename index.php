@@ -29,7 +29,7 @@
                 echo '      <h2 class="section-title">' . htmlspecialchars($cat['name']) . '</h2>';
                 echo '  </div>';
                 echo '  <div class="product-grid">';
-
+    
                 foreach($prods as $p) {
                     include 'card_template.php';
                 }

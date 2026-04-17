@@ -48,8 +48,27 @@ function initScrollAnim() {
     document.querySelectorAll('.fade-in').forEach(el => obs.observe(el));
 }
 
+// === HEADER SCROLL SHRINK ===
+function initStickyHeader() {
+    const header = document.querySelector('.tgdd-header');
+    if (!header) return;
+    const threshold = 80;
+
+    const onScroll = () => {
+        if (window.scrollY > threshold) {
+            header.classList.add('shrink');
+        } else {
+            header.classList.remove('shrink');
+        }
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+}
+
 // === INIT KHI LOAD XONG ===
 window.addEventListener('DOMContentLoaded', () => {
     updateCart();
     initScrollAnim();
+    initStickyHeader();
 });
