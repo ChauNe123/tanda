@@ -51,108 +51,321 @@ $stmt = $conn->prepare("SELECT * FROM products WHERE cat_code = 'THIET-BI-MANG' 
 $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
 $stmt->execute();
 $thietBiMangProds = $stmt->fetchAll();
-
-// Lấy toàn bộ sản phẩm đang hoạt động để phân loại cho Tab
-$stmt = $conn->prepare("SELECT * FROM products WHERE status = 1 ORDER BY sort_order ASC");
-$stmt->execute();
-$allProds = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-// Phân loại sản phẩm theo cat_code để gửi cho JS
-$categorizedData = [
-    'wifi' => [],
-    'tronbo' => [],
-    'daughi' => [],
-    'phukien' => [],
-    'mang' => []
-];
-
-foreach ($allProds as $p) {
-    if ($p['cat_code'] == 'CAM-WIFI') $categorizedData['wifi'][] = $p;
-    elseif ($p['cat_code'] == 'CAM-DAY') $categorizedData['tronbo'][] = $p;
-    elseif ($p['cat_code'] == 'DAU-GHI') $categorizedData['daughi'][] = $p;
-    elseif ($p['cat_code'] == 'PHU-KIEN') $categorizedData['phukien'][] = $p;
-    elseif ($p['cat_code'] == 'THIET-BI-MANG') $categorizedData['mang'][] = $p;
-}
 ?>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TANDA - Hệ Thống Phân Phối Camera & An Ninh Chính Hãng</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="assets/css/style.css?v=<?php echo rand(10000, 99999); ?>">
+</head>
+<body>
 
-<?php include 'includes/header.php'; ?>
-<main class="container">
-    <section class="flash-sale-wrap">
-        <h2 style="font-size: 22px; font-weight: 700; text-transform: uppercase; margin-bottom: 20px; color: #ff5722;">
-            Sản Phẩm Nổi Bật Tanda
-        </h2>
-        
-        <div class="fs-tabs" id="fs-tabs">
-            <div class="fs-tab active" data-tab="wifi">Camera Wifi</div>
-            <div class="fs-tab" data-tab="tronbo">Trọn bộ Camera</div>
-            <div class="fs-tab" data-tab="daughi">Đầu Ghi Hình</div>
-            <div class="fs-tab" data-tab="phukien">Phụ Kiện</div>
-            <div class="fs-tab" data-tab="mang">Thiết Bị Mạng</div>
+    <div class="top-bar">
+        <div class="container">
+            <div class="top-badge"><i class="fas fa-map-marker-alt"></i> Hệ thống showroom</div>
+            <div class="top-badge" style="background: transparent;"><i class="fas fa-phone-alt"></i> Mua hàng trực tuyến</div>
         </div>
+    </div>
 
-        <div id="fs-grid" class="fs-grid"></div>
+    <header class="main-header">
+        <div class="container">
+            <a href="/" class="logo-area">
+                <div class="logo-text">TAN<span>DA</span></div>
+            </a>
+            
+            <div class="search-area">
+                <form class="search-box">
+                    <select>
+                        <option>Tất cả danh mục</option>
+                        <option>Camera Wifi</option>
+                        <option>Camera Trọn Bộ</option>
+                        <option>Đầu Ghi Hình</option>
+                    </select>
+                    <input type="text" placeholder="Tìm kiếm mã camera, đầu ghi, thẻ nhớ...">
+                    <button type="button"><i class="fas fa-search"></i></button>
+                </form>
+                <div class="search-suggest">
+                    <a href="#">Camera Ezviz</a>
+                    <a href="#">Camera Imou</a>
+                    <a href="#">Trọn bộ Dahua</a>
+                    <a href="#">Ổ cứng chuyên dụng</a>
+                </div>
+            </div>
+            
+            <div class="header-actions">
+                <div class="contact-box">
+                    <i class="fas fa-headset"></i>
+                    <div class="contact-info">
+                        <span class="title">Hotline & Zalo (24/7)</span>
+                        <span class="phone">098.655.xxxx</span>
+                    </div>
+                </div>
+                <div class="cart-box">
+                    <i class="fas fa-shopping-cart"></i> Giỏ hàng <span class="count">(0)</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav-bar">
+        <div class="container">
+            <div class="nav-category">
+                <i class="fas fa-bars"></i> DANH MỤC SẢN PHẨM
+            </div>
+            <div class="nav-links">
+                <a href="category.php?slug=camera-wifi"><i class="fas fa-video"></i> CAMERA WIFI KHÔNG DÂY</a>
+                <a href="category.php?slug=camera-tron-bo"><i class="fas fa-camera"></i> CAMERA TRỌN BỘ</a>
+                <a href="category.php?slug=dau-ghi-hinh"><i class="fas fa-server"></i> ĐẦU GHI HÌNH</a>
+                <a href="category.php?slug=phu-kien"><i class="fas fa-hdd"></i> THẺ NHỚ & PHỤ KIỆN</a>
+                <a href="category.php?slug=thiet-bi-mang"><i class="fas fa-network-wired"></i> THIẾT BỊ MẠNG</a>
+                <a href="#"><i class="fas fa-tools"></i> DỊCH VỤ LẮP ĐẶT</a> </div>
+            </div>
+    </nav>
+
+    <section class="banner-section container">
+        <a href="<?php echo isset($banners['BANNER-CHINH']) ? htmlspecialchars($banners['BANNER-CHINH']['target_link']) : '#'; ?>" class="banner-top">
+            <?php if(isset($banners['BANNER-CHINH'])): ?>
+                <img src="banners/<?php echo htmlspecialchars($banners['BANNER-CHINH']['image_file']); ?>?v=<?php echo time(); ?>" alt="Banner Chính">
+            <?php else: ?>
+                <img src="https://via.placeholder.com/1200x350/ff5722/ffffff?text=BANNER-CHINH+(1200x350)" alt="Trống">
+            <?php endif; ?>
+        </a>
+        <div class="banner-bottom-row">
+            <a href="<?php echo isset($banners['BANNER-PHU-1']) ? htmlspecialchars($banners['BANNER-PHU-1']['target_link']) : '#'; ?>" class="banner-item">
+                <?php if(isset($banners['BANNER-PHU-1'])): ?>
+                    <img src="banners/<?php echo htmlspecialchars($banners['BANNER-PHU-1']['image_file']); ?>?v=<?php echo time(); ?>">
+                <?php else: ?>
+                    <img src="https://via.placeholder.com/400x150/003028/ffffff?text=BANNER-PHU-1+(400x150)">
+                <?php endif; ?>
+            </a>
+            <a href="<?php echo isset($banners['BANNER-PHU-2']) ? htmlspecialchars($banners['BANNER-PHU-2']['target_link']) : '#'; ?>" class="banner-item">
+                <?php if(isset($banners['BANNER-PHU-2'])): ?>
+                    <img src="banners/<?php echo htmlspecialchars($banners['BANNER-PHU-2']['image_file']); ?>?v=<?php echo time(); ?>">
+                <?php else: ?>
+                    <img src="https://via.placeholder.com/400x150/003028/ffffff?text=BANNER-PHU-2+(400x150)">
+                <?php endif; ?>
+            </a>
+            <a href="<?php echo isset($banners['BANNER-PHU-3']) ? htmlspecialchars($banners['BANNER-PHU-3']['target_link']) : '#'; ?>" class="banner-item">
+                <?php if(isset($banners['BANNER-PHU-3'])): ?>
+                    <img src="banners/<?php echo htmlspecialchars($banners['BANNER-PHU-3']['image_file']); ?>?v=<?php echo time(); ?>">
+                <?php else: ?>
+                    <img src="https://via.placeholder.com/400x150/003028/ffffff?text=BANNER-PHU-3+(400x150)">
+                <?php endif; ?>
+            </a>
+        </div>
     </section>
-</main>
 
-<script>
-const dbProducts = <?php echo json_encode($categorizedData); ?>;
-
-document.addEventListener('DOMContentLoaded', function() {
-    const grid = document.getElementById('fs-grid');
-    const tabs = document.querySelectorAll('.fs-tab');
-
-    function renderProducts(tabId) {
-        const items = dbProducts[tabId] || [];
+    <div class="container deal-hot-bg" <?php if(isset($banners['DEAL-HOT-BG'])) echo "style=\"background-image: url('banners/".htmlspecialchars($banners['DEAL-HOT-BG']['image_file'])."?v=".time()."');\""; ?>>
+        <div class="deal-hot-header">
+            <div class="deal-hot-title">DEAL HOT MỖI NGÀY - KHUYẾN MÃI LIỀN TAY</div>
+            <div class="hot-sale-badge">HOT SALE</div>
+        </div>
         
-        grid.classList.add('fade-out');
-        grid.classList.remove('fade-in');
+        <div class="carousel-wrap">
+            <button class="btn-scroll scroll-left" onclick="slideLeft('slider-deal')"><i class="fas fa-chevron-left"></i></button>
+            <button class="btn-scroll scroll-right" onclick="slideRight('slider-deal')"><i class="fas fa-chevron-right"></i></button>
+            
+            <div class="product-carousel" id="slider-deal">
+                <?php foreach($dealHotProds as $p): ?>
+                    <?php include 'card_template.php'; ?>
+                <?php endforeach; ?>
+            </div>
+        </div>
+        <a href="#" class="btn-view-deal">Xem tất cả <i class="fas fa-angle-double-right"></i></a>
+    </div>
 
-        setTimeout(() => {
-            if(items.length === 0) {
-                grid.innerHTML = '<p style="grid-column: 1/-1; text-align:center; padding:50px; color:#999;">Đang cập nhật sản phẩm cho mục này...</p>';
-            } else {
-                grid.innerHTML = items.map(p => {
-                    const hasSale = p.sale_price > 0 && p.sale_price < p.price;
-                    const displayPrice = hasSale ? p.sale_price : p.price;
-                    const percent = hasSale ? Math.round(((p.price - p.sale_price) / p.price) * 100) : 0;
-                    
-                    return `
-                        <div class="fs-card">
-                            <div class="fs-img-wrap" onclick="window.location.href='product-detail.php?slug=${p.slug}'">
-                                <img src="uploads/${p.image_file}" alt="${p.name}" loading="lazy">
-                            </div>
-                            <div class="fs-title" onclick="window.location.href='product-detail.php?slug=${p.slug}'">${p.name}</div>
-                            <div class="fs-price-row">
-                                <span class="fs-price-new">${parseInt(displayPrice).toLocaleString('vi-VN')}₫</span>
-                                ${hasSale ? `<span class="fs-price-old">${parseInt(p.price).toLocaleString('vi-VN')}₫</span>` : ''}
-                                ${hasSale ? `<span class="fs-discount">-${percent}%</span>` : ''}
-                            </div>
-                            <div class="fs-progress">
-                                <div class="fs-progress-bar" style="width: ${Math.floor(Math.random() * 60) + 30}%"></div>
-                                <span>Mới về kho</span>
-                            </div>
-                            <button class="btn-fs-buy" onclick="addToCart('${p.sku}', '${p.name.replace(/'/g, "\\'")}', ${displayPrice}, '${p.image_file}')">
-                                MUA NGAY
-                            </button>
-                        </div>
-                    `;
-                }).join('');
+    <div class="container block-section">
+        <div class="ribbon-header">
+        <div class="ribbon-title">CAMERA TRỌN BỘ CÓ DÂY</div>
+        <div class="ribbon-links">
+            <a href="search.php?q=Dahua">Trọn Bộ Dahua</a>
+            <a href="search.php?q=KBVision">Trọn Bộ KBVision</a>
+            <a href="search.php?q=Hikvision">Trọn Bộ Hikvision</a>
+        </div>
+            <a href="category.php?slug=camera-tron-bo" class="view-all-link">Xem tất cả &raquo;</a>
+    </div>
+
+        <div class="carousel-wrap">
+            <button class="btn-scroll scroll-left" onclick="slideLeft('slider-bo')"><i class="fas fa-chevron-left"></i></button>
+            <button class="btn-scroll scroll-right" onclick="slideRight('slider-bo')"><i class="fas fa-chevron-right"></i></button>
+            
+            <div class="product-carousel" id="slider-bo">
+                <?php foreach($camBoProds as $p): ?>
+                    <?php include 'card_template.php'; ?>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+
+    <div class="container block-section">
+        <div class="ribbon-header">
+    <div class="ribbon-title">CAMERA WIFI GIÁ RẺ</div>
+    <div class="ribbon-links">
+        <a href="search.php?q=Ezviz">Ezviz Trong Nhà</a>
+        <a href="search.php?q=Imou">Imou Xoay 360</a>
+        <a href="search.php?q=Tapo">Tapo Giá Rẻ</a>
+    </div>
+    <a href="category.php?slug=camera-wifi" class="view-all-link">Xem tất cả &raquo;</a>
+</div>
+
+        <div class="carousel-wrap">
+            <button class="btn-scroll scroll-left" onclick="slideLeft('slider-wifi')"><i class="fas fa-chevron-left"></i></button>
+            <button class="btn-scroll scroll-right" onclick="slideRight('slider-wifi')"><i class="fas fa-chevron-right"></i></button>
+            
+            <div class="product-carousel" id="slider-wifi">
+                <?php foreach($camWifiProds as $p): ?>
+                    <?php include 'card_template.php'; ?>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+
+    <div class="container block-section" style="margin-bottom: 60px;">
+        <div class="ribbon-header">
+    <div class="ribbon-title">ĐẦU GHI HÌNH CAMERA</div>
+    <div class="ribbon-links">
+        <a href="search.php?q=4 kênh">Đầu Ghi 4 Kênh</a>
+        <a href="search.php?q=8 kênh">Đầu Ghi 8 Kênh</a>
+        <a href="search.php?q=IP">Đầu Ghi IP NVR</a>
+    </div>
+    <a href="category.php?slug=dau-ghi-hinh" class="view-all-link">Xem tất cả &raquo;</a>
+</div>
+
+        <div class="carousel-wrap">
+            <button class="btn-scroll scroll-left" onclick="slideLeft('slider-dau')"><i class="fas fa-chevron-left"></i></button>
+            <button class="btn-scroll scroll-right" onclick="slideRight('slider-dau')"><i class="fas fa-chevron-right"></i></button>
+            
+            <div class="product-carousel" id="slider-dau">
+                <?php foreach($dauGhiProds as $p): ?>
+                    <?php include 'card_template.php'; ?>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+
+    <div class="container block-section" style="margin-bottom: 60px;">
+        <div class="ribbon-header">
+    <div class="ribbon-title">PHỤ KIỆN CAMERA</div>
+    <div class="ribbon-links">
+        <a href="search.php?q=Thẻ nhớ">Thẻ Nhớ Sandisk</a>
+        <a href="search.php?q=Ổ cứng">Ổ Cứng Chuyên Dụng</a>
+        <a href="search.php?q=Nguồn">Nguồn & Jack</a>
+    </div>
+    <a href="category.php?slug=phu-kien" class="view-all-link">Xem tất cả &raquo;</a>
+</div>
+
+        <div class="carousel-wrap">
+            <button class="btn-scroll scroll-left" onclick="slideLeft('slider-phu-kien')"><i class="fas fa-chevron-left"></i></button>
+            <button class="btn-scroll scroll-right" onclick="slideRight('slider-phu-kien')"><i class="fas fa-chevron-right"></i></button>
+            
+            <div class="product-carousel" id="slider-phu-kien">
+                <?php foreach($phuKienProds as $p): ?>
+                    <?php include 'card_template.php'; ?>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+
+    <div class="container block-section" style="margin-bottom: 60px;">
+        <div class="ribbon-header">
+    <div class="ribbon-title">THIẾT BỊ MẠNG</div>
+    <div class="ribbon-links">
+        <a href="search.php?q=Router">Bộ Phát Wifi</a>
+        <a href="search.php?q=Switch">Switch PoE</a>
+        <a href="search.php?q=Cáp">Dây Cáp Mạng</a>
+    </div>
+    <a href="category.php?slug=thiet-bi-mang" class="view-all-link">Xem tất cả &raquo;</a>
+</div>
+
+        <div class="carousel-wrap">
+            <button class="btn-scroll scroll-left" onclick="slideLeft('slider-mang')"><i class="fas fa-chevron-left"></i></button>
+            <button class="btn-scroll scroll-right" onclick="slideRight('slider-mang')"><i class="fas fa-chevron-right"></i></button>
+            
+            <div class="product-carousel" id="slider-mang">
+                <?php foreach($thietBiMangProds as $p): ?>
+                    <?php include 'card_template.php'; ?>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // HÀM TRƯỢT SIÊU MƯỢT (Dùng chung cho cả Tự động và Bấm nút)
+        function smoothScrollTo(slider, target, duration) {
+            const start = slider.scrollLeft;
+            const distance = target - start;
+            let startTime = null;
+
+            function animation(currentTime) {
+                if (startTime === null) startTime = currentTime;
+                const timeElapsed = currentTime - startTime;
+                
+                // Công thức tính độ mượt (chậm dần ở cuối)
+                let progress = Math.min(timeElapsed / duration, 1);
+                const ease = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
+                
+                slider.scrollLeft = start + distance * ease;
+
+                if (timeElapsed < duration) {
+                    requestAnimationFrame(animation);
+                }
             }
+            requestAnimationFrame(animation);
+        }
 
-            grid.classList.remove('fade-out');
-            grid.classList.add('fade-in');
-        }, 150);
-    }
+        // ĐỘNG CƠ BĂNG CHUYỀN
+        function setupPremiumSlider(sliderId) {
+            const slider = document.getElementById(sliderId);
+            if (!slider) return;
 
-    tabs.forEach(tab => {
-        tab.addEventListener('click', function() {
-            tabs.forEach(t => t.classList.remove('active'));
-            this.classList.add('active');
-            renderProducts(this.getAttribute('data-tab'));
-        });
-    });
+            slider.style.scrollBehavior = 'auto'; // Tắt cuộn mặc định
 
-    renderProducts('wifi');
-});
-</script>
+            // Nhân bản nội dung để lặp vô tận
+            const originalHTML = slider.innerHTML;
+            slider.innerHTML += originalHTML;
+
+            let isHovered = false;
+            slider.addEventListener('mouseenter', () => { isHovered = true; });
+            slider.addEventListener('mouseleave', () => { isHovered = false; });
+
+            // Tự động chạy sau mỗi 3 giây
+            setInterval(() => {
+                if (!isHovered) {
+                    const originalWidth = slider.scrollWidth / 2;
+                    if (slider.scrollLeft >= originalWidth) {
+                        slider.scrollLeft -= originalWidth;
+                    }
+                    // Tự động trượt trong 800ms
+                    smoothScrollTo(slider, slider.scrollLeft + 232, 2000); 
+                }
+            }, 3000);
+        }
+
+        // XỬ LÝ NÚT BẤM (Cũng trượt mượt mà trong 500ms)
+        function slideLeft(sliderId) { 
+            const slider = document.getElementById(sliderId);
+            if (slider) smoothScrollTo(slider, slider.scrollLeft - 232, 500);
+        }
+        function slideRight(sliderId) { 
+            const slider = document.getElementById(sliderId);
+            if (slider) smoothScrollTo(slider, slider.scrollLeft + 232, 500);
+        }
+
+        // Khởi động mọi dải sản phẩm
+        window.onload = () => {
+            setupPremiumSlider('slider-deal');
+            setupPremiumSlider('slider-bo');
+            setupPremiumSlider('slider-wifi');
+            setupPremiumSlider('slider-dau');
+            setupPremiumSlider('slider-phu-kien');
+            setupPremiumSlider('slider-mang');
+            setupPremiumSlider('slider-thiet-bi-mang');
+        }
+    </script>
+
     <?php include 'includes/footer.php'; ?>

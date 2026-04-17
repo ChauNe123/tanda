@@ -39,29 +39,43 @@ $products = $stmtProds->fetchAll();
 
 include 'includes/header.php';
 ?>
-<main class="container" style="margin-top: 20px; margin-bottom: 40px;">
-    <div style="background: #fff; padding: 15px; border-radius: 8px;">
-        <h2 style="font-size: 20px; text-transform: uppercase; margin-bottom: 15px; color: #ff5722;">
-            <?php echo htmlspecialchars($category['name']); ?>
-        </h2>
-        
-        <?php if (count($products) > 0): ?>
-            <div class="product-grid-5">
-                <?php foreach($products as $p): ?>
-                    <?php include 'card_template.php'; ?>
-                <?php endforeach; ?>
-            </div>
-        <?php else: ?>
-            <p style="text-align: center; padding: 50px 0; color: #888;">Chưa có sản phẩm nào trong danh mục này.</p>
-        <?php endif; ?>
-    </div>
-</main>
 
-<?php include 'includes/footer.php'; ?>
+<main class="container" style="margin-top: 20px; margin-bottom: 60px; min-height: 50vh;">
+    <div class="breadcrumb" style="margin-bottom: 20px; color: #666; font-size: 14px;">
+        <a href="index.php" style="color: var(--orange-brand); font-weight: bold;">Trang chủ</a> / 
+        <span>Danh mục</span> / 
+        <strong><?php echo htmlspecialchars($category['name']); ?></strong>
+    </div>
+
+    <div class="category-banner">
+        <h1 class="category-main-title"><?php echo mb_strtoupper($category['name'], 'UTF-8'); ?></h1>
+    </div>
+
+    <div class="category-toolbar">
+        <div class="cat-count">Hiển thị <strong><?php echo count($products); ?></strong> sản phẩm</div>
+        <div class="cat-sort">
+            <label>Sắp xếp theo:</label>
+            <select onchange="location = this.value;">
+                <option value="?slug=<?php echo $slug; ?>&sort=default" <?php echo $sort=='default'?'selected':''; ?>>Mặc định</option>
+                <option value="?slug=<?php echo $slug; ?>&sort=price_asc" <?php echo $sort=='price_asc'?'selected':''; ?>>Giá tăng dần</option>
+                <option value="?slug=<?php echo $slug; ?>&sort=price_desc" <?php echo $sort=='price_desc'?'selected':''; ?>>Giá giảm dần</option>
+                <option value="?slug=<?php echo $slug; ?>&sort=newest" <?php echo $sort=='newest'?'selected':''; ?>>Mới nhất</option>
+            </select>
+        </div>
+    </div>
+
     <?php if (count($products) > 0): ?>
+        <div class="category-product-grid">
             <?php foreach($products as $p): ?>
                 <?php include 'card_template.php'; ?>
             <?php endforeach; ?>
+        </div>
     <?php else: ?>
+        <div class="empty-product">
+            <i class="fas fa-box-open"></i>
+            <p>Hiện chưa có sản phẩm nào trong danh mục này.</p>
+        </div>
     <?php endif; ?>
+</main>
+
 <?php include 'includes/footer.php'; ?>
