@@ -3,35 +3,42 @@ require_once 'cores/db_config.php';
 include 'includes/header.php';
 ?>
 
-<main class="container cart-page-container">
-    <div class="breadcrumb">
-        <a href="index.php" class="home-link">Trang chủ</a> / <strong>Giỏ hàng của bạn</strong>
-    </div>
+<!-- Link CSS cho Giỏ Hàng -->
+<link rel="stylesheet" href="assets/css/pages/cart.css?v=<?php echo time(); ?>">
 
-    <div class="cart-layout">
-        <div class="cart-items-wrap">
-            <h2 class="cart-box-title">SẢN PHẨM TRONG GIỎ</h2>
-            <div id="cart-render-area">
-                </div>
+<main class="container cart-page-container">
+    <div class="cart-tgdd-wrapper">
+        <div class="cart-tgdd-header">
+            <a href="index.php" class="back-link"><i class="fas fa-chevron-left"></i> Mua thêm sản phẩm khác</a>
+            <span>Giỏ hàng của bạn</span>
         </div>
 
-        <div class="cart-form-wrap">
-            <h2 class="cart-box-title">THÔNG TIN ĐẶT HÀNG</h2>
-            <form id="checkout-form">
-                <input type="text" id="cusName" class="form-input" placeholder="Họ và tên của bạn" required>
-                <input type="tel" id="cusPhone" class="form-input" placeholder="Số điện thoại Zalo" required>
-                <input type="text" id="cusAddress" class="form-input" placeholder="Địa chỉ giao hàng / Lắp đặt" required>
-                <textarea id="cusNote" class="form-input form-textarea" placeholder="Ghi chú thêm (Không bắt buộc)"></textarea>
-                
-                <div class="cart-total-box">
-                    <span>TỔNG CỘNG:</span>
-                    <span id="cart-total-price" class="total-price-text">0đ</span>
-                </div>
+        <div id="cart-render-area">
+            <!-- JS renders items here -->
+        </div>
 
-                <button type="button" onclick="generateZaloMessage()" class="btn-zalo-submit">
-                    <i class="fas fa-paper-plane"></i> GỬI ĐƠN QUA ZALO
-                </button>
-            </form>
+        <div class="cart-tgdd-footer" id="cart-footer" style="display: none;">
+            <div class="cart-total-box">
+                <span>Tạm tính:</span>
+                <span id="cart-total-price" class="total-price-text">0đ</span>
+            </div>
+
+            <div class="cart-form-wrap">
+                <h3 style="font-size: 14px; margin-bottom:15px; color: #333; text-transform: uppercase;">THÔNG TIN KHÁCH HÀNG</h3>
+                <form id="checkout-form">
+                    <div class="form-group-tgdd">
+                        <input type="text" id="cusName" class="form-input" placeholder="Họ và tên (Bắt buộc)" required>
+                        <input type="tel" id="cusPhone" class="form-input" placeholder="Số điện thoại (Bắt buộc)" required>
+                    </div>
+                    <input type="text" id="cusAddress" class="form-input" placeholder="Địa chỉ nhận hàng (Bắt buộc)" required>
+                    <textarea id="cusNote" class="form-input form-textarea" placeholder="Yêu cầu khác (Không bắt buộc)"></textarea>
+                    
+                    <p id="checkout-error" style="color: #d70018; font-size: 14px; margin-bottom: 15px; display: none; font-weight: 500;"><i class="fas fa-exclamation-triangle"></i> <span></span></p>
+                    <button type="button" onclick="generateZaloMessage()" class="tgdd-btn-order">
+                        ĐẶT HÀNG QUA ZALO
+                    </button>
+                </form>
+            </div>
         </div>
     </div>
 </main>
@@ -40,32 +47,48 @@ include 'includes/header.php';
     <div class="zalo-modal-content">
         <i class="fas fa-times zalo-modal-close" onclick="closeModal()"></i>
         <h3 class="zalo-modal-title"><i class="fas fa-check-circle"></i> TẠO ĐƠN THÀNH CÔNG!</h3>
-        <p class="zalo-modal-desc">Bạn vui lòng <b>Copy</b> nội dung bên dưới và gửi cho shop qua Zalo để được chốt đơn nhanh nhất nhé.</p>
+        <p class="zalo-modal-desc">Chỉ cần bấm nút bên dưới, hệ thống sẽ tự động <b>Copy</b> đơn hàng và mở Zalo để bạn gửi cho shop chốt đơn.</p>
         
         <textarea id="zaloMessageContent" class="zalo-textarea" readonly></textarea>
         
         <div class="zalo-modal-actions">
-            <button onclick="copyMessage()" class="btn-copy">
-                <i class="fas fa-copy"></i> COPY TIN NHẮN
+            <button onclick="copyAndOpenZalo()" class="btn-open-zalo" style="width: 100%; font-size: 16px; padding: 15px; background: #0068ff; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                <i class="fas fa-paper-plane"></i> COPY TIN NHẮN & MỞ ZALO NGAY
             </button>
-            <a href="https://zalo.me/0938440781" target="_blank" class="btn-open-zalo">
-                <i class="fas fa-external-link-alt"></i> MỞ ZALO NGAY
-            </a>
+        </div>
+    </div>
+</div>
+
+<div id="confirmDeleteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100000; justify-content: center; align-items: center;">
+    <div style="background: #fff; width: 90%; max-width: 350px; padding: 25px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); animation: slideDown 0.3s ease;">
+        <i class="fas fa-trash-alt" style="font-size: 50px; color: #d70018; margin-bottom: 15px;"></i>
+        <h3 style="color: #333; margin-bottom: 10px; font-size: 18px;">Xóa sản phẩm?</h3>
+        <p style="color: #666; font-size: 15px; margin-bottom: 25px; line-height: 1.4;">Bạn có chắc chắn muốn xóa <br><b id="deleteItemName" style="color:#000;"></b><br> khỏi giỏ hàng?</p>
+        
+        <div style="display: flex; gap: 12px;">
+            <button onclick="closeDeleteModal()" style="flex: 1; padding: 12px; background: #f1f1f1; color: #333; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; cursor: pointer;">KHÔNG XÓA</button>
+            <button onclick="executeDelete()" style="flex: 1; padding: 12px; background: #d70018; color: #fff; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">XÓA LUÔN</button>
         </div>
     </div>
 </div>
 
 <script>
-    // Hàm render Giỏ hàng
+    function formatCurrency(num) {
+        return num.toLocaleString('vi-VN') + 'đ';
+    }
+
     function renderCartPage() {
         let cart = JSON.parse(localStorage.getItem('tanda_cart')) || [];
         let area = document.getElementById('cart-render-area');
+        let footer = document.getElementById('cart-footer');
         let totalEl = document.getElementById('cart-total-price');
         
         if(cart.length === 0) {
-            area.innerHTML = '<div class="cart-empty"><i class="fas fa-shopping-basket cart-empty-icon"></i><p>Giỏ hàng của bạn đang trống.</p><a href="index.php" class="cart-empty-link">Tiếp tục mua sắm</a></div>';
-            totalEl.innerText = '0đ';
+            area.innerHTML = '<div class="cart-empty"><i class="fas fa-shopping-cart" style="font-size: 60px; color:#ccc; margin-bottom:15px;"></i><p>Không có sản phẩm nào trong giỏ hàng</p><a href="index.php" class="cart-empty-link">VỀ TRANG CHỦ</a></div>';
+            footer.style.display = 'none';
             return;
+        } else {
+            footer.style.display = 'block';
         }
 
         let html = '';
@@ -76,62 +99,117 @@ include 'includes/header.php';
             total += itemTotal;
             html += `
                 <div class="cart-item">
-                    <img src="uploads/${item.image}" class="cart-item-img" alt="${item.name}">
+                    <div class="cart-item-img-wrap">
+                        <img src="uploads/${item.image}" class="cart-item-img" alt="${item.name}" onerror="this.src='https://via.placeholder.com/80'">
+                        <button onclick="removeItem(${index})" class="btn-remove-item"><i class="fas fa-times-circle"></i> Xóa</button>
+                    </div>
                     <div class="cart-item-info">
                         <h4 class="cart-item-name">${item.name}</h4>
-                        <div class="cart-item-price">${item.price.toLocaleString('vi-VN')}đ</div>
+                        <div class="cart-item-price">${formatCurrency(item.price)}</div>
+                        <div class="cart-item-qty-control">
+                            <button onclick="changeQty(${index}, -1)" class="btn-qty">-</button>
+                            <input type="text" readonly value="${item.qty}" class="input-qty">
+                            <button onclick="changeQty(${index}, 1)" class="btn-qty">+</button>
+                        </div>
                     </div>
-                    <div class="cart-item-qty-control">
-                        <button onclick="changeQty(${index}, -1)" class="btn-qty">-</button>
-                        <input type="text" readonly value="${item.qty}" class="input-qty">
-                        <button onclick="changeQty(${index}, 1)" class="btn-qty">+</button>
-                    </div>
-                    <div class="cart-item-total">
-                        ${itemTotal.toLocaleString('vi-VN')}đ
-                    </div>
-                    <button onclick="removeItem(${index})" class="btn-remove-item" title="Xóa"><i class="fas fa-trash-alt"></i></button>
                 </div>
             `;
         });
         
         area.innerHTML = html;
-        totalEl.innerText = total.toLocaleString('vi-VN') + 'đ';
+        totalEl.innerText = formatCurrency(total);
     }
 
-    // Tăng giảm số lượng
+    let deleteIndexQueue = -1;
+
     function changeQty(index, amount) {
         let cart = JSON.parse(localStorage.getItem('tanda_cart'));
-        cart[index].qty += amount;
-        if(cart[index].qty <= 0) cart.splice(index, 1);
-        localStorage.setItem('tanda_cart', JSON.stringify(cart));
-        renderCartPage();
-        updateCartBadge();
+        
+        if (amount === -1 && cart[index].qty === 1) {
+            // Mở HTML Dialog
+            deleteIndexQueue = index;
+            document.getElementById('deleteItemName').innerText = cart[index].name;
+            document.getElementById('confirmDeleteModal').style.display = 'flex';
+        } else {
+            cart[index].qty += amount;
+            if(cart[index].qty <= 0) {
+                cart.splice(index, 1);
+            }
+            localStorage.setItem('tanda_cart', JSON.stringify(cart));
+            renderCartPage();
+            if(typeof updateCartBadge === 'function') updateCartBadge();
+        }
     }
 
-    // Xóa sản phẩm
     function removeItem(index) {
         let cart = JSON.parse(localStorage.getItem('tanda_cart'));
-        cart.splice(index, 1);
-        localStorage.setItem('tanda_cart', JSON.stringify(cart));
-        renderCartPage();
-        updateCartBadge();
+        // Mở HTML Dialog cả khi ấn trực tiếp nút Xóa
+        deleteIndexQueue = index;
+        document.getElementById('deleteItemName').innerText = cart[index].name;
+        document.getElementById('confirmDeleteModal').style.display = 'flex';
     }
 
-    // Render ngay khi load file cart.php
+    function closeDeleteModal() {
+        document.getElementById('confirmDeleteModal').style.display = 'none';
+        deleteIndexQueue = -1;
+    }
+
+    function executeDelete() {
+        if (deleteIndexQueue > -1) {
+            let cart = JSON.parse(localStorage.getItem('tanda_cart'));
+            cart.splice(deleteIndexQueue, 1);
+            localStorage.setItem('tanda_cart', JSON.stringify(cart));
+            renderCartPage();
+            if(typeof updateCartBadge === 'function') updateCartBadge();
+            closeDeleteModal();
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", renderCartPage);
 
-    // XỬ LÝ NÚT GỬI ZALO (TẠO TIN NHẮN)
     function generateZaloMessage() {
         let cart = JSON.parse(localStorage.getItem('tanda_cart')) || [];
         if(cart.length === 0) return alert('Giỏ hàng trống!');
         
-        let name = document.getElementById('cusName').value.trim();
-        let phone = document.getElementById('cusPhone').value.trim();
-        let address = document.getElementById('cusAddress').value.trim();
+        let nameEl = document.getElementById('cusName');
+        let phoneEl = document.getElementById('cusPhone');
+        let addressEl = document.getElementById('cusAddress');
+        let errorEl = document.getElementById('checkout-error');
+        
+        let name = nameEl.value.trim();
+        let phone = phoneEl.value.trim();
+        let address = addressEl.value.trim();
         let note = document.getElementById('cusNote').value.trim();
 
-        if(!name || !phone || !address) {
-            alert('Vui lòng điền đủ Họ Tên, SĐT và Địa chỉ!');
+        // Reset errors
+        nameEl.style.borderColor = '#ccc';
+        phoneEl.style.borderColor = '#ccc';
+        addressEl.style.borderColor = '#ccc';
+        errorEl.style.display = 'none';
+
+        // Validate
+        if(name.length < 2) {
+            nameEl.style.borderColor = '#d70018';
+            errorEl.querySelector('span').innerText = 'Vui lòng nhập Họ và Tên hợp lệ.';
+            errorEl.style.display = 'block';
+            nameEl.focus();
+            return;
+        }
+
+        let phoneRegex = /^(0[3|5|7|8|9])+([0-9]{8})$/;
+        if(!phoneRegex.test(phone)) {
+            phoneEl.style.borderColor = '#d70018';
+            errorEl.querySelector('span').innerText = 'Số điện thoại không hợp lệ (Phải là 10 số và bắt đầu bằng 0).';
+            errorEl.style.display = 'block';
+            phoneEl.focus();
+            return;
+        }
+
+        if(address.length < 5) {
+            addressEl.style.borderColor = '#d70018';
+            errorEl.querySelector('span').innerText = 'Vui lòng nhập địa chỉ giao hàng cụ thể.';
+            errorEl.style.display = 'block';
+            addressEl.focus();
             return;
         }
 
@@ -139,35 +217,53 @@ include 'includes/header.php';
         let msg = `🛒 ĐƠN HÀNG TỪ WEB TANDA:\n`;
         msg += `---------------------------\n`;
         msg += `👤 Khách hàng: ${name}\n`;
-        msg += `📞 Số điện thoại: ${phone}\n`;
+        msg += `📞 SĐT: ${phone}\n`;
         msg += `📍 Địa chỉ: ${address}\n`;
         if(note) msg += `📝 Ghi chú: ${note}\n`;
-        msg += `\n📦 DANH SÁCH SẢN PHẨM:\n`;
+        msg += `📦 SẢN PHẨM:\n`;
         
         cart.forEach(item => {
             let itemTotal = item.price * item.qty;
             total += itemTotal;
-            msg += `- ${item.qty}x ${item.name} (${item.price.toLocaleString('vi-VN')}đ)\n`;
+            msg += `- ${item.qty}x ${item.name} (${formatCurrency(item.price)})\n`;
         });
         
         msg += `---------------------------\n`;
-        msg += `💰 TỔNG TIỀN: ${total.toLocaleString('vi-VN')}đ\n`;
+        msg += `💰 TỔNG: ${formatCurrency(total)}\n`;
 
         document.getElementById('zaloMessageContent').value = msg;
         document.getElementById('zaloModal').style.display = 'flex';
     }
 
-    // Đóng Modal
     function closeModal() {
         document.getElementById('zaloModal').style.display = 'none';
     }
 
-    // Copy nội dung
-    function copyMessage() {
+    function copyAndOpenZalo() {
         let text = document.getElementById('zaloMessageContent');
         text.select();
         document.execCommand('copy');
-        alert('✅ Đã copy tin nhắn! Hãy bấm "Mở Zalo Ngay" và Dán (Paste) để gửi cho shop nhé.');
+        
+        // Thay đổi UI của Modal hiện tại thay vì dùng alert() xấu xí
+        let modalContent = document.querySelector('.zalo-modal-content');
+        modalContent.innerHTML = `
+            <div style="text-align: center; padding: 10px;">
+                <i class="fas fa-check-circle" style="font-size: 60px; color: #28a745; margin-bottom: 15px;"></i>
+                <h3 style="color: #333; margin-bottom: 15px; font-size: 20px;">Đã lưu (Copy) đơn hàng!</h3>
+                <p style="color: #555; font-size: 15px; line-height: 1.6; margin-bottom: 25px;">
+                    Hệ thống đang tự động chuyển qua Zalo...<br>
+                    👉 Bạn chỉ cần nhấn <b>Dán (Paste)</b> và Gửi cho shop để chốt đơn nhé!
+                </p>
+                <div style="margin-bottom: 10px;">
+                    <i class="fas fa-circle-notch fa-spin" style="font-size: 30px; color: #0068ff;"></i>
+                </div>
+            </div>
+        `;
+
+        // Chờ 2.5 giây để khách đọc kịp hướng dẫn "Dán (Paste)", sau đó mới chuyển hướng
+        setTimeout(() => {
+            window.location.href = 'https://zalo.me/0938440781';
+        }, 2500);
     }
 </script>
 

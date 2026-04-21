@@ -79,6 +79,27 @@ switch ($id) {
         ";
         break;
 
+    case 'dich-vu':
+        $title = "Dịch Vụ Tiện Ích";
+        $content = "
+            <p>TANDA không chỉ phân phối sản phẩm mà còn cung cấp các dịch vụ tiện ích đi kèm nhằm mang lại trải nghiệm trọn vẹn nhất cho quý khách hàng:</p>
+            
+            <h3 style='margin-top: 20px;'><i class='fas fa-tools' style='color: #0068ff;'></i> 1. Khảo sát & Thi công lắp đặt tận nơi</h3>
+            <p>Đội ngũ kỹ thuật viên giàu kinh nghiệm của chúng tôi sẽ đến tận nơi khảo sát địa hình, tư vấn vị trí lắp đặt camera tối ưu nhất góc nhìn và thẩm mỹ. Thi công đi dây âm tường, ruột gà, nẹp vuông gọn gàng, an toàn tuyệt đối.</p>
+            
+            <h3 style='margin-top: 20px;'><i class='fas fa-network-wired' style='color: #0068ff;'></i> 2. Thiết kế hạ tầng mạng & WiFi diện rộng</h3>
+            <p>Bên cạnh camera, chúng tôi nhận thiết kế, cấu hình hệ thống mạng LAN, WiFi Mesh cho nhà phố, biệt thự, quán cafe và nhà xưởng, đảm bảo đường truyền internet luôn ổn định 24/7.</p>
+            
+            <h3 style='margin-top: 20px;'><i class='fas fa-hard-hat' style='color: #0068ff;'></i> 3. Bảo trì & Vệ sinh hệ thống định kỳ</h3>
+            <p>Hệ thống an ninh hoạt động lâu ngày sẽ bị bám bụi, mờ ống kính hoặc lỏng jack cắm. TANDA cung cấp các gói bảo trì, vệ sinh và kiểm tra hệ thống định kỳ, giúp kéo dài tuổi thọ thiết bị.</p>
+            
+            <h3 style='margin-top: 20px;'><i class='fas fa-sync' style='color: #0068ff;'></i> 4. Thu cũ đổi mới - Nâng cấp hệ thống</h3>
+            <p>Bạn đang sử dụng hệ thống camera Analog cũ mờ, hoặc đầu ghi đã hỏng? Chúng tôi có chương trình hỗ trợ thu lại thiết bị cũ với giá tốt để quý khách nâng cấp lên hệ thống Camera IP độ phân giải cao, sắc nét hơn.</p>
+            
+            <p style='margin-top: 25px; font-weight: bold; color: #d70018;'>Liên hệ ngay Hotline để được tư vấn dịch vụ chi tiết!</p>
+        ";
+        break;
+
     default:
         $title = "Thông tin không tồn tại";
         $content = "<p>Rất tiếc, nội dung bạn tìm kiếm không có sẵn.</p>";

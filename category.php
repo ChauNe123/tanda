@@ -40,32 +40,64 @@ $products = $stmtProds->fetchAll();
 include 'includes/header.php';
 ?>
 
+<style>
+.sort-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 15px;
+    background: #f1f1f1;
+    color: #333;
+    text-decoration: none;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: all 0.2s;
+    border: 1px solid #e0e0e0;
+}
+.sort-btn:hover {
+    background: #e0e0e0;
+}
+.sort-btn.active {
+    background: #eaf4fc;
+    color: #288ad6;
+    border-color: #288ad6;
+    font-weight: bold;
+}
+.sort-btn.active i {
+    color: #288ad6;
+}
+</style>
+
 <main class="container" style="margin-top: 20px; margin-bottom: 60px; min-height: 50vh;">
-    <div class="breadcrumb" style="margin-bottom: 20px; color: #666; font-size: 14px;">
-        <a href="index.php" style="color: var(--orange-brand); font-weight: bold;">Trang chủ</a> / 
-        <span>Danh mục</span> / 
-        <strong><?php echo htmlspecialchars($category['name']); ?></strong>
+    <div class="breadcrumb" style="margin-bottom: 15px; color: #288ad6; font-size: 13px;">
+        <a href="index.php" style="color: #288ad6; text-decoration: none;"><i class="fas fa-home"></i> Trang chủ</a> 
+        <span style="color:#999; margin: 0 5px;">&rsaquo;</span> 
+        <strong style="color:#333;"><?php echo htmlspecialchars($category['name']); ?></strong>
     </div>
 
-    <div class="category-banner">
-        <h1 class="category-main-title"><?php echo mb_strtoupper($category['name'], 'UTF-8'); ?></h1>
-    </div>
-
-    <div class="category-toolbar">
-        <div class="cat-count">Hiển thị <strong><?php echo count($products); ?></strong> sản phẩm</div>
-        <div class="cat-sort">
-            <label>Sắp xếp theo:</label>
-            <select onchange="location = this.value;">
-                <option value="?slug=<?php echo $slug; ?>&sort=default" <?php echo $sort=='default'?'selected':''; ?>>Mặc định</option>
-                <option value="?slug=<?php echo $slug; ?>&sort=price_asc" <?php echo $sort=='price_asc'?'selected':''; ?>>Giá tăng dần</option>
-                <option value="?slug=<?php echo $slug; ?>&sort=price_desc" <?php echo $sort=='price_desc'?'selected':''; ?>>Giá giảm dần</option>
-                <option value="?slug=<?php echo $slug; ?>&sort=newest" <?php echo $sort=='newest'?'selected':''; ?>>Mới nhất</option>
-            </select>
+    <!-- BOX LỌC VÀ TIÊU ĐỀ -->
+    <div class="category-filter-box" style="background: #fff; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.05);">
+        <h1 style="font-size: 20px; color: #333; margin: 0 0 15px 0; text-transform: uppercase;">
+            <?php echo htmlspecialchars($category['name']); ?> 
+            <span style="font-size: 14px; font-weight: normal; color: #888; text-transform: none;">(<?php echo count($products); ?> sản phẩm)</span>
+        </h1>
+        
+        <div class="sort-buttons" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <span style="font-size: 14px; color: #666; font-weight: bold; margin-right: 5px;">Sắp xếp theo:</span>
+            <a href="?slug=<?php echo $slug; ?>&sort=newest" class="sort-btn <?php echo ($sort=='newest' || $sort=='default') ? 'active' : ''; ?>">
+                <i class="fas fa-sort-amount-down"></i> Mới nhất
+            </a>
+            <a href="?slug=<?php echo $slug; ?>&sort=price_asc" class="sort-btn <?php echo ($sort=='price_asc') ? 'active' : ''; ?>">
+                <i class="fas fa-sort-numeric-down"></i> Giá Thấp - Cao
+            </a>
+            <a href="?slug=<?php echo $slug; ?>&sort=price_desc" class="sort-btn <?php echo ($sort=='price_desc') ? 'active' : ''; ?>">
+                <i class="fas fa-sort-numeric-down-alt"></i> Giá Cao - Thấp
+            </a>
         </div>
     </div>
 
     <?php if (count($products) > 0): ?>
-        <div class="category-product-grid">
+        <div class="product-grid">
             <?php foreach($products as $p): ?>
                 <?php include 'card_template.php'; ?>
             <?php endforeach; ?>

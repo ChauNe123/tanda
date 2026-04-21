@@ -1,0 +1,409 @@
+/* ====== THE GIOI DI DONG PRODUCT DETAIL LAYOUT REPLICA ====== */
+
+.tgdd-pd-layout {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    margin-bottom: 40px;
+}
+
+/* LEFT COLUMN */
+.pd-left {
+    flex: 40%;
+    max-width: 40%;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Đổi lại background trắng, bo góc thay vì trong suốt */
+.pd-box {
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    border: 1px solid #f1f1f1;
+}
+
+/* Gallery & Image */
+.pd-gallery-box {
+    text-align: center;
+    position: relative;
+    padding: 0;
+    overflow: hidden;
+}
+.pd-img-main {
+    max-width: 100%;
+    height: auto;
+    object-fit: contain;
+    max-height: 400px;
+    display: block;
+    margin: 0 auto;
+}
+.pd-img-frame {
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    height: 100%;
+    max-height: 400px;
+    object-fit: contain;
+    pointer-events: none;
+}
+
+/* Cam kết box (TGDD cam kết) */
+.pd-policy-box {
+    background: #f8f9fa;
+    border-radius: 8px;
+    padding: 15px 20px;
+}
+.policy-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    color: #333;
+}
+.policy-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+.policy-item {
+    font-size: 13px;
+    color: #333;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    line-height: 1.4;
+}
+.policy-item i {
+    color: #288ad6;
+    font-size: 16px;
+    margin-top: 2px;
+}
+.policy-item strong {
+    font-weight: 700;
+}
+
+/* Tabs (Đặc điểm nổi bật / Thông số kỹ thuật) */
+.pd-tabs-container {
+    background: #fff;
+    border-radius: 8px;
+    margin-top: 20px;
+}
+.tabs-header {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+.tab-btn {
+    flex: 1;
+    padding: 12px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 15px;
+    font-weight: 600;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.tab-btn.active {
+    background: #f1f8ff;
+    color: #288ad6;
+    border-color: #288ad6;
+}
+.tab-content {
+    display: none;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #444;
+}
+.tab-content.active {
+    display: block;
+}
+
+/* MIDDLE COLUMN (Price & Promo) */
+.pd-middle {
+    flex: 35%;
+    max-width: 35%;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* RIGHT COLUMN (Actions & Contact - Sticky) */
+.pd-right-action {
+    flex: 25%;
+    max-width: 25%;
+    position: sticky;
+    top: 80px; /* Bám header */
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.pd-top-info {
+    margin-bottom: 10px;
+}
+.pd-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 8px;
+    line-height: 1.3;
+}
+.pd-rating {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: #666;
+}
+.stars {
+    color: #ff9f00;
+}
+.stars i { padding-right: 2px; }
+.rating-count { color: #288ad6; font-weight: bold; }
+
+/* Box Flash Sale / Khuyến mãi (Màu Cam đặc trưng) */
+.flash-sale-box {
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    border: 1px solid #ff6a00;
+}
+.flash-header {
+    background: linear-gradient(90deg, #ff4c00, #ff9900);
+    padding: 10px 15px;
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.flash-title {
+    font-weight: 700;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+.flash-title i { font-size: 16px; }
+.countdown {
+    font-size: 13px;
+    background: rgba(0,0,0,0.2);
+    padding: 3px 8px;
+    border-radius: 4px;
+}
+.countdown strong { font-weight: 700; }
+
+.flash-body {
+    background: #ff5722;
+    padding: 15px;
+    color: #fff;
+}
+.main-price-row {
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 5px;
+}
+.old-price-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: rgba(255,255,255,0.8);
+}
+.old-price { text-decoration: line-through; }
+.percent { background: rgba(0,0,0,0.3); padding: 1px 6px; border-radius: 4px; }
+.flash-stock {
+    text-align: right;
+    font-size: 13px;
+    font-weight: bold;
+    margin-top: 5px;
+}
+
+/* Box Quà Tặng / Khuyến mãi trị giá */
+.promo-box {
+    background: #fff;
+    padding: 15px;
+}
+.promo-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 4px;
+}
+.promo-note {
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 12px;
+    font-style: italic;
+}
+.promo-list {
+    list-style: none;
+    margin-bottom: 15px;
+}
+.promo-list li {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    color: #333;
+    margin-bottom: 10px;
+    line-height: 1.4;
+}
+.promo-num {
+    background: #288ad6;
+    color: #fff;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: bold;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+.promo-extra {
+    border-top: 1px solid #eee;
+    padding-top: 12px;
+}
+.promo-extra-item {
+    font-size: 12px;
+    color: #e57373;
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.promo-extra-item::before {
+    content: "•";
+}
+
+/* Các nút bấm Hành Động */
+.pd-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 10px;
+}
+.btn-row {
+    display: flex;
+    gap: 10px;
+}
+.btn-outline-blue {
+    flex: 1;
+    background: #fff;
+    border: 1px solid #288ad6;
+    color: #288ad6;
+    font-size: 14px;
+    font-weight: 600;
+    border-radius: 4px;
+    padding: 12px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    transition: all 0.3s;
+}
+.btn-outline-blue:hover {
+    background: #f1f8ff;
+}
+.btn-outline-blue i { font-size: 18px; }
+
+.btn-solid-orange {
+    flex: 1;
+    background: #ff8c00;
+    border: none;
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: 4px;
+    padding: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.3s;
+}
+.btn-solid-orange:hover { background: #e07b00; }
+
+.btn-installment {
+    background: #288ad6;
+    border: none;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 700;
+    border-radius: 4px;
+    padding: 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: background 0.3s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+.btn-installment span {
+    font-size: 12px;
+    font-weight: normal;
+}
+.btn-installment:hover { background: #2374b5; }
+
+/* Thông tin liên hệ cước điện thoại */
+.pd-contact-inline {
+    font-size: 13px;
+    color: #555;
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.pd-contact-inline p { margin: 0; display: flex; align-items: center; gap: 8px; }
+.pd-contact-inline i { color: #666; font-size: 14px; }
+.pd-contact-inline a { color: #288ad6; font-weight: bold; text-decoration: none; }
+
+/* List đặc điểm - thông số */
+.specs-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.specs-list li {
+    padding: 10px 15px;
+    background: #fff;
+    display: flex;
+    font-size: 14px;
+}
+.specs-list li:nth-child(odd) {
+    background: #f5f5f5;
+}
+.specs-list li strong {
+    width: 40%;
+    color: #333;
+    font-weight: normal;
+}
+.specs-list li span {
+    width: 60%;
+    color: #333;
+}
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+    .tgdd-pd-layout { flex-direction: column; }
+    .pd-left, .pd-right { flex: 100%; max-width: 100%; }
+    .pd-right { position: static; }
+}
+@media (max-width: 600px) {
+    .policy-grid { grid-template-columns: 1fr; }
+    .btn-row { flex-direction: column; }
+}

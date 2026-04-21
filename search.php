@@ -7,8 +7,29 @@ $keyword = isset($_GET['q']) ? trim($_GET['q']) : '';
 $cat = isset($_GET['cat']) ? trim($_GET['cat']) : '';
 
 // Xử lý truy vấn
-$sql = "SELECT * FROM products WHERE (name LIKE :keyword OR sku LIKE :keyword) AND status = 1";
-$params = [':keyword' => '%' . $keyword . '%'];
+$sql = "SELECT * FROM products WHERE status = 1";
+$params = [];
+
+if (!empty($keyword)) {
+    // Tách từ khóa theo khoảng trắng để lọc chính xác (Ví dụ: "Ezviz Trong Nhà")
+    $words = explode(' ', $keyword);
+    $sql .= " AND (";
+    $wordConditions = [];
+    foreach ($words as $index => $word) {
+        $word = trim($word);
+        if ($word !== '') {
+            $wordConditions[] = "(name LIKE :kw_$index OR sku LIKE :kw_$index OR specs_summary LIKE :kw_$index)";
+            $params[":kw_$index"] = '%' . $word . '%';
+        }
+    }
+    // Gộp các điều kiện bằng AND để đảm bảo sản phẩm chứa TẤT CẢ từ khóa
+    if (count($wordConditions) > 0) {
+        $sql .= implode(' AND ', $wordConditions);
+    } else {
+        $sql .= " 1=1 ";
+    }
+    $sql .= ")";
+}
 
 // Nếu khách có chọn danh mục cụ thể
 if (!empty($cat)) {
@@ -38,7 +59,7 @@ include 'includes/header.php';
         </div>
 
         <?php if (count($products) > 0): ?>
-            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; padding-top: 10px;">
+            <div class="product-grid" style="padding-top: 10px;">
                 <?php foreach($products as $p): ?>
                     <?php include 'card_template.php'; ?>
                 <?php endforeach; ?>

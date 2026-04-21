@@ -14,6 +14,8 @@ global $sys_settings;
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <link rel="stylesheet" href="assets/css/style.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="assets/css/layout/grid.css?v=<?php echo time(); ?>">
+    <link rel="stylesheet" href="assets/css/components/product-card.css?v=<?php echo time(); ?>">
 </head>
 <body>
 
@@ -25,18 +27,16 @@ global $sys_settings;
             </a>
             
             <div class="tgdd-search">
-                <i class="fas fa-search"></i>
-                <input type="text" placeholder="Bạn tìm camera gì...">
+                <form action="search.php" method="GET" style="display: flex; width: 100%; align-items: center; margin: 0;">
+                    <button type="submit" style="background: none; border: none; color: #666; cursor: pointer;"><i class="fas fa-search"></i></button>
+                    <input type="text" name="q" placeholder="Bạn tìm camera gì..." style="border: none; outline: none; flex: 1; padding: 5px; background: transparent;">
+                </form>
             </div>
             
             <div class="header-actions">
                 <div class="action-btn cart-btn" onclick="window.location.href='cart.php'">
                     <i class="fas fa-shopping-cart"></i> Giỏ hàng
                     <span class="cart-badge" id="cartBadge">0</span>
-                </div>
-
-                <div class="action-btn location-btn">
-                    <i class="fas fa-map-marker-alt"></i> Hồ Chí Minh <i class="fas fa-chevron-down" style="font-size: 10px; margin-left:2px;"></i>
                 </div>
             </div>
         </div>
@@ -45,40 +45,25 @@ global $sys_settings;
             <div class="container">
                 <ul class="tgdd-menu-list">
                     <li class="tgdd-menu-item">
-                        <a href="#"><i class="fas fa-video"></i> Camera Wifi <i class="fas fa-chevron-down arrow"></i></a>
-                        <ul class="dropdown">
-                            <li><a href="#">Ezviz Trong Nhà</a></li>
-                            <li><a href="#">Imou Ngoài Trời</a></li>
-                        </ul>
+                        <a href="category.php?slug=camera-wifi"><i class="fas fa-video" style="font-size:16px;"></i> Camera WiFi</a>
                     </li>
                     <li class="tgdd-menu-item">
-                        <a href="#"><i class="fas fa-shield-alt"></i> Camera Trọn Bộ <i class="fas fa-chevron-down arrow"></i></a>
-                        <ul class="dropdown">
-                            <li><a href="#">Bộ 4 Mắt Dahua</a></li>
-                            <li><a href="#">Bộ 8 Mắt Hikvision</a></li>
-                        </ul>
+                        <a href="category.php?slug=camera-tron-bo"><i class="fas fa-server" style="font-size:16px;"></i> Camera Trọn Bộ</a>
                     </li>
                     <li class="tgdd-menu-item">
-                        <a href="#"><i class="fas fa-hdd"></i> Đầu Ghi Hình</a>
+                        <a href="category.php?slug=dau-ghi-hinh"><i class="fas fa-hdd" style="font-size:16px;"></i> Đầu Ghi Hình</a>
                     </li>
                     <li class="tgdd-menu-item">
-                        <a href="#"><i class="fas fa-network-wired"></i> Thiết Bị Mạng <i class="fas fa-chevron-down arrow"></i></a>
-                        <ul class="dropdown">
-                            <li><a href="#">Switch PoE</a></li>
-                            <li><a href="#">Router Wifi</a></li>
-                        </ul>
+                        <a href="category.php?slug=thiet-bi-mang"><i class="fas fa-network-wired" style="font-size:16px;"></i> Thiết Bị Mạng</a>
                     </li>
                     <li class="tgdd-menu-item">
-                        <a href="#"><i class="fas fa-tools"></i> Phụ Kiện <i class="fas fa-chevron-down arrow"></i></a>
-                        <ul class="dropdown">
-                            <li><a href="#">Ổ cứng & Thẻ nhớ</a></li>
-                            <li><a href="#">Nguồn & Jack</a></li>
-                        </ul>
+                        <a href="category.php?slug=phu-kien"><i class="fas fa-headphones" style="font-size:16px;"></i> Phụ Kiện</a>
                     </li>
                     <li class="tgdd-menu-item">
-                        <a href="#"><i class="fas fa-headset"></i> Dịch vụ tiện ích <i class="fas fa-chevron-down arrow"></i></a>
+                        <a href="search.php?promo=1"><i class="fas fa-bolt" style="font-size:16px; color:#d70018;"></i> Khuyến Mãi Hot</a>
                     </li>
                 </ul>
             </div>
         </nav>
+
     </header>

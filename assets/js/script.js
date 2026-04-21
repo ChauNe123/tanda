@@ -28,14 +28,21 @@ function addToCart(sku, name, price, image) {
     localStorage.setItem('tanda_cart', JSON.stringify(cart));
     updateCart();
     
-    // Bật Popup dấu tick xanh báo thành công
-    let popup = document.getElementById('cartPopup');
-    if (popup) {
-        popup.classList.remove('show');
-        void popup.offsetWidth; // Force reflow
-        popup.classList.add('show');
-        setTimeout(() => popup.classList.remove('show'), 1500);
+    // Bật Dialog thông báo thành công
+    let modal = document.getElementById('addToCartModal');
+    let nameEl = document.getElementById('addedProductName');
+    if (modal && nameEl) {
+        nameEl.innerText = name;
+        modal.style.display = 'flex';
     }
+}
+
+// Mở Zalo để tư vấn/mua ngay không thông qua giỏ hàng (Áp dụng cho trang chi tiết)
+function orderViaZalo(productName, price) {
+    let msg = `Chào shop, mình cần tư vấn/đặt hàng sản phẩm:\n- ${productName}\n- Giá: ${formatMoney(price)}\n(Từ website TANDA)`;
+    let encodedMsg = encodeURIComponent(msg);
+    // Thay số điện thoại Zalo của shop tại đây
+    window.location.href = `https://zalo.me/0938440781?text=${encodedMsg}`;
 }
 
 // === OBSERVER ANIMATION (Cuộn đến đâu hiện ra đến đó) ===
@@ -68,6 +75,18 @@ function initStickyHeader() {
 
 // === INIT KHI LOAD XONG ===
 window.addEventListener('DOMContentLoaded', () => {
+    // Thêm padding cho body bằng đúng chiều cao header để chống giật hoàn toàn khi fixed header co giãn
+    const header = document.querySelector('.tgdd-header');
+    if (header) {
+        document.body.style.paddingTop = header.offsetHeight + 'px';
+        // Lắng nghe resize để cập nhật lại padding nếu khách xoay màn hình điện thoại
+        window.addEventListener('resize', () => {
+            if (!header.classList.contains('shrink')) {
+                document.body.style.paddingTop = header.offsetHeight + 'px';
+            }
+        });
+    }
+
     updateCart();
     initScrollAnim();
     initStickyHeader();
