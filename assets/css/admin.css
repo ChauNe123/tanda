@@ -102,3 +102,11 @@ h2.text-red { color: #d9534f; }
 .tp-banner-top { width: 100%; border-radius: 8px; overflow: hidden; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
 .tp-banner-bottom-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
 .tp-banner-item { border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+
+/* DRAG AND DROP ZONE CHO TABLE CSS */
+.drop-zone-cell { transition: all 0.2s ease-in-out; border: 2px dashed transparent !important; cursor: pointer; position: relative; }
+.drop-zone-cell.dragover { background-color: #d1ecf1 !important; border-color: #17a2b8 !important; }
+.drop-zone-cell:hover { background-color: #f1f8ff !important; border-color: #80bdff !important; }
+.drop-zone-content { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 50px; padding: 5px; }
+.drop-zone-content img.thumb { max-width: 50px; max-height: 50px; object-fit: contain; border-radius: 4px; margin-top: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); }
+.uploading-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.8); display: flex; align-items: center; justify-content: center; z-index: 10; font-size: 11px; font-weight: bold; color: #0056b3; }

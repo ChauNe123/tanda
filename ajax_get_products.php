@@ -13,10 +13,14 @@ if(!empty($catFilter)) {
 
 $suggestProds = $stmtSuggest->fetchAll();
 
+$perRow = 6;
+$visibleCount = (int)(floor(count($suggestProds) / $perRow) * $perRow);
+$suggestProdsGrid = array_slice($suggestProds, 0, $visibleCount);
+
 $html = '';
-if(count($suggestProds) > 0) {
+if(count($suggestProdsGrid) > 0) {
     ob_start();
-    foreach($suggestProds as $p) {
+    foreach($suggestProdsGrid as $p) {
         include 'card_template.php';
     }
     $html = ob_get_clean();
@@ -25,7 +29,7 @@ if(count($suggestProds) > 0) {
 }
 
 $btnHtml = '';
-if(count($suggestProds) == 16) {
+if(count($suggestProds) > count($suggestProdsGrid) || count($suggestProds) == 16) {
     if(!empty($catFilter)) {
         $catSlug = 'camera-wifi';
         if($catFilter === 'KB-DAY') $catSlug = 'camera-tron-bo';

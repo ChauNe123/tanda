@@ -1,5 +1,15 @@
 <?php include 'includes/header.php'; ?>
 
+    <div class="container hero-banner">
+        <div class="banner-main">
+            <img src="banners/1.png" alt="Banner Chính">
+        </div>
+        <div class="banner-sub">
+            <img src="banners/2.png" alt="Banner Phụ 1">
+            <img src="banners/3.png" alt="Banner Phụ 2">
+        </div>
+    </div>
+
 <style>
 /* CSS cho bố cục Trang chủ mới */
 .section-flash-sale {
@@ -73,21 +83,29 @@
 
 <main class="container" id="mainContent">
 
+    <?php
+    function fitGridBySix($items) {
+        $perRow = 6;
+        $visibleCount = (int)(floor(count($items) / $perRow) * $perRow);
+        return array_slice($items, 0, $visibleCount);
+    }
+    ?>
+
     <!-- KHỐI 1: KHUYẾN MÃI HOT -->
     <?php
     // Lấy TỐI ĐA 16 sản phẩm (2 hàng) có KHUYẾN MÃI (sale_price > 0 và sale_price < price)
     $stmtSale = $conn->prepare("SELECT * FROM products WHERE sale_price > 0 AND price > sale_price AND status = 1 ORDER BY sort_order ASC, sku DESC LIMIT 16");
     $stmtSale->execute();
     $saleProds = $stmtSale->fetchAll();
+    $saleProdsGrid = fitGridBySix($saleProds);
 
-    if(count($saleProds) > 0):
+    if(count($saleProdsGrid) > 0):
     ?>
     <div class="product-section section-flash-sale">
         <h2 class="section-title"><i class="fas fa-bolt" style="color: #ff9f00;"></i> KHUYẾN MÃI HOT</h2>
-
         <div class="product-grid">
             <?php 
-            foreach($saleProds as $p) {
+            foreach($saleProdsGrid as $p) {
                 include 'card_template.php';
             }
             ?>
@@ -125,9 +143,10 @@
             $stmtSuggest->execute();
             
             $suggestProds = $stmtSuggest->fetchAll();
+            $suggestProdsGrid = fitGridBySix($suggestProds);
             
-            if(count($suggestProds) > 0) {
-                foreach($suggestProds as $p) {
+            if(count($suggestProdsGrid) > 0) {
+                foreach($suggestProdsGrid as $p) {
                     include 'card_template.php';
                 }
             } else {
@@ -137,7 +156,7 @@
         </div>
         
         <div class="btn-view-more-wrap" id="suggest-btn-wrap">
-            <?php if(count($suggestProds) >= 16): ?>
+            <?php if(count($suggestProds) > count($suggestProdsGrid) || count($suggestProds) >= 16): ?>
                 <a href="search.php" class="btn-view-more">XEM TẤT CẢ SẢN PHẨM</a>
             <?php endif; ?>
         </div>
@@ -158,8 +177,9 @@
             $stmtTop = $conn->prepare("SELECT * FROM products WHERE status = 1 ORDER BY price ASC LIMIT 16");
             $stmtTop->execute();
             $topProds = $stmtTop->fetchAll();
-            if(count($topProds) > 0) {
-                foreach($topProds as $p) {
+            $topProdsGrid = fitGridBySix($topProds);
+            if(count($topProdsGrid) > 0) {
+                foreach($topProdsGrid as $p) {
                     include 'card_template.php';
                 }
             } else {
@@ -180,12 +200,13 @@
         
         <div class="product-grid">
             <?php
-            // Lấy các sản phẩm thuộc nhóm Phụ kiện
-            $stmtAcc = $conn->prepare("SELECT * FROM products WHERE cat_code IN ('KB-PHU') AND status = 1 ORDER BY sort_order ASC, sku DESC LIMIT 16");
+            // Lấy các sản phẩm thuộc nhóm Phụ kiện hoặc Thiết bị mạng
+            $stmtAcc = $conn->prepare("SELECT * FROM products WHERE cat_code IN ('PHU-KIEN', 'THIET-BI-MANG') AND status = 1 ORDER BY sort_order ASC, sku DESC LIMIT 16");
             $stmtAcc->execute();
             $accProds = $stmtAcc->fetchAll();
-            if(count($accProds) > 0) {
-                foreach($accProds as $p) {
+            $accProdsGrid = fitGridBySix($accProds);
+            if(count($accProdsGrid) > 0) {
+                foreach($accProdsGrid as $p) {
                     include 'card_template.php';
                 }
             } else {

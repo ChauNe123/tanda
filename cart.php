@@ -59,19 +59,6 @@ include 'includes/header.php';
     </div>
 </div>
 
-<div id="confirmDeleteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 100000; justify-content: center; align-items: center;">
-    <div style="background: #fff; width: 90%; max-width: 350px; padding: 25px; border-radius: 8px; text-align: center; box-shadow: 0 5px 15px rgba(0,0,0,0.3); animation: slideDown 0.3s ease;">
-        <i class="fas fa-trash-alt" style="font-size: 50px; color: #d70018; margin-bottom: 15px;"></i>
-        <h3 style="color: #333; margin-bottom: 10px; font-size: 18px;">Xóa sản phẩm?</h3>
-        <p style="color: #666; font-size: 15px; margin-bottom: 25px; line-height: 1.4;">Bạn có chắc chắn muốn xóa <br><b id="deleteItemName" style="color:#000;"></b><br> khỏi giỏ hàng?</p>
-        
-        <div style="display: flex; gap: 12px;">
-            <button onclick="closeDeleteModal()" style="flex: 1; padding: 12px; background: #f1f1f1; color: #333; border: 1px solid #ccc; border-radius: 4px; font-weight: bold; cursor: pointer;">KHÔNG XÓA</button>
-            <button onclick="executeDelete()" style="flex: 1; padding: 12px; background: #d70018; color: #fff; border: none; border-radius: 4px; font-weight: bold; cursor: pointer;">XÓA LUÔN</button>
-        </div>
-    </div>
-</div>
-
 <script>
     function formatCurrency(num) {
         return num.toLocaleString('vi-VN') + 'đ';
@@ -120,49 +107,21 @@ include 'includes/header.php';
         totalEl.innerText = formatCurrency(total);
     }
 
-    let deleteIndexQueue = -1;
-
     function changeQty(index, amount) {
         let cart = JSON.parse(localStorage.getItem('tanda_cart'));
-        
-        if (amount === -1 && cart[index].qty === 1) {
-            // Mở HTML Dialog
-            deleteIndexQueue = index;
-            document.getElementById('deleteItemName').innerText = cart[index].name;
-            document.getElementById('confirmDeleteModal').style.display = 'flex';
-        } else {
-            cart[index].qty += amount;
-            if(cart[index].qty <= 0) {
-                cart.splice(index, 1);
-            }
-            localStorage.setItem('tanda_cart', JSON.stringify(cart));
-            renderCartPage();
-            if(typeof updateCartBadge === 'function') updateCartBadge();
-        }
+        cart[index].qty += amount;
+        if(cart[index].qty <= 0) cart.splice(index, 1);
+        localStorage.setItem('tanda_cart', JSON.stringify(cart));
+        renderCartPage();
+        if(typeof updateCartBadge === 'function') updateCartBadge();
     }
 
     function removeItem(index) {
         let cart = JSON.parse(localStorage.getItem('tanda_cart'));
-        // Mở HTML Dialog cả khi ấn trực tiếp nút Xóa
-        deleteIndexQueue = index;
-        document.getElementById('deleteItemName').innerText = cart[index].name;
-        document.getElementById('confirmDeleteModal').style.display = 'flex';
-    }
-
-    function closeDeleteModal() {
-        document.getElementById('confirmDeleteModal').style.display = 'none';
-        deleteIndexQueue = -1;
-    }
-
-    function executeDelete() {
-        if (deleteIndexQueue > -1) {
-            let cart = JSON.parse(localStorage.getItem('tanda_cart'));
-            cart.splice(deleteIndexQueue, 1);
-            localStorage.setItem('tanda_cart', JSON.stringify(cart));
-            renderCartPage();
-            if(typeof updateCartBadge === 'function') updateCartBadge();
-            closeDeleteModal();
-        }
+        cart.splice(index, 1);
+        localStorage.setItem('tanda_cart', JSON.stringify(cart));
+        renderCartPage();
+        if(typeof updateCartBadge === 'function') updateCartBadge();
     }
 
     document.addEventListener("DOMContentLoaded", renderCartPage);

@@ -4,6 +4,17 @@ $outOfStock = ($p['status'] == 0);
 $chot_gia = ($p['sale_price'] > 0) ? $p['sale_price'] : $p['price'];
 $hasDiscount = ($p['sale_price'] > 0 && $p['price'] > $p['sale_price']);
 $pct = $hasDiscount ? round((($p['price'] - $p['sale_price']) / $p['price']) * 100) : 0;
+
+// XỬ LÝ ẢNH THÔNG MINH: Ưu tiên lấy ảnh theo SKU nếu tồn tại, nếu không mới lấy image_file từ DB
+$display_img = $p['image_file'];
+$sku_clean = trim($p['sku']);
+$sku_pattern = 'uploads/' . $sku_clean . '.{jpg,jpeg,png,webp,gif,JPG,JPEG,PNG,WEBP,GIF}';
+$sku_matches = glob($sku_pattern, GLOB_BRACE);
+
+if (!empty($sku_matches)) {
+    // Lấy file đầu tiên tìm thấy
+    $display_img = basename($sku_matches[0]);
+}
 ?>
 <div class="tgdd-product-card <?php echo $outOfStock ? 'out-of-stock' : ''; ?>">
     
@@ -11,12 +22,14 @@ $pct = $hasDiscount ? round((($p['price'] - $p['sale_price']) / $p['price']) * 1
     <div class="tgdd-badge-wrap">
         <?php if($hasDiscount): ?>
             <span class="tgdd-badge badge-discount">Giảm <?php echo $pct; ?>%</span>
+        <?php else: ?>
+            <span class="tgdd-badge badge-installment">Trả góp 0%</span>
         <?php endif; ?>
     </div>
 
     <!-- Hình ảnh nguyên bản -->
     <a href="product-detail.php?slug=<?php echo htmlspecialchars($p['slug']); ?>" class="tgdd-card-img">
-        <img src="uploads/<?php echo htmlspecialchars($p['image_file']); ?>" alt="<?php echo htmlspecialchars($p['name']); ?>">
+        <img src="uploads/<?php echo htmlspecialchars($display_img); ?>" alt="<?php echo htmlspecialchars($p['name']); ?>">
     </a>
     
     <!-- Tên Sản Phẩm Giới Hạn 2 Dòng -->
@@ -28,24 +41,27 @@ $pct = $hasDiscount ? round((($p['price'] - $p['sale_price']) / $p['price']) * 1
 
     <!-- Group Giá TGDD -->
     <div class="tgdd-card-price">
-        <span class="tgdd-price-new"><?php echo number_format($chot_gia, 0, ',', '.'); ?>₫</span>
-        <div class="tgdd-price-old-wrap">
-            <?php if($hasDiscount): ?>
-                <span class="tgdd-price-old"><?php echo number_format($p['price'], 0, ',', '.'); ?>₫</span>
-                <span class="tgdd-price-percent">-<?php echo $pct; ?>%</span>
-            <?php endif; ?>
-        </div>
+        <span class="tgdd-price-new"><?php echo number_format($chot_gia, 0, ',', '.'); ?>đ</span>
+        <?php if($hasDiscount): ?>
+            <span class="tgdd-price-old"><?php echo number_format($p['price'], 0, ',', '.'); ?>đ</span>
+            <span class="tgdd-price-percent">-<?php echo $pct; ?>%</span>
+        <?php endif; ?>
+    </div>
+    
+    <!-- Promo text (Giả lập để không gian đỡ trống) -->
+    <div class="tgdd-card-promo">
+        <?php echo $outOfStock ? '<span class="tgdd-status-label tgdd-status-out">Tạm hết hàng</span>' : '<span class="tgdd-status-label tgdd-status-in">Còn hàng</span>'; ?>
     </div>
 
-    <!-- Cụm Hành Động (Luôn hiển thị) -->
+    <!-- Cụm Hành Động (Chỉ hiện khi Hover) -->
     <div class="tgdd-card-actions">
         <?php if(!$outOfStock): ?>
-            <button type="button" class="tgdd-btn-add" onclick="addToCart('<?php echo $p['sku']; ?>', '<?php echo addslashes($p['name']); ?>', <?php echo $chot_gia; ?>, '<?php echo $p['image_file']; ?>')">
-                Thêm vào giỏ hàng
+            <button type="button" class="tgdd-btn-add" onclick="addToCart('<?php echo $p['sku']; ?>', '<?php echo addslashes($p['name']); ?>', <?php echo $chot_gia; ?>, '<?php echo $display_img; ?>')">
+                THÊM VÀO GIỎ
             </button>
         <?php else: ?>
-            <button type="button" class="tgdd-btn-add" disabled style="opacity:0.5; cursor:not-allowed; color:#999; background:#eee;">
-                Tạm hết hàng
+            <button type="button" class="tgdd-btn-add" disabled style="opacity:0.5; cursor:not-allowed;">
+                ĐẶT TRƯỚC
             </button>
         <?php endif; ?>
     </div>

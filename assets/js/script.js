@@ -75,18 +75,6 @@ function initStickyHeader() {
 
 // === INIT KHI LOAD XONG ===
 window.addEventListener('DOMContentLoaded', () => {
-    // Thêm padding cho body bằng đúng chiều cao header để chống giật hoàn toàn khi fixed header co giãn
-    const header = document.querySelector('.tgdd-header');
-    if (header) {
-        document.body.style.paddingTop = header.offsetHeight + 'px';
-        // Lắng nghe resize để cập nhật lại padding nếu khách xoay màn hình điện thoại
-        window.addEventListener('resize', () => {
-            if (!header.classList.contains('shrink')) {
-                document.body.style.paddingTop = header.offsetHeight + 'px';
-            }
-        });
-    }
-
     updateCart();
     initScrollAnim();
     initStickyHeader();

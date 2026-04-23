@@ -73,11 +73,50 @@ $pct = $hasDiscount ? round((($p['price'] - $chot_gia) / $p['price']) * 100) : 0
     <div class="tgdd-pd-layout">
         <!-- ==== CỘT TRÁI (ẢNH VÀ THÔNG TIN CHI TIẾT) ==== -->
         <div class="pd-left">
+            <?php
+            // Lấy toàn bộ ảnh của sản phẩm kể cả khi chưa lưu vào DB (dựa trên tên file chuẩn)
+            $gallery_images = [];
+            $sku_clean = trim($p['sku']);
+
+            // 1. ƯU TIÊN ẢNH CHÍNH THEO SKU
+            $main_pattern = 'uploads/' . $sku_clean . '.{jpg,jpeg,png,webp,gif,JPG,JPEG,PNG,WEBP,GIF}';
+            $main_matches = glob($main_pattern, GLOB_BRACE);
+            
+            if (!empty($main_matches)) {
+                $gallery_images[] = basename($main_matches[0]);
+            } elseif (!empty($p['image_file']) && file_exists('uploads/'.$p['image_file'])) {
+                $gallery_images[] = $p['image_file'];
+            }
+
+            // 2. Ảnh phụ (từ 2 đến 5)
+            for ($i = 2; $i <= 5; $i++) {
+                $sub_pattern = 'uploads/' . $sku_clean . '-' . $i . '.{jpg,jpeg,png,webp,gif,JPG,JPEG,PNG,WEBP,GIF}';
+                $sub_matches = glob($sub_pattern, GLOB_BRACE);
+                
+                if (!empty($sub_matches)) {
+                    $gallery_images[] = basename($sub_matches[0]);
+                } else {
+                    $img_col = 'image_'.$i;
+                    if (!empty($p[$img_col]) && file_exists('uploads/'.$p[$img_col])) {
+                        $gallery_images[] = $p[$img_col];
+                    }
+                }
+            }
+            ?>
             <!-- Box Gallery (Ảnh SP) -->
-            <div class="pd-box pd-gallery-box">
-                <img src="uploads/<?php echo htmlspecialchars($p['image_file']); ?>" alt="<?php echo htmlspecialchars($p['name']); ?>" class="pd-img-main">
-                <?php if(!empty($p['frame_file'])): ?>
-                    <img src="uploads/<?php echo htmlspecialchars($p['frame_file']); ?>" class="pd-img-frame" alt="Frame product">
+            <div class="pd-box pd-gallery-wrapper" style="padding-bottom: 15px;">
+                <div class="pd-gallery-box" style="position: relative; width: 100%; aspect-ratio: 1 / 1; max-height: 500px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #fff; border-radius: 8px;">
+                    <?php $main_show = !empty($gallery_images) ? $gallery_images[0] : 'placeholder.png'; ?>
+                    <img id="main-product-image" src="uploads/<?php echo htmlspecialchars($main_show); ?>" alt="<?php echo htmlspecialchars($p['name']); ?>" class="pd-img-main" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; transform: none; margin: 0; padding: 0;">
+                </div>
+                
+                <!-- Thumbnails Slider -->
+                <?php if(count($gallery_images) > 1): ?>
+                <div class="pd-thumbnails" style="display: flex; gap: 10px; margin-top: 15px; justify-content: center; overflow-x: auto;">
+                    <?php foreach($gallery_images as $index => $img): ?>
+                    <img src="uploads/<?php echo htmlspecialchars($img); ?>" class="pd-thumb-item" style="width: 60px; height: 60px; min-width: 60px; object-fit: contain; background: #fff; border: 2px solid <?php echo $index === 0 ? '#288ad6' : '#eee'; ?>; border-radius: 4px; cursor: pointer; transition: 0.2s;" onclick="changeMainImage('<?php echo htmlspecialchars($img); ?>', this)">
+                    <?php endforeach; ?>
+                </div>
                 <?php endif; ?>
             </div>
 
@@ -260,6 +299,15 @@ function switchProductTab(event, tabId) {
     // Gán active mới
     event.currentTarget.classList.add('active');
     document.getElementById(tabId).classList.add('active');
+}
+
+function changeMainImage(imgFile, el) {
+    document.getElementById('main-product-image').src = 'uploads/' + imgFile;
+    // Đổi viền active cho thumbnail
+    document.querySelectorAll('.pd-thumb-item').forEach(thumb => {
+        thumb.style.borderColor = '#eee';
+    });
+    el.style.borderColor = '#288ad6';
 }
 </script>
 

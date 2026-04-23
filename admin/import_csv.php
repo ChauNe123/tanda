@@ -75,6 +75,24 @@ function optimizeAndSaveImage($sourcePath, $destPath, $maxWidth = 800, $quality 
     return $success;
 }
 
+function findExistingSkuImage($sku, $suffix = '') {
+    $sku = trim((string)$sku);
+    if ($sku === '') return '';
+
+    $uploadDir = __DIR__ . '/../uploads/';
+    $baseName = $sku . $suffix;
+    $extensions = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+    foreach ($extensions as $ext) {
+        $candidate = $baseName . '.' . $ext;
+        if (file_exists($uploadDir . $candidate)) {
+            return $candidate;
+        }
+    }
+
+    return '';
+}
+
 // ---------------------------------------------------------
 // XỬ LÝ AJAX 1: NHẬN HÌNH ẢNH (PHÂN LOẠI THƯ MỤC)
 // ---------------------------------------------------------
@@ -143,8 +161,8 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'upload_products') 
                 $sku        = trim(preg_replace('/[\xEF\xBB\xBF]/', '', $row[0] ?? '')); 
                 $cat_code   = trim($row[1] ?? ''); $name = trim($row[2] ?? '');
                 $price      = (int)($row[3] ?? 0); $sale_price = (int)($row[4] ?? 0); 
-                $coupon     = trim($row[5] ?? ''); $image_file = trim($row[6] ?? ''); 
-                $frame_file = trim($row[7] ?? ''); $specs = trim($row[8] ?? ''); 
+                $coupon     = trim($row[5] ?? '');
+                $specs = trim($row[8] ?? ''); 
                 // Thêm dòng lấy dữ liệu description (Cột số 10 trong mảng, do mảng bắt đầu từ 0)
                 $description = trim($row[9] ?? ''); 
                 // Status lùi lại thành cột số 11 (Index 10)
@@ -153,18 +171,31 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'upload_products') 
                 if(empty($sku) || empty($name)) continue;
                 $slug = createSlug($name);
 
+                // Tự map toàn bộ ảnh theo SKU từ thư mục uploads
+                $image_file = findExistingSkuImage($sku, '');
+                $image_2 = findExistingSkuImage($sku, '-2');
+                $image_3 = findExistingSkuImage($sku, '-3');
+                $image_4 = findExistingSkuImage($sku, '-4');
+                $image_5 = findExistingSkuImage($sku, '-5');
+
                 // CẬP NHẬT CÂU LỆNH SQL: Thêm cột description
-                $sql = "INSERT INTO products (sku, cat_code, name, slug, price, sale_price, coupon_code, image_file, frame_file, specs_summary, description, status, sort_order) 
-                        VALUES (:sku, :cat, :name, :slug, :price, :sale, :coupon, :img, :frame, :specs, :desc, :stt, :sort)
+                $sql = "INSERT INTO products (sku, cat_code, name, slug, price, sale_price, coupon_code, image_file, image_2, image_3, image_4, image_5, specs_summary, description, status, sort_order) 
+                        VALUES (:sku, :cat, :name, :slug, :price, :sale, :coupon, :img, :img2, :img3, :img4, :img5, :specs, :desc, :stt, :sort)
                         ON DUPLICATE KEY UPDATE cat_code=VALUES(cat_code), name=VALUES(name), slug=VALUES(slug), price=VALUES(price), sale_price=VALUES(sale_price), 
-                        coupon_code=VALUES(coupon_code), image_file=IF(VALUES(image_file) != '', VALUES(image_file), image_file), frame_file=VALUES(frame_file), 
+                        coupon_code=VALUES(coupon_code), 
+                        image_file=IF(VALUES(image_file) != '', VALUES(image_file), image_file),
+                        image_2=IF(VALUES(image_2) != '', VALUES(image_2), image_2),
+                        image_3=IF(VALUES(image_3) != '', VALUES(image_3), image_3),
+                        image_4=IF(VALUES(image_4) != '', VALUES(image_4), image_4),
+                        image_5=IF(VALUES(image_5) != '', VALUES(image_5), image_5),
                         specs_summary=VALUES(specs_summary), description=VALUES(description), status=VALUES(status), sort_order=VALUES(sort_order)";
                 
                 $stmt = $conn->prepare($sql);
                 $stmt->execute([
                     ':sku'=>$sku, ':cat'=>$cat_code, ':name'=>$name, ':slug'=>$slug, 
                     ':price'=>$price, ':sale'=>$sale_price, ':coupon'=>$coupon, 
-                    ':img'=>$image_file, ':frame'=>$frame_file, ':specs'=>$specs, 
+                    ':img'=>$image_file, ':img2'=>$image_2, ':img3'=>$image_3, ':img4'=>$image_4, ':img5'=>$image_5,
+                    ':specs'=>$specs, 
                     ':desc'=>$description, // Truyền biến mới vào đây
                     ':stt'=>$status, ':sort'=>$row_num
                 ]);
@@ -273,7 +304,11 @@ if (isset($_POST['btn_upload_banners'])) {
 
     <div class="card card-products" id="product-upload-section">
         <h2 class="text-blue">📦 NẠP DỮ LIỆU KHO HÀNG</h2>
-        <p class="subtitle">Tải CSV lên -> Gõ sửa trực tiếp trên bảng -> Xác nhận</p>
+        <p class="subtitle">Tải CSV lên -> Sửa thông tin nếu cần -> Đồng bộ vào database</p>
+        <div style="margin: 10px 0 15px; background:#e8f4ff; border:1px solid #b8d9ff; border-radius:8px; padding:10px 12px; font-size:13px; color:#0b4d8a;">
+            <strong>Luồng chuẩn: kéo-thả ảnh trước, sau đó đồng bộ CSV.</strong><br>
+            Tên ảnh tự map theo SKU: <strong>SKU.jpg</strong>, <strong>SKU-2.jpg</strong>...<strong>SKU-5.jpg</strong>.
+        </div>
         
         <div class="form-group">
             <div class="file-upload-wrapper wrap-blue">
@@ -287,6 +322,7 @@ if (isset($_POST['btn_upload_banners'])) {
             <div class="table-wrapper" id="csv-table-wrapper"></div>
             <div class="preview-actions">
                 <button type="button" class="btn-submit btn-blue" id="btn_confirm_csv" style="width: auto;">🚀 LƯU VÀO DATABASE</button>
+                <button type="button" class="btn-submit btn-green" id="btn_sync_all" style="width: auto; margin-left: 8px;">⚡ ĐỒNG BỘ TẤT CẢ (ẢNH + CSV)</button>
             </div>
         </div>
     </div>

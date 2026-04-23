@@ -30,11 +30,11 @@
     text-transform: uppercase;
 }
 
-/* 3. HỆ THỐNG LƯỚI 8 CỘT CHUẨN CÓ KHOẢNG CÁCH GAP */
+/* 3. HỆ THỐNG LƯỚI 6 CỘT CHUẨN CÓ KHOẢNG CÁCH GAP */
 .product-grid {
     display: grid;
-    /* Yêu cầu 8 cột bằng nhau */
-    grid-template-columns: repeat(8, 1fr);
+    /* Desktop luôn hiển thị 6 card / hàng */
+    grid-template-columns: repeat(6, 1fr);
     /* Cách nhau 2px theo yêu cầu để tạo rãnh */
     gap: 2px;
     background: #f1f1f1; /* Nền mờ để hắt màu hở lên khe gap */
@@ -43,27 +43,21 @@
 
 /* --- Responsive (Thích ứng Màn hình di động) --- */
 
-@media (max-width: 1200px) {
-    .product-grid {
-        grid-template-columns: repeat(6, 1fr);
-    }
-}
-
 @media (max-width: 1024px) {
-    .product-grid {
-        grid-template-columns: repeat(5, 1fr);
-    }
-}
-
-@media (max-width: 768px) {
     .product-grid {
         grid-template-columns: repeat(4, 1fr);
     }
 }
 
-@media (max-width: 576px) {
+@media (max-width: 768px) {
     .product-grid {
         grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+@media (max-width: 576px) {
+    .product-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
     
     /* Gọt bớt xíu cho màn điện thoại đỡ cồng kềnh */
