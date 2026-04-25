@@ -1,4 +1,4 @@
-// assets/js/admin_import.js
+﻿// assets/js/admin_import.js
 
 // =========================================================
 // 1. CHỨC NĂNG UP HÌNH ẢNH CÓ PREVIEW & CHỌN THƯ MỤC
@@ -95,241 +95,188 @@ if (btnConfirm) {
 }
 
 // =========================================================
-// 2. MINI EXCEL: KHO HÀNG
+// 2.IMPORT ZIP + CSV BATCH PROCESS
 // =========================================================
-let parsedCSVData = [];
-const csvInput = document.getElementById('csv_products_input');
-const csvPreviewBox = document.getElementById('csv-preview-box');
-const csvTableWrapper = document.getElementById('csv-table-wrapper');
-const btnConfirmCSV = document.getElementById('btn_confirm_csv');
-const btnSyncAll = document.getElementById('btn_sync_all');
+const zipInput = document.getElementById('zip_file');
+const csvInput = document.getElementById('csv_file');
+const btnStart = document.getElementById('btn_start');
+const btnCancel = document.getElementById('btn_cancel');
+const progressBar = document.getElementById('progress-bar');
+const statusLine = document.getElementById('status-line');
+const logBox = document.getElementById('logbox');
+const logWrap = document.getElementById('log');
 
-function CSVToArray(strData) {
-    const objPattern = new RegExp(("(\\,|\\r?\\n|\\r|^)(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|([^\"\\,\\r\\n]*))"), "gi");
-    const arrData = [[]];
-    let arrMatches = null;
-    while (arrMatches = objPattern.exec(strData)) {
-        const strMatchedDelimiter = arrMatches[1];
-        if (strMatchedDelimiter.length && strMatchedDelimiter !== ",") {
-            arrData.push([]);
-        }
-        const strMatchedValue = arrMatches[2] ? arrMatches[2].replace(new RegExp("\"\"", "g"), "\"") : arrMatches[3];
-        arrData[arrData.length - 1].push(strMatchedValue);
-    }
-    return arrData;
+const BATCH_SIZE = 10;
+let abortImport = false;
+
+function setStatus(text) {
+    if (statusLine) statusLine.textContent = text;
 }
 
-function ArrayToCSV(arr) {
-    return arr.map(row => row.map(String).map(v => v.replaceAll('"', '""')).map(v => `"${v}"`).join(',')).join('\r\n');
+function updateProgress(percent) {
+    if (!progressBar) return;
+    const safePercent = Math.max(0, Math.min(100, Math.round(percent)));
+    progressBar.style.width = safePercent + '%';
+    progressBar.textContent = safePercent + '%';
 }
 
-function saveProductsRequest() {
-    if (parsedCSVData.length < 2) {
-        return Promise.resolve({ success: 0, error: 1, message: 'CSV chưa hợp lệ' });
-    }
+function logMessage(text) {
+    if (!logBox || !logWrap) return;
+    logWrap.style.display = 'block';
+    const now = new Date().toLocaleTimeString();
+    logBox.textContent += `[${now}] ${text}\n`;
+    logBox.scrollTop = logBox.scrollHeight;
+}
 
-    const newCSVString = ArrayToCSV(parsedCSVData);
-    const blob = new Blob([newCSVString], { type: 'text/csv;charset=utf-8;' });
+async function ajaxPost(formData) {
+    try {
+        const response = await fetch(window.location.href, {
+            method: 'POST',
+            body: formData,
+        });
+        return await response.json();
+    } catch (error) {
+        return { success: 0, error: error.message || 'Network error' };
+    }
+}
+
+async function validateFiles(zipFile, csvFile) {
     const formData = new FormData();
-    formData.append('ajax_action', 'upload_products');
-    formData.append('csv_products', blob, 'edited.csv');
-
-    return fetch(window.location.href, { method: 'POST', body: formData }).then(res => res.json());
+    formData.append('ajax_action', 'validate_zip_csv');
+    formData.append('zip_file', zipFile);
+    formData.append('csv_file', csvFile);
+    return ajaxPost(formData);
 }
 
-function renderCSVTable() {
-    if (parsedCSVData.length < 2) return;
-    const header = parsedCSVData[0] || [];
-    const imageColIdx = header.findIndex(c => /^(image|image_file|anh)$/i.test(String(c || '').trim()));
-
-    let html = '<table class="csv-table">';
-    parsedCSVData.forEach((row, rIdx) => {
-        if (row.length === 1 && row[0] === "") return;
-        html += '<tr>';
-
-        row.forEach((col, cIdx) => {
-            if (rIdx === 0) {
-                if (cIdx === imageColIdx) html += '<th>Image (Tự động)</th>';
-                else if (cIdx === frameColIdx) html += '<th>Frame (Tự động)</th>';
-                else html += `<th>${col}</th>`;
-            } else {
-                const skuVal = row[0] ? row[0].replace(/"/g, '') : 'SKU';
-                if (cIdx === imageColIdx) {
-                    html += `<td class="drop-zone-cell" ondragover="window.dragOverHandler(event)" ondragleave="window.dragLeaveHandler(event)" ondrop="window.dropImageHandler(event, '${skuVal}', this)" style="background:#e8f5e9; text-align:center;">
-                                <div class="drop-zone-content" id="img-preview-${skuVal}">
-                                    <div style="font-size:11px; color:#155724;"><b>${skuVal}.jpg</b><br>Kéo thả ảnh (tối đa 5)</div>
-                                </div>
-                             </td>`;
-                } else {
-                    html += `<td><input type="text" value="${col ? col.replace(/"/g, '&quot;') : ''}" onchange="updateCSVData(${rIdx}, ${cIdx}, this.value)"></td>`;
-                }
-            }
-        });
-
-        if (rIdx === 0 && imageColIdx === -1) html += '<th>Image (Tự động)</th>';
-        if (rIdx > 0 && imageColIdx === -1) {
-            const skuVal = row[0] ? row[0].replace(/"/g, '') : 'SKU';
-            html += `<td class="drop-zone-cell" ondragover="window.dragOverHandler(event)" ondragleave="window.dragLeaveHandler(event)" ondrop="window.dropImageHandler(event, '${skuVal}', this)" style="background:#e8f5e9; text-align:center;">
-                        <div class="drop-zone-content" id="img-preview-${skuVal}">
-                            <div style="font-size:11px; color:#155724;"><b>${skuVal}.jpg</b><br>Kéo thả ảnh (tối đa 5)</div>
-                        </div>
-                     </td>`;
-        }
-
-        if (rIdx === 0) html += `<th>Hành động</th>`;
-        else html += `<td><button type="button" class="btn-remove-row" onclick="removeCSVRow(${rIdx})">Xóa</button></td>`;
-        html += '</tr>';
-    });
-    html += '</table>';
-    csvTableWrapper.innerHTML = html;
-    csvPreviewBox.style.display = 'block';
+async function processBatch(token, start, batchSize) {
+    const formData = new FormData();
+    formData.append('ajax_action', 'process_batch');
+    formData.append('token', token);
+    formData.append('start', start);
+    formData.append('batch', batchSize);
+    return ajaxPost(formData);
 }
 
-window.updateCSVData = function(rowIdx, colIdx, val) {
-    parsedCSVData[rowIdx][colIdx] = val;
-};
+async function cleanupTemp(token) {
+    const formData = new FormData();
+    formData.append('ajax_action', 'cleanup_temp');
+    formData.append('token', token);
+    return ajaxPost(formData);
+}
 
-window.removeCSVRow = function(rowIdx) {
-    parsedCSVData.splice(rowIdx, 1);
-    renderCSVTable();
-};
+function resetProgress() {
+    updateProgress(0);
+    setStatus('Chưa bắt đầu');
+    if (logBox) logBox.textContent = '';
+}
 
-window.dragOverHandler = function(ev) {
-    ev.preventDefault();
-    ev.currentTarget.classList.add('dragover');
-};
-
-window.dragLeaveHandler = function(ev) {
-    ev.preventDefault();
-    ev.currentTarget.classList.remove('dragover');
-};
-
-window.dropImageHandler = function(ev, sku, cellElement) {
-    ev.preventDefault();
-    cellElement.classList.remove('dragover');
-    
-    if (ev.dataTransfer.items) {
-        const files = Array.from(ev.dataTransfer.files).filter(f => f.type.startsWith('image/'));
-        if (files.length === 0) return;
-        
-        // Show loading state
-        const loadingDiv = document.createElement('div');
-        loadingDiv.className = 'uploading-overlay';
-        loadingDiv.innerText = 'Đang tải...';
-        cellElement.appendChild(loadingDiv);
-
-        const formData = new FormData();
-        formData.append('ajax_action', 'upload_images');
-        formData.append('target_folder', 'uploads');
-
-        files.forEach((file, index) => {
-            if (index >= 5) return; // Max 5 images
-            
-            let ext = file.name.split('.').pop().toLowerCase();
-            let newName = (index === 0 ? `${sku}.${ext}` : `${sku}-${index + 1}.${ext}`);
-            
-            formData.append('images[]', file);
-            formData.append('new_names[]', newName);
-        });
-
-        fetch(window.location.href, { method: 'POST', body: formData })
-        .then(res => res.json())
-        .then(data => {
-            cellElement.removeChild(loadingDiv);
-            if (data.success > 0) {
-                // Update UI to show thumbnail of the first dropped image
-                const contentDiv = cellElement.querySelector('.drop-zone-content');
-                const imgURL = URL.createObjectURL(files[0]);
-                let ext = files[0].name.split('.').pop().toLowerCase();
-                let mainName = `${sku}.${ext}`;
-                contentDiv.innerHTML = `<div style="font-size:11px; color:#155724;"><b>${mainName}</b> <span style="color:red">(${data.success} ảnh)</span></div><img src="${imgURL}" class="thumb">`;
-                
-                // Show a brief success message in the main message box
-                const msgBox = document.getElementById('msg-box');
-                if (msgBox) {
-                    msgBox.innerHTML = `<div class='alert success' style='padding: 8px; margin-bottom: 10px; font-size: 14px;'>✅ Đã nạp ngay ${data.success} ảnh cho SKU: <b>${sku}</b></div>`;
-                    setTimeout(() => msgBox.innerHTML = '', 3000);
-                }
-            } else {
-                alert('Tải ảnh thất bại!');
-            }
-        })
-        .catch(err => {
-            console.error(err);
-            cellElement.removeChild(loadingDiv);
-            alert('Có lỗi xảy ra khi tải ảnh.');
-        });
+async function startImport() {
+    if (!zipInput || !csvInput || !zipInput.files[0] || !csvInput.files[0]) {
+        alert('Vui lòng chọn file ZIP và file CSV trước khi bắt đầu.');
+        return;
     }
-};
 
-if (csvInput) {
-    csvInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        document.getElementById('file-name-products').innerHTML = '📄 Đang mở: ' + file.name;
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            parsedCSVData = CSVToArray(event.target.result);
-            renderCSVTable();
-        };
-        reader.readAsText(file, 'UTF-8');
-    });
-}
+    abortImport = false;
+    if (btnStart) btnStart.disabled = true;
+    if (btnCancel) btnCancel.style.display = 'inline-block';
+    resetProgress();
 
-if (btnConfirmCSV) {
-    btnConfirmCSV.addEventListener('click', function() {
-        if (parsedCSVData.length < 2) return;
-        document.getElementById('product-upload-section').classList.add('loading');
-        btnConfirmCSV.innerHTML = '⏳ ĐANG LƯU DỮ LIỆU...';
+    setStatus('Đang kiểm tra file ZIP và CSV...');
+    logMessage('Bắt đầu kiểm tra file.');
 
-        saveProductsRequest().then(data => {
-            document.getElementById('product-upload-section').classList.remove('loading');
-            btnConfirmCSV.innerHTML = '🚀 LƯU VÀO DATABASE';
-            if (data.success > 0) {
-                msgBox.innerHTML = `<div class='alert success'>📦 ✅ Đã lưu ${data.success} SẢN PHẨM vào kho!</div>`;
-                csvPreviewBox.style.display = 'none';
-                document.getElementById('file-name-products').innerHTML = '📁 Chạm để chọn file Kho_Hang.csv...';
-                csvInput.value = '';
-                parsedCSVData = [];
-            }
-        });
-    });
-}
+    const validation = await validateFiles(zipInput.files[0], csvInput.files[0]);
+    if (!validation.success) {
+        const message = validation.error === 'missing_images' && validation.missing
+            ? `Thiếu ảnh theo CSV:\n${validation.missing.slice(0, 20).map(item => `- Row ${item.row}: ${item.image}`).join('\n')}`
+            : `Validation lỗi: ${validation.error || 'Không xác định'}`;
+        alert(message);
+        setStatus('Validation lỗi');
+        logMessage(message);
+        if (btnStart) btnStart.disabled = false;
+        if (btnCancel) btnCancel.style.display = 'none';
+        return;
+    }
 
-if (btnSyncAll) {
-    btnSyncAll.addEventListener('click', async function() {
-        if (parsedCSVData.length < 2) {
-            msgBox.innerHTML = `<div class='alert error'>❌ Bạn chưa chọn CSV sản phẩm.</div>`;
-            return;
+    const total = Number(validation.total || 0);
+    const token = validation.token;
+    if (!token || total <= 0) {
+        alert('Validation không trả về token hoặc tổng số sản phẩm không hợp lệ.');
+        setStatus('Validation thất bại');
+        logMessage('Validation trả về dữ liệu không hợp lệ.');
+        if (btnStart) btnStart.disabled = false;
+        if (btnCancel) btnCancel.style.display = 'none';
+        return;
+    }
+
+    setStatus(`Validation OK. Tổng sản phẩm: ${total}`);
+    logMessage(`Validation OK. Tổng sản phẩm: ${total}. Token: ${token}`);
+
+    let processed = 0;
+    updateProgress(0);
+
+    while (processed < total && !abortImport) {
+        const nextEnd = Math.min(processed + BATCH_SIZE, total);
+        setStatus(`Đang nạp ${processed + 1} - ${nextEnd} / ${total}`);
+        logMessage(`Gửi batch ${processed} -> ${nextEnd}`);
+
+        const batchResult = await processBatch(token, processed, BATCH_SIZE);
+        if (!batchResult.success) {
+            alert(`Lỗi khi nạp batch: ${batchResult.error || 'Không xác định'}`);
+            setStatus('Lỗi khi nạp batch');
+            logMessage(`Batch lỗi: ${batchResult.error || JSON.stringify(batchResult)}`);
+            break;
         }
 
-        const productSection = document.getElementById('product-upload-section');
-        productSection.classList.add('loading');
-        btnSyncAll.disabled = true;
-        btnSyncAll.innerHTML = '⏳ ĐANG ĐỒNG BỘ...';
+        const got = Number(batchResult.processed || 0);
+        if (got <= 0) {
+            if (processed >= total) break;
+            alert('Batch trả về 0 sản phẩm đã xử lý. Dừng để tránh vòng lặp vô hạn.');
+            setStatus('Dừng do batch 0');
+            logMessage('Batch trả về 0 sản phẩm đã xử lý.');
+            break;
+        }
 
-        try {
-            const imgResult = await uploadImagesRequest();
-            const prodResult = await saveProductsRequest();
+        processed += got;
+        const percent = (total > 0) ? (processed / total) * 100 : 100;
+        updateProgress(percent);
+        logMessage(`Hoàn thành batch, processed=${processed}.`);
 
-            if (prodResult.success > 0) {
-                msgBox.innerHTML = `<div class='alert success'>✅ Đồng bộ thành công! Ảnh: ${imgResult.success || 0} | Sản phẩm: ${prodResult.success}</div>`;
-                selectedFiles = [];
-                renderPreview();
-                csvPreviewBox.style.display = 'none';
-                document.getElementById('file-name-products').innerHTML = '📁 Chạm để chọn file Kho_Hang.csv...';
-                csvInput.value = '';
-                parsedCSVData = [];
-            } else {
-                msgBox.innerHTML = `<div class='alert error'>❌ Lưu sản phẩm thất bại. Kiểm tra lại CSV.</div>`;
-            }
-        } catch (error) {
-            console.error(error);
-            msgBox.innerHTML = `<div class='alert error'>❌ Đồng bộ thất bại: ${error.message}</div>`;
-        } finally {
-            productSection.classList.remove('loading');
-            btnSyncAll.disabled = false;
-            btnSyncAll.innerHTML = '⚡ ĐỒNG BỘ TẤT CẢ (ẢNH + CSV)';
+        if (processed >= total) break;
+    }
+
+    if (abortImport) {
+        setStatus('Tiến trình đã bị hủy');
+        logMessage('Người dùng hủy tiến trình.');
+    } else if (processed >= total) {
+        setStatus('Nạp dữ liệu xong. Đang dọn dẹp...');
+        logMessage('Hoàn tất nạp dữ liệu. Dọn dẹp dữ liệu tạm.');
+        const cleanup = await cleanupTemp(token);
+        if (cleanup.success) {
+            updateProgress(100);
+            setStatus('Đã hoàn tất import!');
+            logMessage('Dọn dẹp thành công.');
+        } else {
+            setStatus('Hoàn tất nhưng không dọn được tạm.');
+            logMessage(`Cleanup lỗi: ${cleanup.error || 'Không xác định'}`);
+        }
+    }
+
+    if (btnStart) btnStart.disabled = false;
+    if (btnCancel) btnCancel.style.display = 'none';
+}
+
+if (btnStart) {
+    btnStart.addEventListener('click', startImport);
+}
+
+if (btnCancel) {
+    btnCancel.addEventListener('click', function() {
+        if (confirm('Bạn có chắc muốn hủy tiến trình hiện tại?')) {
+            abortImport = true;
+            if (btnStart) btnStart.disabled = false;
+            if (btnCancel) btnCancel.style.display = 'none';
+            setStatus('Đang hủy...');
+            logMessage('Người dùng yêu cầu hủy.');
         }
     });
 }
@@ -337,82 +284,123 @@ if (btnSyncAll) {
 // =========================================================
 // 3. XỬ LÝ CHỌN FILE, HỦY FILE VÀ XEM THỬ REALISTIC
 // =========================================================
-const csvBannersInput = document.getElementById('csv_banners_input');
-const designActionBox = document.getElementById('design-action-box');
-const btnPreviewDesign = document.getElementById('btn_preview_design');
-const btnCancelDesign = document.getElementById('btn_cancel_design');
-const btnConfirmDesign = document.getElementById('btn_confirm_design');
-const formCsvBanners = document.getElementById('form-csv-banners');
+// Tiếp tục từ đoạn bị cắt: function CSVToArray(strData) { ... }
 
-const realPreviewModal = document.getElementById('realPreviewModal');
-const btnClosePreview = document.getElementById('btn_close_preview');
+function CSVToArray(strData) {
+    // Biểu thức chính quy (Regex) để tách các cột phân cách bằng dấu phẩy
+    // Giữ nguyên được dữ liệu nếu trong tên sản phẩm có chứa dấu phẩy (nằm trong ngoặc kép "")
+    const objPattern = new RegExp(
+        "(\\,|\\r?\\n|\\r|^)" +
+        "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
+        "([^\"\\,\\r\\n]*))",
+        "gi"
+    );
 
-let designData = [];
+    const arrData = [[]];
+    let arrMatches = null;
 
-if (csvBannersInput) {
-    csvBannersInput.addEventListener('change', function(e) {
+    // Vòng lặp quét qua toàn bộ chuỗi CSV
+    while (arrMatches = objPattern.exec(strData)) {
+        const strMatchedDelimiter = arrMatches[1];
+
+        // Nếu gặp dấu xuống dòng, tạo một dòng mới trong mảng
+        if (strMatchedDelimiter.length && strMatchedDelimiter !== ",") {
+            arrData.push([]);
+        }
+
+        let strMatchedValue;
+        // Nếu giá trị được bọc trong ngoặc kép
+        if (arrMatches[2]) {
+            strMatchedValue = arrMatches[2].replace(new RegExp("\"\"", "g"), "\"");
+        } else {
+            // Giá trị bình thường không có ngoặc kép
+            strMatchedValue = arrMatches[3];
+        }
+
+        // Đẩy dữ liệu vào cột cuối cùng của dòng hiện tại
+        arrData[arrData.length - 1].push(strMatchedValue);
+    }
+
+    return arrData;
+}
+
+// =========================================================
+// 4. XỬ LÝ SỰ KIỆN GIAO DIỆN KHI CHỌN FILE
+// =========================================================
+
+// Hiển thị tên file ZIP khi khách hàng chọn
+if (zipInput) {
+    zipInput.addEventListener('change', function(e) {
+        const fileName = e.target.files[0] ? e.target.files[0].name : "Chưa chọn file";
+        const label = document.getElementById('zip_file_name');
+        if (label) label.textContent = fileName;
+        setStatus('Đã chọn file ZIP: ' + fileName);
+    });
+}
+
+// Hiển thị tên file CSV và kích hoạt chế độ XEM TRƯỚC (Preview)
+if (csvInput) {
+    csvInput.addEventListener('change', function(e) {
         const file = e.target.files[0];
-        if (!file) return;
-        document.getElementById('file-name-banners').innerHTML = '📄 Đã chọn file: ' + file.name;
-
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            designData = CSVToArray(event.target.result);
-            designActionBox.style.display = 'block';
-        };
-        reader.readAsText(file, 'UTF-8');
-    });
-}
-
-if (btnCancelDesign) {
-    btnCancelDesign.addEventListener('click', function() {
-        csvBannersInput.value = '';
-        document.getElementById('file-name-banners').innerHTML = '📁 Chạm để chọn file Trang_Tri.csv...';
-        designActionBox.style.display = 'none';
-        designData = [];
-    });
-}
-
-if (btnPreviewDesign) {
-    btnPreviewDesign.addEventListener('click', function() {
-        if (designData.length < 2) {
-            alert('File CSV không hợp lệ hoặc trống!');
+        const label = document.getElementById('csv_file_name');
+        
+        if (!file) {
+            if (label) label.textContent = "Chưa chọn file";
             return;
         }
 
-        const positions = ['BANNER-CHINH', 'BANNER-PHU-1', 'BANNER-PHU-2', 'BANNER-PHU-3'];
+        if (label) label.textContent = file.name;
+        setStatus('Đang đọc dữ liệu CSV để xem trước...');
 
-        positions.forEach(pos => {
-            const wrap = document.getElementById('prev-' + pos);
-            if (wrap) {
-                wrap.innerHTML = `<img src="https://via.placeholder.com/1200x350/003028/ffffff?text=${pos}+CHƯA+KÊU" style="width:100%; display:block; object-fit:cover;">`;
-            }
-        });
-
-        designData.forEach((row, rIdx) => {
-            if (rIdx === 0 || (row.length === 1 && row[0] === '')) return;
-            const bannerCode = (row[0] ?? '').trim();
-            const imageFile = (row[1] ?? '').trim();
-            const status = (row[3] ?? '1').trim();
-
-            if (positions.includes(bannerCode) && imageFile !== '' && status === '1') {
-                const wrap = document.getElementById('prev-' + bannerCode);
-                if (wrap) {
-                    wrap.innerHTML = `<img src="../banners/${imageFile}?v=${new Date().getTime()}" alt="${bannerCode}" style="width:100%; display:block; object-fit:cover; border-radius: 8px;">`;
-                }
-            }
-        });
-
-        realPreviewModal.style.display = 'flex';
+        // Dùng FileReader để đọc lướt qua file CSV trên trình duyệt (không cần gửi lên Server)
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const csvData = event.target.result;
+            const parsedData = CSVToArray(csvData);
+            
+            // Render ra cái bảng Preview nhỏ gọn (Giả sử bạn có thẻ div id="csv_preview_table")
+            renderPreviewTable(parsedData);
+        };
+        reader.readAsText(file);
     });
 }
 
-if (btnClosePreview) {
-    btnClosePreview.addEventListener('click', () => {
-        realPreviewModal.style.display = 'none';
-    });
-}
+// Hàm render bảng xem trước 5 dòng đầu tiên của CSV
+function renderPreviewTable(data) {
+    const previewContainer = document.getElementById('csv_preview_table');
+    if (!previewContainer) return; // Nếu trong HTML không có id này thì bỏ qua
 
-if (btnConfirmDesign) {
-    btnConfirmDesign.addEventListener('click', () => formCsvBanners.submit());
+    let html = '<table class="preview-table" style="width:100%; border-collapse: collapse; margin-top: 15px; font-size: 13px;">';
+    
+    // Lặp qua tối đa 6 dòng (1 dòng tiêu đề + 5 dòng dữ liệu) để tránh lag nếu file quá lớn
+    const maxRows = Math.min(data.length, 6); 
+    
+    for (let i = 0; i < maxRows; i++) {
+        const row = data[i];
+        // Bỏ qua dòng trống
+        if (row.length === 1 && row[0].trim() === '') continue;
+
+        html += '<tr>';
+        row.forEach(col => {
+            if (i === 0) {
+                // Dòng tiêu đề
+                html += `<th style="border: 1px solid #ddd; padding: 8px; background: #f4f4f4;">${col}</th>`;
+            } else {
+                // Dòng dữ liệu
+                // Highlight cột hình ảnh (giả sử cột hình ảnh là cột số 5 - index 4) để khách dễ nhìn
+                const cellStyle = 'border: 1px solid #ddd; padding: 8px;';
+                html += `<td style="${cellStyle}">${col}</td>`;
+            }
+        });
+        html += '</tr>';
+    }
+    
+    html += '</table>';
+    
+    if (data.length > 6) {
+        html += `<p style="color: #666; font-size: 12px; font-style: italic; margin-top: 5px;">* Chỉ hiển thị xem trước 5 dòng đầu tiên. Tổng cộng có ${data.length - 1} sản phẩm.</p>`;
+    }
+
+    previewContainer.innerHTML = html;
+    setStatus('Đã load xong bản xem trước CSV.');
 }

@@ -74,34 +74,18 @@ $pct = $hasDiscount ? round((($p['price'] - $chot_gia) / $p['price']) * 100) : 0
         <!-- ==== CỘT TRÁI (ẢNH VÀ THÔNG TIN CHI TIẾT) ==== -->
         <div class="pd-left">
             <?php
-            // Lấy toàn bộ ảnh của sản phẩm kể cả khi chưa lưu vào DB (dựa trên tên file chuẩn)
+            // Lấy toàn bộ ảnh từ cột image_file (nếu có)
             $gallery_images = [];
-            $sku_clean = trim($p['sku']);
-
-            // 1. ƯU TIÊN ẢNH CHÍNH THEO SKU
-            $main_pattern = 'uploads/' . $sku_clean . '.{jpg,jpeg,png,webp,gif,JPG,JPEG,PNG,WEBP,GIF}';
-            $main_matches = glob($main_pattern, GLOB_BRACE);
-            
-            if (!empty($main_matches)) {
-                $gallery_images[] = basename($main_matches[0]);
-            } elseif (!empty($p['image_file']) && file_exists('uploads/'.$p['image_file'])) {
-                $gallery_images[] = $p['image_file'];
-            }
-
-            // 2. Ảnh phụ (từ 2 đến 5)
-            for ($i = 2; $i <= 5; $i++) {
-                $sub_pattern = 'uploads/' . $sku_clean . '-' . $i . '.{jpg,jpeg,png,webp,gif,JPG,JPEG,PNG,WEBP,GIF}';
-                $sub_matches = glob($sub_pattern, GLOB_BRACE);
-                
-                if (!empty($sub_matches)) {
-                    $gallery_images[] = basename($sub_matches[0]);
-                } else {
-                    $img_col = 'image_'.$i;
-                    if (!empty($p[$img_col]) && file_exists('uploads/'.$p[$img_col])) {
-                        $gallery_images[] = $p[$img_col];
+            if (!empty($p['image_file'])) {
+                $image_files = explode(',', $p['image_file']); // Giả sử các ảnh được lưu cách nhau bởi dấu phẩy
+                foreach ($image_files as $image) {
+                    $image = trim($image);
+                    if (!empty($image) && file_exists('uploads/' . $image)) {
+                        $gallery_images[] = $image;
                     }
                 }
             }
+
             ?>
             <!-- Box Gallery (Ảnh SP) -->
             <div class="pd-box pd-gallery-wrapper" style="padding-bottom: 15px;">

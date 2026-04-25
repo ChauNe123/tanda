@@ -5,16 +5,16 @@ $chot_gia = ($p['sale_price'] > 0) ? $p['sale_price'] : $p['price'];
 $hasDiscount = ($p['sale_price'] > 0 && $p['price'] > $p['sale_price']);
 $pct = $hasDiscount ? round((($p['price'] - $p['sale_price']) / $p['price']) * 100) : 0;
 
-// XỬ LÝ ẢNH THÔNG MINH: Ưu tiên lấy ảnh theo SKU nếu tồn tại, nếu không mới lấy image_file từ DB
-$display_img = $p['image_file'];
-$sku_clean = trim($p['sku']);
-$sku_pattern = 'uploads/' . $sku_clean . '.{jpg,jpeg,png,webp,gif,JPG,JPEG,PNG,WEBP,GIF}';
-$sku_matches = glob($sku_pattern, GLOB_BRACE);
-
-if (!empty($sku_matches)) {
-    // Lấy file đầu tiên tìm thấy
-    $display_img = basename($sku_matches[0]);
+// Ưu tiên lấy ảnh từ cột image_file
+$display_img = 'placeholder.png';
+if (!empty($p['image_file'])) {
+    $image_files = explode(',', $p['image_file']); // Giả sử các ảnh được lưu cách nhau bởi dấu phẩy
+    $first_image = trim($image_files[0]);
+    if (!empty($first_image) && file_exists('uploads/' . $first_image)) {
+        $display_img = $first_image;
+    }
 }
+
 ?>
 <div class="tgdd-product-card <?php echo $outOfStock ? 'out-of-stock' : ''; ?>">
     

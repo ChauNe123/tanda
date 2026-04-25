@@ -17,7 +17,6 @@ function optimizeAndSaveImage($sourcePath, $destPath, $maxWidth = 800, $quality 
     $height = $info[1];
     $mime = $info['mime'];
 
-    // 1. Tính toán kích thước mới (Giữ nguyên tỉ lệ để không méo hình)
     if ($width > $maxWidth) {
         $newWidth = $maxWidth;
         $newHeight = floor(($height / $width) * $newWidth);
@@ -26,10 +25,8 @@ function optimizeAndSaveImage($sourcePath, $destPath, $maxWidth = 800, $quality 
         $newHeight = $height;
     }
 
-    // 2. Tạo khung vẽ cho ảnh mới
     $newImage = imagecreatetruecolor($newWidth, $newHeight);
 
-    // 3. Xử lý kĩ nền trong suốt cho PNG (Quan trọng để up khung viền ngày Lễ Tết không bị đen)
     if ($mime == 'image/png' || $mime == 'image/webp' || $mime == 'image/gif') {
         imagealphablending($newImage, false);
         imagesavealpha($newImage, true);
@@ -37,7 +34,6 @@ function optimizeAndSaveImage($sourcePath, $destPath, $maxWidth = 800, $quality 
         imagefilledrectangle($newImage, 0, 0, $newWidth, $newHeight, $transparent);
     }
 
-    // 4. Nhúng dữ liệu ảnh gốc vào
     switch ($mime) {
         case 'image/jpeg': $sourceImage = imagecreatefromjpeg($sourcePath); break;
         case 'image/png':  $sourceImage = imagecreatefrompng($sourcePath); break;
@@ -46,18 +42,15 @@ function optimizeAndSaveImage($sourcePath, $destPath, $maxWidth = 800, $quality 
         default: return false;
     }
 
-    // 5. Bắt đầu Resize mượt mà
     imagecopyresampled($newImage, $sourceImage, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
 
-    // 6. Nén và Xuất file (Giữ nguyên định dạng gốc đuôi file để khớp với file CSV)
     $success = false;
     switch ($mime) {
         case 'image/jpeg':
-            $success = imagejpeg($newImage, $destPath, $quality); // Quality từ 0-100
+            $success = imagejpeg($newImage, $destPath, $quality);
             break;
         case 'image/png':
-            // PNG dùng thang nén từ 0-9 (Tính toán ngược từ 80% về hệ số 9)
-            $pngQuality = round(9 - ($quality / 100 * 9)); 
+            $pngQuality = round(9 - ($quality / 100 * 9));
             $success = imagepng($newImage, $destPath, $pngQuality);
             break;
         case 'image/gif':
@@ -68,7 +61,6 @@ function optimizeAndSaveImage($sourcePath, $destPath, $maxWidth = 800, $quality 
             break;
     }
 
-    // 7. Dọn rác RAM máy chủ
     imagedestroy($newImage);
     imagedestroy($sourceImage);
 
@@ -93,124 +85,18 @@ function findExistingSkuImage($sku, $suffix = '') {
     return '';
 }
 
-// ---------------------------------------------------------
-// XỬ LÝ AJAX 1: NHẬN HÌNH ẢNH (PHÂN LOẠI THƯ MỤC)
-// ---------------------------------------------------------
-if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'upload_images') {
-    
-    $folder_name = (isset($_POST['target_folder']) && $_POST['target_folder'] == 'banners') ? 'banners' : 'uploads';
-    $target_dir = "../" . $folder_name . "/";
-    if (!is_dir($target_dir)) { mkdir($target_dir, 0777, true); }
-
-    $count_success = 0; $count_error = 0;
-    $allowed_types = ['jpg', 'jpeg', 'png', 'gif', 'webp']; // Khai báo đuôi file hợp lệ
-
-    // Kiểm tra xem có file nào được up lên không
-    if (!empty($_FILES['images']['name'][0])) {
-        foreach ($_FILES['images']['name'] as $key => $name) {
-            $tmp_name = $_FILES['images']['tmp_name'][$key];
-            $error = $_FILES['images']['error'][$key];
-            
-            if ($error === UPLOAD_ERR_OK) {
-                $imageFileType = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-                
-                // Lấy tên mới từ input hoặc giữ tên gốc
-                $new_name_post = isset($_POST['new_names'][$key]) ? trim($_POST['new_names'][$key]) : '';
-                $final_name = ($new_name_post !== '') ? $new_name_post : pathinfo($name, PATHINFO_FILENAME);
-                
-                // Gắn lại đuôi file nếu m quên gõ
-                if (!preg_match('/\.[a-zA-Z0-9]+$/', $final_name)) {
-                    $final_name .= '.' . $imageFileType;
-                }
-                
-                $target_file = $target_dir . $final_name;
-
-                if (in_array($imageFileType, $allowed_types)) {
-                    // GỌI HÀM NÉN ẢNH VỚI CHIỀU NGANG MAX 800PX, CHẤT LƯỢNG 80%
-                    if (optimizeAndSaveImage($tmp_name, $target_file, 800, 80)) { 
-                        $count_success++; 
-                    } else {
-                        // Fallback: copy file gốc nếu lỗi
-                        if (move_uploaded_file($tmp_name, $target_file)) { $count_success++; } 
-                        else { $count_error++; }
-                    }
-                } else {
-                    $count_error++; // Sai định dạng
-                }
-            } else {
-                $count_error++; // Lỗi file
-            }
-        }
+// unzip helper
+function unzip_file($zipPath, $destDir) {
+    if (!class_exists('ZipArchive')) return false;
+    $zip = new ZipArchive();
+    if ($zip->open($zipPath) === TRUE) {
+        if (!is_dir($destDir)) mkdir($destDir, 0777, true);
+        $res = $zip->extractTo($destDir);
+        $zip->close();
+        return $res;
     }
-    
-    echo json_encode(['success' => $count_success, 'error' => $count_error]);
-    exit;
+    return false;
 }
-
-// ---------------------------------------------------------
-// XỬ LÝ AJAX 2: NHẬN DỮ LIỆU KHO HÀNG (TỪ MINI-EXCEL)
-// ---------------------------------------------------------
-if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'upload_products') {
-    if (isset($_FILES['csv_products']) && $_FILES['csv_products']['error'] == 0) {
-        $file_tmp = $_FILES['csv_products']['tmp_name'];
-        if (($handle = fopen($file_tmp, "r")) !== FALSE) {
-            $count_success = 0; $row_num = 0;
-            while (($row = fgetcsv($handle, 10000, ",")) !== FALSE) {
-                $row_num++; if ($row_num == 1) continue; 
-
-                $sku        = trim(preg_replace('/[\xEF\xBB\xBF]/', '', $row[0] ?? '')); 
-                $cat_code   = trim($row[1] ?? ''); $name = trim($row[2] ?? '');
-                $price      = (int)($row[3] ?? 0); $sale_price = (int)($row[4] ?? 0); 
-                $coupon     = trim($row[5] ?? '');
-                $specs = trim($row[8] ?? ''); 
-                // Thêm dòng lấy dữ liệu description (Cột số 10 trong mảng, do mảng bắt đầu từ 0)
-                $description = trim($row[9] ?? ''); 
-                // Status lùi lại thành cột số 11 (Index 10)
-                $status     = (int)($row[10] ?? 0);
-                
-                if(empty($sku) || empty($name)) continue;
-                $slug = createSlug($name);
-
-                // Tự map toàn bộ ảnh theo SKU từ thư mục uploads
-                $image_file = findExistingSkuImage($sku, '');
-                $image_2 = findExistingSkuImage($sku, '-2');
-                $image_3 = findExistingSkuImage($sku, '-3');
-                $image_4 = findExistingSkuImage($sku, '-4');
-                $image_5 = findExistingSkuImage($sku, '-5');
-
-                // CẬP NHẬT CÂU LỆNH SQL: Thêm cột description
-                $sql = "INSERT INTO products (sku, cat_code, name, slug, price, sale_price, coupon_code, image_file, image_2, image_3, image_4, image_5, specs_summary, description, status, sort_order) 
-                        VALUES (:sku, :cat, :name, :slug, :price, :sale, :coupon, :img, :img2, :img3, :img4, :img5, :specs, :desc, :stt, :sort)
-                        ON DUPLICATE KEY UPDATE cat_code=VALUES(cat_code), name=VALUES(name), slug=VALUES(slug), price=VALUES(price), sale_price=VALUES(sale_price), 
-                        coupon_code=VALUES(coupon_code), 
-                        image_file=IF(VALUES(image_file) != '', VALUES(image_file), image_file),
-                        image_2=IF(VALUES(image_2) != '', VALUES(image_2), image_2),
-                        image_3=IF(VALUES(image_3) != '', VALUES(image_3), image_3),
-                        image_4=IF(VALUES(image_4) != '', VALUES(image_4), image_4),
-                        image_5=IF(VALUES(image_5) != '', VALUES(image_5), image_5),
-                        specs_summary=VALUES(specs_summary), description=VALUES(description), status=VALUES(status), sort_order=VALUES(sort_order)";
-                
-                $stmt = $conn->prepare($sql);
-                $stmt->execute([
-                    ':sku'=>$sku, ':cat'=>$cat_code, ':name'=>$name, ':slug'=>$slug, 
-                    ':price'=>$price, ':sale'=>$sale_price, ':coupon'=>$coupon, 
-                    ':img'=>$image_file, ':img2'=>$image_2, ':img3'=>$image_3, ':img4'=>$image_4, ':img5'=>$image_5,
-                    ':specs'=>$specs, 
-                    ':desc'=>$description, // Truyền biến mới vào đây
-                    ':stt'=>$status, ':sort'=>$row_num
-                ]);
-                $count_success++;
-            }
-            fclose($handle);
-            echo json_encode(['success' => $count_success]);
-            exit;
-        }
-    }
-    echo json_encode(['success' => 0, 'error' => 1]);
-    exit;
-}
-
-$message = '';
 
 function createSlug($str) {
     $str = mb_strtolower($str, 'UTF-8');
@@ -227,152 +113,432 @@ function createSlug($str) {
 }
 
 // ---------------------------------------------------------
-// XỬ LÝ 3: NẠP GIAO DIỆN BẰNG NÚT CỔ ĐIỂN
+// Existing lightweight image upload handler (kept)
 // ---------------------------------------------------------
-if (isset($_POST['btn_upload_banners'])) {
-    if (isset($_FILES['csv_banners']) && $_FILES['csv_banners']['error'] == 0) {
-        $file_tmp = $_FILES['csv_banners']['tmp_name'];
-        if (($handle = fopen($file_tmp, "r")) !== FALSE) {
-            $count_success = 0; $row_num = 0;
-            while (($row = fgetcsv($handle, 1000, ",")) !== FALSE) {
-                $row_num++; if ($row_num == 1) continue;
+if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'upload_images') {
+    $folder_name = (isset($_POST['target_folder']) && $_POST['target_folder'] == 'banners') ? 'banners' : 'uploads';
+    $target_dir = __DIR__ . '/../' . $folder_name . '/';
+    if (!is_dir($target_dir)) { mkdir($target_dir, 0777, true); }
 
-                $banner_code = trim(preg_replace('/[\xEF\xBB\xBF]/', '', $row[0] ?? '')); 
-                $image_file  = trim($row[1] ?? ''); $target_link = trim($row[2] ?? ''); 
-                $status      = (int)($row[3] ?? 0);  
-                
-                if(empty($banner_code) || empty($image_file)) continue;
+    $count_success = 0; $count_error = 0;
+    $allowed_types = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 
-                $sql = "INSERT INTO banners (banner_code, image_file, target_link, status) 
-                        VALUES (:code, :img, :link, :stt)
-                        ON DUPLICATE KEY UPDATE image_file=VALUES(image_file), target_link=VALUES(target_link), status=VALUES(status)";
-                
-                $stmt = $conn->prepare($sql);
-                $stmt->execute([':code'=>$banner_code, ':img'=>$image_file, ':link'=>$target_link, ':stt'=>$status]);
-                $count_success++;
-            }
-            fclose($handle);
-            $message = "<div class='alert success'>🎨 ✅ Đã cập nhật $count_success BANNER GIAO DIỆN!</div>";
+    if (!empty($_FILES['images']['name'][0])) {
+        foreach ($_FILES['images']['name'] as $key => $name) {
+            $tmp_name = $_FILES['images']['tmp_name'][$key];
+            $error = $_FILES['images']['error'][$key];
+            if ($error === UPLOAD_ERR_OK) {
+                $imageFileType = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+                $new_name_post = isset($_POST['new_names'][$key]) ? trim($_POST['new_names'][$key]) : '';
+                $final_name = ($new_name_post !== '') ? $new_name_post : $name;
+                $target_file = $target_dir . $final_name;
+                if (in_array($imageFileType, $allowed_types)) {
+                    if (optimizeAndSaveImage($tmp_name, $target_file, 800, 80)) $count_success++;
+                    else if (move_uploaded_file($tmp_name, $target_file)) $count_success++;
+                    else $count_error++;
+                } else $count_error++;
+            } else $count_error++;
         }
     }
+    echo json_encode(['success' => $count_success, 'error' => $count_error]);
+    exit;
+}
+
+// ---------------------------------------------------------
+// API Step 1: Validate ZIP + CSV
+// ---------------------------------------------------------
+if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'validate_zip_csv') {
+    if (!isset($_FILES['zip_file']) || $_FILES['zip_file']['error'] != 0) {
+        echo json_encode(['success'=>0,'error'=>'ZIP file missing']); exit;
+    }
+    if (!isset($_FILES['csv_file']) || $_FILES['csv_file']['error'] != 0) {
+        echo json_encode(['success'=>0,'error'=>'CSV file missing']); exit;
+    }
+
+    $token = uniqid('imp_', true);
+    $baseTemp = __DIR__ . '/../uploads/temp_unzip/';
+    $tempDir = $baseTemp . $token . '/';
+    if (!is_dir($tempDir)) mkdir($tempDir, 0777, true);
+
+    $zipTmp = $_FILES['zip_file']['tmp_name'];
+    $zipName = $_FILES['zip_file']['name'];
+    $savedZip = $tempDir . basename($zipName);
+    if (!move_uploaded_file($zipTmp, $savedZip)) {
+        echo json_encode(['success'=>0,'error'=>'Failed to move ZIP']); exit;
+    }
+
+    if (!unzip_file($savedZip, $tempDir)) {
+        echo json_encode(['success'=>0,'error'=>'Failed to unzip file']); exit;
+    }
+
+    $csvTmp = $_FILES['csv_file']['tmp_name'];
+    $csvSaved = $tempDir . 'data.csv';
+    if (!move_uploaded_file($csvTmp, $csvSaved)) {
+        echo json_encode(['success'=>0,'error'=>'Failed to save CSV']); exit;
+    }
+
+    $missing = [];
+    $totalRows = 0;
+    if (($handle = fopen($csvSaved, 'r')) !== FALSE) {
+        $headers = fgetcsv($handle, 10000, ',');
+        if (!$headers) { fclose($handle); echo json_encode(['success'=>0,'error'=>'CSV invalid header']); exit; }
+        $imageCol = -1;
+        foreach ($headers as $i => $h) {
+            if (preg_match('/image|images|image_file|anh/i', $h)) { $imageCol = $i; break; }
+        }
+        $rowNum = 0;
+        while (($row = fgetcsv($handle, 10000, ',')) !== FALSE) {
+            $rowNum++; $totalRows++;
+            if ($imageCol === -1) continue;
+            $imgs = array_map('trim', explode(',', $row[$imageCol] ?? ''));
+            foreach ($imgs as $img) {
+                if ($img === '') continue;
+                if (!file_exists($tempDir . $img)) {
+                    $missing[] = ['row'=>$rowNum, 'image'=>$img];
+                    if (count($missing) > 20) break;
+                }
+            }
+            if (count($missing) > 20) break;
+        }
+        fclose($handle);
+    }
+
+    if (!empty($missing)) {
+        echo json_encode(['success'=>0,'error'=>'missing_images','missing'=>array_slice($missing,0,20)]);
+        exit;
+    }
+
+    echo json_encode(['success'=>1,'total'=>$totalRows,'token'=>$token]);
+    exit;
+}
+
+// ---------------------------------------------------------
+// API Step 2: Process batch
+// ---------------------------------------------------------
+if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'process_batch') {
+    $token = $_POST['token'] ?? '';
+    $start = (int)($_POST['start'] ?? 0);
+    $batch = (int)($_POST['batch'] ?? 10);
+    if ($token === '') { echo json_encode(['success'=>0,'error'=>'no_token']); exit; }
+
+    $baseTemp = __DIR__ . '/../uploads/temp_unzip/';
+    $tempDir = $baseTemp . $token . '/';
+    $csvSaved = $tempDir . 'data.csv';
+    if (!is_dir($tempDir) || !file_exists($csvSaved)) { echo json_encode(['success'=>0,'error'=>'temp_missing']); exit; }
+
+    $uploadsDir = __DIR__ . '/../uploads/'; if (!is_dir($uploadsDir)) mkdir($uploadsDir,0777,true);
+
+    $processed = 0; $errors = [];
+    if (($handle = fopen($csvSaved,'r')) !== FALSE) {
+        $headers = fgetcsv($handle, 10000, ',');
+        $map = [];
+        foreach ($headers as $i => $h) { $key = trim(strtolower($h)); $map[$key] = $i; }
+
+        $getIdx = function($names, $default) use ($map) {
+            foreach ($names as $n) { $k = trim(strtolower($n)); if (isset($map[$k])) return $map[$k]; }
+            return $default;
+        };
+
+        $idx_sku = $getIdx(['sku'], 0);
+        $idx_cat = $getIdx(['cat_code','cat','category'], 1);
+        $idx_name = $getIdx(['name','title'], 2);
+        $idx_price = $getIdx(['price'], 3);
+        $idx_sale = $getIdx(['sale_price','sale'], 4);
+        $idx_coupon = $getIdx(['coupon','coupon_code'], 5);
+        $idx_image = $getIdx(['image','images','image_file','anh'], -1);
+        $idx_specs = $getIdx(['specs','specs_summary'], 8);
+        $idx_desc = $getIdx(['description','desc'], 9);
+        $idx_status = $getIdx(['status'], 10);
+
+        $rowIndex = 0;
+        while (($row = fgetcsv($handle, 10000, ',')) !== FALSE) {
+            if ($rowIndex < $start) { $rowIndex++; continue; }
+            if ($processed >= $batch) break;
+
+            $sku = trim($row[$idx_sku] ?? '');
+            $cat_code = trim($row[$idx_cat] ?? '');
+            $name = trim($row[$idx_name] ?? '');
+            $price = (int)($row[$idx_price] ?? 0);
+            $sale_price = (int)($row[$idx_sale] ?? 0);
+            $coupon = trim($row[$idx_coupon] ?? '');
+            $specs = trim($row[$idx_specs] ?? '');
+            $description = trim($row[$idx_desc] ?? '');
+            $status = (int)($row[$idx_status] ?? 1);
+
+            if ($sku === '' || $name === '') { $rowIndex++; continue; }
+
+            // create category if not exists (minimal)
+            if ($cat_code !== '') {
+                try {
+                    $chk = $conn->prepare("SELECT cat_code FROM categories WHERE cat_code = :code LIMIT 1");
+                    $chk->execute([':code'=>$cat_code]);
+                    if ($chk->rowCount() == 0) {
+                        $insc = $conn->prepare("INSERT INTO categories (cat_code, name) VALUES (:code, :name)");
+                        $insc->execute([':code'=>$cat_code, ':name'=>$cat_code]);
+                    }
+                } catch (Exception $e) { /* ignore */ }
+            }
+
+            // images
+            $image_list = [];
+            if ($idx_image !== -1 && isset($row[$idx_image])) {
+                $raw = $row[$idx_image];
+                $parts = array_map('trim', explode(',', $raw));
+                foreach ($parts as $p) if ($p !== '') $image_list[] = $p;
+            }
+            if (empty($image_list)) {
+                for ($i=0;$i<5;$i++) {
+                    $suf = $i==0? '': '-' . ($i+1);
+                    $found = findExistingSkuImage($sku, $suf);
+                    if ($found) $image_list[] = $found;
+                }
+            }
+
+            $savedNames = ['', '', '', '', ''];
+            $countImg = 0;
+            foreach ($image_list as $i => $imgName) {
+                if ($countImg >= 5) break;
+                $src = $tempDir . $imgName;
+                if (!file_exists($src)) continue;
+                $dest = $uploadsDir . basename($imgName);
+                $base = pathinfo($dest, PATHINFO_FILENAME);
+                $ext = pathinfo($dest, PATHINFO_EXTENSION);
+                $final = $base . '.' . $ext;
+                $j = 1;
+                while (file_exists($uploadsDir . $final)) { $final = $base . '-' . $j . '.' . $ext; $j++; }
+                $finalPath = $uploadsDir . $final;
+                if (optimizeAndSaveImage($src, $finalPath, 800, 80)) {
+                    $savedNames[$countImg] = $final;
+                    $countImg++;
+                } else if (@copy($src, $finalPath)) {
+                    $savedNames[$countImg] = $final; $countImg++;
+                }
+            }
+
+            $slug = createSlug($name);
+            $sql = "INSERT INTO products (sku, cat_code, name, slug, price, sale_price, coupon_code, image_file, image_2, image_3, image_4, image_5, specs_summary, description, status, sort_order) 
+                    VALUES (:sku, :cat, :name, :slug, :price, :sale, :coupon, :img, :img2, :img3, :img4, :img5, :specs, :desc, :stt, :sort)
+                    ON DUPLICATE KEY UPDATE cat_code=VALUES(cat_code), name=VALUES(name), slug=VALUES(slug), price=VALUES(price), sale_price=VALUES(sale_price), 
+                    coupon_code=VALUES(coupon_code), 
+                    image_file=IF(VALUES(image_file) != '', VALUES(image_file), image_file),
+                    image_2=IF(VALUES(image_2) != '', VALUES(image_2), image_2),
+                    image_3=IF(VALUES(image_3) != '', VALUES(image_3), image_3),
+                    image_4=IF(VALUES(image_4) != '', VALUES(image_4), image_4),
+                    image_5=IF(VALUES(image_5) != '', VALUES(image_5), image_5),
+                    specs_summary=VALUES(specs_summary), description=VALUES(description), status=VALUES(status), sort_order=VALUES(sort_order)";
+
+            try {
+                $stmt = $conn->prepare($sql);
+                $stmt->execute([
+                    ':sku'=>$sku, ':cat'=>$cat_code, ':name'=>$name, ':slug'=>$slug, 
+                    ':price'=>$price, ':sale'=>$sale_price, ':coupon'=>$coupon, 
+                    ':img'=>$savedNames[0], ':img2'=>$savedNames[1], ':img3'=>$savedNames[2], ':img4'=>$savedNames[3], ':img5'=>$savedNames[4],
+                    ':specs'=>$specs, ':desc'=>$description, ':stt'=>$status, ':sort'=>$start + $rowIndex
+                ]);
+            } catch (Exception $e) {
+                $errors[] = ['sku'=>$sku,'error'=>$e->getMessage()];
+            }
+
+            $processed++; $rowIndex++;
+        }
+        fclose($handle);
+    }
+
+    echo json_encode(['success'=>1,'processed'=>$processed,'errors'=>$errors]);
+    exit;
+}
+
+// ---------------------------------------------------------
+// API Step 3: Cleanup temp
+// ---------------------------------------------------------
+if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'cleanup_temp') {
+    $token = $_POST['token'] ?? '';
+    if ($token === '') { echo json_encode(['success'=>0]); exit; }
+    $baseTemp = __DIR__ . '/../uploads/temp_unzip/';
+    $tempDir = $baseTemp . $token . '/';
+    function rrmdir($dir) {
+        if (!is_dir($dir)) return;
+        $objects = scandir($dir);
+        foreach ($objects as $object) {
+            if ($object == '.' || $object == '..') continue;
+            $path = $dir . DIRECTORY_SEPARATOR . $object;
+            if (is_dir($path)) rrmdir($path); else @unlink($path);
+        }
+        @rmdir($dir);
+    }
+    rrmdir($tempDir);
+    echo json_encode(['success'=>1]); exit;
 }
 ?>
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quản trị Hệ thống KB Tech</title>
+    <title>Import CSV + ZIP - Admin</title>
     <link rel="stylesheet" href="../assets/css/admin.css?v=<?php echo time(); ?>">
+    <style>
+        .center { max-width:900px; margin:30px auto; padding:18px; }
+        .progress { width:100%; background:#eee; border-radius:6px; overflow:hidden; height:18px; }
+        .progress > .bar { height:18px; background:#28a745; width:0%; color:#fff; text-align:center; font-size:12px; line-height:18px; }
+        .card { background:#fff; padding:16px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
+        .muted { color:#666; font-size:13px; }
+        .btn { padding:8px 14px; border:none; border-radius:6px; cursor:pointer; }
+        .btn-green { background:#28a745; color:#fff; }
+        .btn-gray { background:#f0f0f0; color:#333; }
+        pre { white-space:pre-wrap; word-break:break-word; background:#f8f9fa; padding:10px; border-radius:6px; }
+    </style>
 </head>
 <body>
+<div class="center">
+    <div class="card">
+        <h2>📦 Import: ZIP (images) + CSV (data)</h2>
+        <p class="muted">CSV column must contain image filenames in a column named <strong>Image</strong> (comma-separated). Max 5 images per product.</p>
 
-<div class="admin-container">
-    <div id="msg-box"><?php echo $message; ?></div>
-
-    <div class="card card-images" id="image-upload-section">
-        <h2 class="text-green">🖼️ NẠP HÌNH ẢNH LÊN SERVER</h2>
-        <p class="subtitle">Bôi đen nhiều ảnh -> Đổi tên -> Bấm Tải Lên</p>
-        
-        <div style="text-align: center; margin-bottom: 15px; font-weight: bold; background: #f4fff6; padding: 10px; border-radius: 8px; border: 1px dashed #28a745;">
-            Lưu ảnh này vào thư mục nào?<br><br>
-            <label style="cursor: pointer; margin-right: 30px;">
-                <input type="radio" name="target_folder" value="uploads" checked> 📦 Ảnh Sản Phẩm
-            </label>
-            <label style="cursor: pointer;">
-                <input type="radio" name="target_folder" value="banners"> 🎨 Ảnh Banner/Trang Trí
-            </label>
-        </div>
-
-        <div class="form-group">
-            <div class="file-upload-wrapper wrap-green">
-                <span class="file-upload-text text-green" id="file-name-images">📁 Chạm để chọn nhiều ảnh cùng lúc...</span>
-                <input type="file" id="image_files_input" accept="image/*" multiple>
+        <form id="import-form" enctype="multipart/form-data" method="post">
+            <div style="margin-bottom:12px;">
+                <label>Chọn file ZIP (hình ảnh):</label><br>
+                <input type="file" id="zip_file" name="zip_file" accept=".zip" required>
             </div>
-        </div>
-
-        <div class="preview-box" id="preview-box">
-            <div class="preview-header">Danh sách ảnh chuẩn bị tải lên (Có thể đổi tên):</div>
-            <div class="preview-list" id="preview-list"></div>
-            <div class="preview-actions">
-                <button type="button" class="btn-add-more" id="btn_add_more">➕ CHỌN THÊM ẢNH</button>
-                <button type="button" class="btn-submit btn-green" id="btn_confirm_upload" style="width: auto;">🚀 XÁC NHẬN TẢI LÊN</button>
+            <div style="margin-bottom:12px;">
+                <label>Chọn file CSV (dữ liệu):</label><br>
+                <input type="file" id="csv_file" name="csv_file" accept=".csv" required>
             </div>
-        </div>
-    </div>
 
-    <div class="card card-products" id="product-upload-section">
-        <h2 class="text-blue">📦 NẠP DỮ LIỆU KHO HÀNG</h2>
-        <p class="subtitle">Tải CSV lên -> Sửa thông tin nếu cần -> Đồng bộ vào database</p>
-        <div style="margin: 10px 0 15px; background:#e8f4ff; border:1px solid #b8d9ff; border-radius:8px; padding:10px 12px; font-size:13px; color:#0b4d8a;">
-            <strong>Luồng chuẩn: kéo-thả ảnh trước, sau đó đồng bộ CSV.</strong><br>
-            Tên ảnh tự map theo SKU: <strong>SKU.jpg</strong>, <strong>SKU-2.jpg</strong>...<strong>SKU-5.jpg</strong>.
-        </div>
-        
-        <div class="form-group">
-            <div class="file-upload-wrapper wrap-blue">
-                <span class="file-upload-text text-blue" id="file-name-products">📁 Chạm để chọn file Kho_Hang.csv...</span>
-                <input type="file" id="csv_products_input" accept=".csv">
+            <div style="margin:12px 0;">
+                <button type="button" id="btn_start" class="btn btn-green">🚀 BẮT ĐẦU NẠP</button>
+                <button type="button" id="btn_cancel" class="btn btn-gray" style="margin-left:8px; display:none;">HỦY</button>
             </div>
-        </div>
 
-        <div class="csv-preview-box" id="csv-preview-box">
-            <div class="preview-header text-blue">📝 BẢNG CHỈNH SỬA DỮ LIỆU KHO HÀNG:</div>
-            <div class="table-wrapper" id="csv-table-wrapper"></div>
-            <div class="preview-actions">
-                <button type="button" class="btn-submit btn-blue" id="btn_confirm_csv" style="width: auto;">🚀 LƯU VÀO DATABASE</button>
-                <button type="button" class="btn-submit btn-green" id="btn_sync_all" style="width: auto; margin-left: 8px;">⚡ ĐỒNG BỘ TẤT CẢ (ẢNH + CSV)</button>
+            <div style="margin-top:14px;">
+                <div class="progress"><div class="bar" id="progress-bar">0%</div></div>
+                <div id="status-line" style="margin-top:8px;" class="muted">Chưa bắt đầu</div>
             </div>
-        </div>
-    </div>
 
-    <div class="card card-banners" id="banner-upload-section">
-        <h2 class="text-red">🎨 THAY ÁO GIAO DIỆN WEB</h2>
-        <p class="subtitle">Tải CSV thiết kế mới -> Bấm XEM THỬ -> Xác nhận</p>
-        
-        <form action="" method="POST" enctype="multipart/form-data" id="form-csv-banners">
-            <input type="hidden" name="btn_upload_banners" value="1">
-            <div class="form-group">
-                <div class="file-upload-wrapper wrap-red">
-                    <span class="file-upload-text text-red" id="file-name-banners">📁 Chạm để chọn file Trang_Tri.csv...</span>
-                    <input type="file" name="csv_banners" id="csv_banners_input" accept=".csv" required>
-                </div>
+            <div id="log" style="margin-top:12px; display:none;">
+                <h4>Log</h4>
+                <pre id="logbox"></pre>
             </div>
-            <button type="submit" class="btn-submit btn-red" id="btn_submit_banners_legacy" style="display: none;">✨ Đổi Banner Sự Kiện</button>
         </form>
-
-        <div id="design-action-box" style="display: none; margin-top: 15px;">
-            <div class="action-buttons">
-                <button type="button" class="btn-preview" id="btn_preview_design">👁️ XEM THỬ GIAO DIỆN</button>
-                <button type="button" class="btn-cancel-file" id="btn_cancel_design">❌ HỦY BỎ FILE</button>
-            </div>
-            <button type="button" class="btn-submit btn-red" id="btn_confirm_design">🚀 XÁC NHẬN TẢI LÊN SERVER</button>
-        </div>
-    </div>
-</div> <div id="realPreviewModal" class="tanda-modal">
-    <div class="tanda-modal-content">
-        <div class="tanda-modal-header">
-            <h2>👁️ XEM THỬ TRANG CHỦ TANDA</h2>
-            <button type="button" class="tanda-modal-close" id="btn_close_preview">ĐÓNG LẠI</button>
-        </div>
-        <div class="tanda-modal-body">
-            <div class="tp-top-bar"><div class="tp-container"><span>📍 Hệ thống showroom</span> &nbsp;&nbsp;&nbsp; <span>📞 Bán hàng trực tuyến</span></div></div>
-            <div class="tp-main-header"><div class="tp-container"><div class="tp-logo">TAN<span>DA</span></div></div></div>
-            <div class="tp-nav-bar"><div class="tp-container"><div class="tp-nav-category">DANH MỤC SẢN PHẨM</div></div></div>
-            
-            <div class="tp-container tp-banner-section">
-                <div class="tp-banner-top" id="prev-BANNER-CHINH"></div>
-                <div class="tp-banner-bottom-row">
-                    <div class="tp-banner-item" id="prev-BANNER-PHU-1"></div>
-                    <div class="tp-banner-item" id="prev-BANNER-PHU-2"></div>
-                    <div class="tp-banner-item" id="prev-BANNER-PHU-3"></div>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 
-<script src="../assets/js/admin_import.js?v=<?php echo time(); ?>"></script>
+<script>
+(function(){
+    const btnStart = document.getElementById('btn_start');
+    const btnCancel = document.getElementById('btn_cancel');
+    const zipInput = document.getElementById('zip_file');
+    const csvInput = document.getElementById('csv_file');
+    const progressBar = document.getElementById('progress-bar');
+    const statusLine = document.getElementById('status-line');
+    const logBox = document.getElementById('logbox');
+    const logWrap = document.getElementById('log');
+
+    let abortFlag = false;
+
+    function log(msg) {
+        if (!logWrap) return;
+        logWrap.style.display = 'block';
+        const now = new Date().toLocaleTimeString();
+        logBox.textContent += `[${now}] ${msg}\n`;
+        logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    btnStart.addEventListener('click', async function(){
+        abortFlag = false;
+        if (!zipInput.files[0] || !csvInput.files[0]) { alert('Chọn ZIP và CSV trước.'); return; }
+        btnStart.disabled = true; btnCancel.style.display = 'inline-block';
+        statusLine.textContent = 'Đang gửi file để kiểm tra...';
+
+        // Step 1: validate
+        const fd = new FormData();
+        fd.append('ajax_action','validate_zip_csv');
+        fd.append('zip_file', zipInput.files[0]);
+        fd.append('csv_file', csvInput.files[0]);
+
+        try {
+            const res = await fetch(window.location.href, { method: 'POST', body: fd });
+            const j = await res.json();
+            if (!j.success) {
+                btnStart.disabled = false; btnCancel.style.display = 'none';
+                if (j.error === 'missing_images' && j.missing) {
+                    let msg = 'Thiếu ảnh theo CSV:\\n';
+                    j.missing.slice(0,20).forEach(m => msg += `- Row ${m.row}: ${m.image}\\n`);
+                    alert(msg);
+                    statusLine.textContent = 'Lỗi: Thiếu ảnh trong ZIP theo CSV.';
+                    log(msg);
+                    return;
+                }
+                alert('Validation lỗi: ' + (j.error || 'unknown'));
+                statusLine.textContent = 'Validation thất bại.';
+                log('Validation lỗi: ' + JSON.stringify(j));
+                return;
+            }
+
+            const total = j.total || 0;
+            const token = j.token;
+            statusLine.textContent = 'Validation thành công. Số sản phẩm: ' + total;
+
+            // batch loop
+            let processed = 0;
+            const batchSize = 10;
+            while (processed < total) {
+                if (abortFlag) { statusLine.textContent = 'Đã hủy bởi người dùng.'; break; }
+                statusLine.textContent = `Đang nạp ${processed + 1}..${Math.min(processed + batchSize, total)} / ${total}`;
+                log(`Xử lý batch bắt đầu tại ${processed}`);
+
+                const fd2 = new FormData();
+                fd2.append('ajax_action','process_batch');
+                fd2.append('token', token);
+                fd2.append('start', processed);
+                fd2.append('batch', batchSize);
+
+                const r2 = await fetch(window.location.href, { method: 'POST', body: fd2 });
+                const j2 = await r2.json();
+                if (!j2.success) {
+                    alert('Lỗi khi nạp batch: ' + (j2.error || 'unknown'));
+                    log('Lỗi batch: ' + JSON.stringify(j2));
+                    break;
+                }
+                const got = j2.processed || 0;
+                processed += got;
+                const percent = Math.round((processed/total)*100);
+                progressBar.style.width = percent + '%';
+                progressBar.textContent = percent + '%';
+                log(`Batch hoàn thành: ${got} sản phẩm.`);
+                // small pause to avoid hammering
+                await new Promise(r => setTimeout(r, 200));
+            }
+
+            if (!abortFlag) {
+                statusLine.textContent = 'Hoàn tất. Dọn dẹp tạm...';
+                // cleanup
+                const fd3 = new FormData();
+                fd3.append('ajax_action','cleanup_temp');
+                fd3.append('token', token);
+                await fetch(window.location.href, { method: 'POST', body: fd3 });
+                progressBar.style.width = '100%'; progressBar.textContent = '100%';
+                statusLine.textContent = 'Đã hoàn tất import!';
+                log('Import hoàn tất.');
+            }
+
+        } catch (err) {
+            console.error(err);
+            alert('Có lỗi xảy ra. Kiểm tra console.');
+            log('Exception: ' + err.message);
+            statusLine.textContent = 'Lỗi khi nạp.';
+        } finally {
+            btnStart.disabled = false;
+            btnCancel.style.display = 'none';
+        }
+    });
+
+    btnCancel.addEventListener('click', function(){
+        if (!confirm('Bạn có muốn hủy tiến trình hiện tại?')) return;
+        abortFlag = true;
+        btnStart.disabled = false; btnCancel.style.display = 'none';
+    });
+})();
+</script>
 </body>
 </html>
