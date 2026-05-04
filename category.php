@@ -98,12 +98,14 @@ include 'includes/header.php';
 
     <?php if (count($products) > 0): ?>
         <div class="product-grid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px;">
-            <?php 
-            // Hiển thị tất cả sản phẩm của danh mục, lưới 6 cột chuẩn
-            foreach($products as $p): 
-                include 'card_template.php'; 
-            endforeach; 
-            ?>
+            <?php
+$maxShow = floor(count($products) / 6) * 6; // chỉ lấy bội số của 6
+
+for ($i = 0; $i < $maxShow; $i++) {
+    $p = $products[$i];
+    include 'card_template.php';
+}
+?>
         </div>
     <?php else: ?>
         <div class="empty-product" style="text-align: center; padding: 100px 0; background: #fff; border-radius: 8px;">

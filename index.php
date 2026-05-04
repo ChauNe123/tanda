@@ -75,12 +75,12 @@
 <main class="container" id="mainContent">
 
     <?php
-    if (!function_exists('fitGridBySix')) {
-        function fitGridBySix($items) {
-            // Chỉ lấy số lượng sản phẩm chia hết cho 6 để đẹp giao diện ban đầu
+            if (!function_exists('fitGridBySix')) {
+                function fitGridBySix($items) {
             $count = count($items);
+            if ($count < 6) return $items;
+
             $fitCount = floor($count / 6) * 6;
-            if ($fitCount == 0 && $count > 0) return $items; // Nếu có ít hơn 6 thì hiện hết
             return array_slice($items, 0, $fitCount);
         }
     }
@@ -195,19 +195,28 @@
         
         <div class="product-grid">
             <?php
-            // Lấy các sản phẩm thuộc nhóm Phụ kiện hoặc Thiết bị mạng
-            $stmtAcc = $conn->prepare("SELECT * FROM products WHERE cat_code IN ('PHU-KIEN', 'THIET-BI-MANG') AND status = 1 ORDER BY sort_order ASC, sku DESC LIMIT 16");
-            $stmtAcc->execute();
-            $accProds = $stmtAcc->fetchAll();
-            $accProdsGrid = fitGridBySix($accProds);
-            if(count($accProdsGrid) > 0) {
-                foreach($accProdsGrid as $p) {
-                    include 'card_template.php';
-                }
-            } else {
-                echo '<p style="padding: 20px; color: #888;">Chưa có sản phẩm nào.</p>';
-            }
-            ?>
+// FIX ĐÚNG CAT_CODE = KB-PHU
+$stmtAcc = $conn->prepare("
+    SELECT * FROM products 
+    WHERE TRIM(cat_code) = 'KB-PHU' 
+    AND status = 1 
+    ORDER BY sort_order ASC, sku DESC 
+    LIMIT 16
+");
+$stmtAcc->execute();
+$accProds = $stmtAcc->fetchAll();
+
+// CHỐNG LỖI GRID LẺ
+$accProdsGrid = fitGridBySix($accProds);
+
+if(count($accProdsGrid) > 0) {
+    foreach($accProdsGrid as $p) {
+        include 'card_template.php';
+    }
+} else {
+    echo '<p style="padding: 20px; color: red;">❌ Không có sản phẩm KB-PHU (check DB!)</p>';
+}
+?>
         </div>
     </div>
 
