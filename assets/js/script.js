@@ -1,4 +1,4 @@
-// Hàm format tiền
+// === HÀM FORMAT TIỀN (Hiển thị) ===
 const formatMoney = (num) => new Intl.NumberFormat('vi-VN').format(num) + '₫';
 
 // === GIỎ HÀNG (LocalStorage) ===
@@ -73,9 +73,40 @@ function initStickyHeader() {
     onScroll();
 }
 
-// === INIT KHI LOAD XONG ===
+// === INIT KHI LOAD XONG & CÁC HÀM FORMAT INPUT TỰ ĐỘNG ===
 window.addEventListener('DOMContentLoaded', () => {
     updateCart();
     initScrollAnim();
     initStickyHeader();
+
+    // 1. Tự động định dạng tiền tệ khi người dùng gõ (Thêm class "format-currency" vào thẻ input)
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('format-currency')) {
+            // Lấy giá trị, xóa bỏ mọi ký tự không phải là số
+            let value = e.target.value.replace(/\D/g, '');
+            if (value !== '') {
+                // Format theo chuẩn VN (có dấu chấm ngăn cách, vd: 1.000.000)
+                value = new Intl.NumberFormat('vi-VN').format(value);
+            }
+            e.target.value = value;
+        }
+    });
+
+    // 2. Tự động định dạng ngày tháng dd/mm/yyyy khi người dùng gõ (Thêm class "format-date" vào thẻ input)
+    document.addEventListener('input', function(e) {
+        if (e.target.classList.contains('format-date')) {
+            // Xóa mọi ký tự không phải là số
+            let v = e.target.value.replace(/\D/g, '');
+            if (v.length > 8) v = v.slice(0, 8); // Tối đa 8 số (ddmmyyyy)
+            
+            // Tự động chèn dấu '/'
+            if (v.length >= 5) {
+                e.target.value = v.slice(0,2) + '/' + v.slice(2,4) + '/' + v.slice(4);
+            } else if (v.length >= 3) {
+                e.target.value = v.slice(0,2) + '/' + v.slice(2);
+            } else {
+                e.target.value = v;
+            }
+        }
+    });
 });

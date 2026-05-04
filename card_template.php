@@ -27,6 +27,7 @@ if (!empty($p['image_1'])) {
         <?php if($hasDiscount): ?>
             <span class="tgdd-badge badge-discount">Giảm <?php echo $pct; ?>%</span>
         <?php else: ?>
+            <span class="tgdd-badge badge-installment">Trả góp 0%</span>
         <?php endif; ?>
     </div>
 

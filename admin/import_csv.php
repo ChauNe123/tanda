@@ -269,8 +269,9 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'delete_all_product
 if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'save_product') {
     $sku = trim($_POST['sku'] ?? '');
     $name = trim($_POST['name'] ?? '');
-    $price = (int)($_POST['price'] ?? 0);
-    $sale_price = (int)($_POST['sale_price'] ?? 0);
+    // Xóa dấu chấm, phẩy trước khi lưu vào Database
+    $price = (int)str_replace(['.', ','], '', $_POST['price'] ?? 0);
+    $sale_price = (int)str_replace(['.', ','], '', $_POST['sale_price'] ?? 0);
     $cat_code = trim($_POST['cat_code'] ?? '');
     $desc = $_POST['description'] ?? '';
     $specs = $_POST['specs_summary'] ?? '';
@@ -755,11 +756,21 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'cleanup_temp') {
                 </div>
                 <div class="form-group">
                     <label>Giá niêm yết (Price)</label>
-                    <input type="number" id="p_price" name="price">
+                    <div style="position: relative;">
+                        <input type="text" id="p_price" name="price" class="format-currency" style="padding-right: 45px;">
+                        <span style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #888; font-size: 13px; pointer-events: none;">VNĐ</span>
+                    </div>
                 </div>
                 <div class="form-group">
                     <label>Giá khuyến mãi (Sale)</label>
-                    <input type="number" id="p_sale" name="sale_price">
+                    <div style="position: relative;">
+                        <input type="text" id="p_sale" name="sale_price" class="format-currency" style="padding-right: 45px;">
+                        <span style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #888; font-size: 13px; pointer-events: none;">VNĐ</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Ngày áp dụng (dd/mm/yyyy)</label>
+                    <input type="text" id="p_date" name="apply_date" class="format-date" placeholder="Nhập số liền: 25122024...">
                 </div>
                 <div class="form-group" style="grid-column: span 2;">
                     <label>Thông số kỹ thuật tóm tắt</label>

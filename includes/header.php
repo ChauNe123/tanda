@@ -170,6 +170,7 @@ global $sys_settings;
     console.log("%c✅ CODE DỰ ÁN TANDA ĐÃ SẴN SÀNG.", "color: #4CAF50; font-weight: bold;");
     </script>
 </head>
+
 <body>
 
     <header class="tgdd-header">
