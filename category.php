@@ -97,17 +97,29 @@ include 'includes/header.php';
     </div>
 
     <?php if (count($products) > 0): ?>
-        <div class="product-grid">
-            <?php foreach($products as $p): ?>
-                <?php include 'card_template.php'; ?>
-            <?php endforeach; ?>
+        <div class="product-grid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px;">
+            <?php 
+            // Hiển thị tất cả sản phẩm của danh mục, lưới 6 cột chuẩn
+            foreach($products as $p): 
+                include 'card_template.php'; 
+            endforeach; 
+            ?>
         </div>
     <?php else: ?>
-        <div class="empty-product">
-            <i class="fas fa-box-open"></i>
-            <p>Hiện chưa có sản phẩm nào trong danh mục này.</p>
+        <div class="empty-product" style="text-align: center; padding: 100px 0; background: #fff; border-radius: 8px;">
+            <i class="fas fa-box-open" style="font-size: 60px; color: #ddd; margin-bottom: 20px;"></i>
+            <p style="color: #999; font-size: 16px;">Hiện chưa có sản phẩm nào trong danh mục này.</p>
+            <a href="index.php" class="btn btn-primary" style="display: inline-block; margin-top: 20px; background: #288ad6; color: #fff; padding: 10px 25px; border-radius: 4px; text-decoration: none;">Về trang chủ</a>
         </div>
     <?php endif; ?>
 </main>
+
+<style>
+/* Đảm bảo grid luôn chuẩn trên các màn hình */
+@media (max-width: 1200px) { .product-grid { grid-template-columns: repeat(5, 1fr) !important; } }
+@media (max-width: 1024px) { .product-grid { grid-template-columns: repeat(4, 1fr) !important; } }
+@media (max-width: 768px) { .product-grid { grid-template-columns: repeat(3, 1fr) !important; } }
+@media (max-width: 480px) { .product-grid { grid-template-columns: repeat(2, 1fr) !important; } }
+</style>
 
 <?php include 'includes/footer.php'; ?>

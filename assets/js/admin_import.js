@@ -1,406 +1,567 @@
-﻿// assets/js/admin_import.js
+// assets/js/admin_import.js
 
-// =========================================================
-// 1. CHỨC NĂNG UP HÌNH ẢNH CÓ PREVIEW & CHỌN THƯ MỤC
-// =========================================================
-let selectedFiles = [];
-const imageInput = document.getElementById('image_files_input');
-const previewBox = document.getElementById('preview-box');
-const previewList = document.getElementById('preview-list');
-const btnConfirm = document.getElementById('btn_confirm_upload');
-const btnAddMore = document.getElementById('btn_add_more');
-const msgBox = document.getElementById('msg-box');
+// --- HỆ THỐNG QUẢN LÝ BỘ NHỚ LỚN (INDEXEDDB) ---
+const dbStore = {
+    dbName: 'TandaAdminDB',
+    storeName: 'temp_products',
+    db: null,
 
-function renderPreview() {
-    if (selectedFiles.length === 0) {
-        previewBox.style.display = 'none';
-        document.getElementById('file-name-images').innerHTML = '📁 Chạm để chọn nhiều ảnh cùng lúc...';
-        imageInput.value = '';
-        return;
+    async init() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(this.dbName, 1);
+            request.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains(this.storeName)) {
+                    db.createObjectStore(this.storeName, { keyPath: 'id' });
+                }
+            };
+            request.onsuccess = (e) => {
+                this.db = e.target.result;
+                resolve(this.db);
+            };
+            request.onerror = (e) => reject('IndexedDB error: ' + e.target.errorCode);
+        });
+    },
+
+    async save(data) {
+        if (!this.db) await this.init();
+        return new Promise((resolve) => {
+            const tx = this.db.transaction(this.storeName, 'readwrite');
+            const store = tx.objectStore(this.storeName);
+            store.put({ id: 'current_session', products: data });
+            tx.oncomplete = () => resolve(true);
+        });
+    },
+
+    async get() {
+        if (!this.db) await this.init();
+        return new Promise((resolve) => {
+            const tx = this.db.transaction(this.storeName, 'readonly');
+            const store = tx.objectStore(this.storeName);
+            const request = store.get('current_session');
+            request.onsuccess = () => resolve(request.result ? request.result.products : null);
+        });
+    },
+
+    async clear() {
+        if (!this.db) await this.init();
+        return new Promise((resolve) => {
+            const tx = this.db.transaction(this.storeName, 'readwrite');
+            const store = tx.objectStore(this.storeName);
+            store.delete('current_session');
+            tx.oncomplete = () => resolve(true);
+        });
     }
-    document.getElementById('file-name-images').innerHTML = '🖼️ Đang đợi duyệt ' + selectedFiles.length + ' ảnh...';
-    previewList.innerHTML = '';
-    selectedFiles.forEach((file, index) => {
-        const imgURL = URL.createObjectURL(file);
-        const itemHTML = `
-            <div class="preview-item">
-                <img src="${imgURL}" class="preview-img" alt="preview">
-                <input type="text" class="preview-input" id="rename_${index}" value="${file.name}">
-                <button type="button" class="btn-remove" onclick="removeImage(${index})">❌ Xóa</button>
-            </div>
-        `;
-        previewList.insertAdjacentHTML('beforeend', itemHTML);
-    });
-    previewBox.style.display = 'block';
-}
-
-window.removeImage = function(index) {
-    selectedFiles.splice(index, 1);
-    renderPreview();
 };
 
-if (imageInput) {
-    imageInput.addEventListener('change', function(e) {
-        const newFiles = Array.from(e.target.files);
-        selectedFiles = selectedFiles.concat(newFiles);
-        renderPreview();
-    });
-}
+document.addEventListener('DOMContentLoaded', async function() {
+    // Khởi tạo DB
+    await dbStore.init();
 
-if (btnAddMore) {
-    btnAddMore.addEventListener('click', () => imageInput.click());
-}
-
-function uploadImagesRequest() {
-    if (selectedFiles.length === 0) {
-        return Promise.resolve({ success: 0, error: 0, skipped: true });
+    // 1. Tạo container cho Toast
+    if (!document.getElementById('kb-toast-container')) {
+        const container = document.createElement('div');
+        container.id = 'kb-toast-container';
+        document.body.appendChild(container);
     }
 
-    const formData = new FormData();
-    formData.append('ajax_action', 'upload_images');
+    // 2. Tạo cấu trúc cho Confirm Modal
+    if (!document.getElementById('kb-confirm-overlay')) {
+        const overlay = document.createElement('div');
+        overlay.id = 'kb-confirm-overlay';
+        overlay.className = 'kb-confirm-overlay';
+        overlay.innerHTML = `
+            <div class="kb-confirm-card">
+                <i class="fas fa-exclamation-triangle"></i>
+                <h3 id="kb-confirm-title">Xác nhận</h3>
+                <p id="kb-confirm-msg">Bạn có chắc chắn muốn thực hiện hành động này?</p>
+                <div class="kb-confirm-btns">
+                    <button class="btn btn-outline" id="kb-confirm-cancel">Hủy bỏ</button>
+                    <button class="btn btn-primary" id="kb-confirm-ok" style="background:var(--danger-color);">Đồng ý</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+    }
 
-    const selectedFolder = document.querySelector('input[name="target_folder"]:checked').value;
-    formData.append('target_folder', selectedFolder);
+    loadProductList();
 
-    selectedFiles.forEach((file, index) => {
-        const input = document.getElementById('rename_' + index);
-        const newFileName = input ? input.value : file.name;
-        formData.append('images[]', file);
-        formData.append('new_names[]', newFileName);
-    });
+    const btnSaveAll = document.getElementById('btn-save-all');
+    if (btnSaveAll) btnSaveAll.addEventListener('click', bulkUpdate);
 
-    return fetch(window.location.href, { method: 'POST', body: formData }).then(res => res.json());
-}
+    const productForm = document.getElementById('product-form');
+    if (productForm) {
+        productForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveProduct(new FormData(this));
+        });
+    }
 
-if (btnConfirm) {
-    btnConfirm.addEventListener('click', function() {
-        if (selectedFiles.length === 0) return;
-        document.getElementById('image-upload-section').classList.add('loading');
-        btnConfirm.innerHTML = '⏳ ĐANG TẢI LÊN...';
+    const csvInput = document.getElementById('csv_file_input');
+    if (csvInput) {
+        csvInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) previewCSV(file);
+        });
+    }
 
-        uploadImagesRequest().then(data => {
-            document.getElementById('image-upload-section').classList.remove('loading');
-            btnConfirm.innerHTML = '🚀 XÁC NHẬN TẢI LÊN';
-            const selectedFolder = document.querySelector('input[name="target_folder"]:checked').value;
+    const btnConfirmImport = document.getElementById('btn_confirm_import');
+    if (btnConfirmImport) {
+        btnConfirmImport.addEventListener('click', function() {
+            const file = csvInput.files[0];
+            if (file) startImport(file);
+        });
+    }
 
-            if (data.success > 0) {
-                msgBox.innerHTML = `<div class='alert success'>🖼️ ✅ Đã lưu ${data.success} hình ảnh vào thư mục ${selectedFolder}!</div>`;
-                selectedFiles = [];
-                renderPreview();
-            } else {
-                msgBox.innerHTML = `<div class='alert error'>❌ Lỗi tải ảnh!</div>`;
+    // Lắng nghe sự kiện chỉnh sửa trực tiếp trên bảng
+    document.addEventListener('blur', function(e) {
+        if (e.target.classList.contains('editable')) {
+            const tr = e.target.closest('tr');
+            const sku = tr.getAttribute('data-sku');
+            const field = e.target.getAttribute('data-field');
+            let val = e.target.innerText.trim();
+            if (field === 'price' || field === 'sale_price') {
+                val = val.replace(/[^0-9]/g, '');
             }
-        });
-    });
-}
-
-// =========================================================
-// 2.IMPORT ZIP + CSV BATCH PROCESS
-// =========================================================
-const zipInput = document.getElementById('zip_file');
-const csvInput = document.getElementById('csv_file');
-const btnStart = document.getElementById('btn_start');
-const btnCancel = document.getElementById('btn_cancel');
-const progressBar = document.getElementById('progress-bar');
-const statusLine = document.getElementById('status-line');
-const logBox = document.getElementById('logbox');
-const logWrap = document.getElementById('log');
-
-const BATCH_SIZE = 10;
-let abortImport = false;
-
-function setStatus(text) {
-    if (statusLine) statusLine.textContent = text;
-}
-
-function updateProgress(percent) {
-    if (!progressBar) return;
-    const safePercent = Math.max(0, Math.min(100, Math.round(percent)));
-    progressBar.style.width = safePercent + '%';
-    progressBar.textContent = safePercent + '%';
-}
-
-function logMessage(text) {
-    if (!logBox || !logWrap) return;
-    logWrap.style.display = 'block';
-    const now = new Date().toLocaleTimeString();
-    logBox.textContent += `[${now}] ${text}\n`;
-    logBox.scrollTop = logBox.scrollHeight;
-}
-
-async function ajaxPost(formData) {
-    try {
-        const response = await fetch(window.location.href, {
-            method: 'POST',
-            body: formData,
-        });
-        return await response.json();
-    } catch (error) {
-        return { success: 0, error: error.message || 'Network error' };
-    }
-}
-
-async function validateFiles(zipFile, csvFile) {
-    const formData = new FormData();
-    formData.append('ajax_action', 'validate_zip_csv');
-    formData.append('zip_file', zipFile);
-    formData.append('csv_file', csvFile);
-    return ajaxPost(formData);
-}
-
-async function processBatch(token, start, batchSize) {
-    const formData = new FormData();
-    formData.append('ajax_action', 'process_batch');
-    formData.append('token', token);
-    formData.append('start', start);
-    formData.append('batch', batchSize);
-    return ajaxPost(formData);
-}
-
-async function cleanupTemp(token) {
-    const formData = new FormData();
-    formData.append('ajax_action', 'cleanup_temp');
-    formData.append('token', token);
-    return ajaxPost(formData);
-}
-
-function resetProgress() {
-    updateProgress(0);
-    setStatus('Chưa bắt đầu');
-    if (logBox) logBox.textContent = '';
-}
-
-async function startImport() {
-    if (!zipInput || !csvInput || !zipInput.files[0] || !csvInput.files[0]) {
-        alert('Vui lòng chọn file ZIP và file CSV trước khi bắt đầu.');
-        return;
-    }
-
-    abortImport = false;
-    if (btnStart) btnStart.disabled = true;
-    if (btnCancel) btnCancel.style.display = 'inline-block';
-    resetProgress();
-
-    setStatus('Đang kiểm tra file ZIP và CSV...');
-    logMessage('Bắt đầu kiểm tra file.');
-
-    const validation = await validateFiles(zipInput.files[0], csvInput.files[0]);
-    if (!validation.success) {
-        const message = validation.error === 'missing_images' && validation.missing
-            ? `Thiếu ảnh theo CSV:\n${validation.missing.slice(0, 20).map(item => `- Row ${item.row}: ${item.image}`).join('\n')}`
-            : `Validation lỗi: ${validation.error || 'Không xác định'}`;
-        alert(message);
-        setStatus('Validation lỗi');
-        logMessage(message);
-        if (btnStart) btnStart.disabled = false;
-        if (btnCancel) btnCancel.style.display = 'none';
-        return;
-    }
-
-    const total = Number(validation.total || 0);
-    const token = validation.token;
-    if (!token || total <= 0) {
-        alert('Validation không trả về token hoặc tổng số sản phẩm không hợp lệ.');
-        setStatus('Validation thất bại');
-        logMessage('Validation trả về dữ liệu không hợp lệ.');
-        if (btnStart) btnStart.disabled = false;
-        if (btnCancel) btnCancel.style.display = 'none';
-        return;
-    }
-
-    setStatus(`Validation OK. Tổng sản phẩm: ${total}`);
-    logMessage(`Validation OK. Tổng sản phẩm: ${total}. Token: ${token}`);
-
-    let processed = 0;
-    updateProgress(0);
-
-    while (processed < total && !abortImport) {
-        const nextEnd = Math.min(processed + BATCH_SIZE, total);
-        setStatus(`Đang nạp ${processed + 1} - ${nextEnd} / ${total}`);
-        logMessage(`Gửi batch ${processed} -> ${nextEnd}`);
-
-        const batchResult = await processBatch(token, processed, BATCH_SIZE);
-        if (!batchResult.success) {
-            alert(`Lỗi khi nạp batch: ${batchResult.error || 'Không xác định'}`);
-            setStatus('Lỗi khi nạp batch');
-            logMessage(`Batch lỗi: ${batchResult.error || JSON.stringify(batchResult)}`);
-            break;
+            updateLocalProduct(sku, field, val);
         }
+    }, true);
+});
 
-        const got = Number(batchResult.processed || 0);
-        if (got <= 0) {
-            if (processed >= total) break;
-            alert('Batch trả về 0 sản phẩm đã xử lý. Dừng để tránh vòng lặp vô hạn.');
-            setStatus('Dừng do batch 0');
-            logMessage('Batch trả về 0 sản phẩm đã xử lý.');
-            break;
-        }
+// --- HÀM XÁC NHẬN TÙY CHỈNH (THAY THẾ CONFIRM) ---
+function kbConfirm(message, title = 'Xác nhận xóa') {
+    return new Promise((resolve) => {
+        const overlay = document.getElementById('kb-confirm-overlay');
+        const msgPara = document.getElementById('kb-confirm-msg');
+        const titleH3 = document.getElementById('kb-confirm-title');
+        const okBtn = document.getElementById('kb-confirm-ok');
+        const cancelBtn = document.getElementById('kb-confirm-cancel');
 
-        processed += got;
-        const percent = (total > 0) ? (processed / total) * 100 : 100;
-        updateProgress(percent);
-        logMessage(`Hoàn thành batch, processed=${processed}.`);
+        msgPara.innerText = message;
+        titleH3.innerText = title;
+        overlay.style.display = 'flex';
 
-        if (processed >= total) break;
-    }
-
-    if (abortImport) {
-        setStatus('Tiến trình đã bị hủy');
-        logMessage('Người dùng hủy tiến trình.');
-    } else if (processed >= total) {
-        setStatus('Nạp dữ liệu xong. Đang dọn dẹp...');
-        logMessage('Hoàn tất nạp dữ liệu. Dọn dẹp dữ liệu tạm.');
-        const cleanup = await cleanupTemp(token);
-        if (cleanup.success) {
-            updateProgress(100);
-            setStatus('Đã hoàn tất import!');
-            logMessage('Dọn dẹp thành công.');
-        } else {
-            setStatus('Hoàn tất nhưng không dọn được tạm.');
-            logMessage(`Cleanup lỗi: ${cleanup.error || 'Không xác định'}`);
-        }
-    }
-
-    if (btnStart) btnStart.disabled = false;
-    if (btnCancel) btnCancel.style.display = 'none';
-}
-
-if (btnStart) {
-    btnStart.addEventListener('click', startImport);
-}
-
-if (btnCancel) {
-    btnCancel.addEventListener('click', function() {
-        if (confirm('Bạn có chắc muốn hủy tiến trình hiện tại?')) {
-            abortImport = true;
-            if (btnStart) btnStart.disabled = false;
-            if (btnCancel) btnCancel.style.display = 'none';
-            setStatus('Đang hủy...');
-            logMessage('Người dùng yêu cầu hủy.');
-        }
-    });
-}
-
-// =========================================================
-// 3. XỬ LÝ CHỌN FILE, HỦY FILE VÀ XEM THỬ REALISTIC
-// =========================================================
-// Tiếp tục từ đoạn bị cắt: function CSVToArray(strData) { ... }
-
-function CSVToArray(strData) {
-    // Biểu thức chính quy (Regex) để tách các cột phân cách bằng dấu phẩy
-    // Giữ nguyên được dữ liệu nếu trong tên sản phẩm có chứa dấu phẩy (nằm trong ngoặc kép "")
-    const objPattern = new RegExp(
-        "(\\,|\\r?\\n|\\r|^)" +
-        "(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|" +
-        "([^\"\\,\\r\\n]*))",
-        "gi"
-    );
-
-    const arrData = [[]];
-    let arrMatches = null;
-
-    // Vòng lặp quét qua toàn bộ chuỗi CSV
-    while (arrMatches = objPattern.exec(strData)) {
-        const strMatchedDelimiter = arrMatches[1];
-
-        // Nếu gặp dấu xuống dòng, tạo một dòng mới trong mảng
-        if (strMatchedDelimiter.length && strMatchedDelimiter !== ",") {
-            arrData.push([]);
-        }
-
-        let strMatchedValue;
-        // Nếu giá trị được bọc trong ngoặc kép
-        if (arrMatches[2]) {
-            strMatchedValue = arrMatches[2].replace(new RegExp("\"\"", "g"), "\"");
-        } else {
-            // Giá trị bình thường không có ngoặc kép
-            strMatchedValue = arrMatches[3];
-        }
-
-        // Đẩy dữ liệu vào cột cuối cùng của dòng hiện tại
-        arrData[arrData.length - 1].push(strMatchedValue);
-    }
-
-    return arrData;
-}
-
-// =========================================================
-// 4. XỬ LÝ SỰ KIỆN GIAO DIỆN KHI CHỌN FILE
-// =========================================================
-
-// Hiển thị tên file ZIP khi khách hàng chọn
-if (zipInput) {
-    zipInput.addEventListener('change', function(e) {
-        const fileName = e.target.files[0] ? e.target.files[0].name : "Chưa chọn file";
-        const label = document.getElementById('zip_file_name');
-        if (label) label.textContent = fileName;
-        setStatus('Đã chọn file ZIP: ' + fileName);
-    });
-}
-
-// Hiển thị tên file CSV và kích hoạt chế độ XEM TRƯỚC (Preview)
-if (csvInput) {
-    csvInput.addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        const label = document.getElementById('csv_file_name');
-        
-        if (!file) {
-            if (label) label.textContent = "Chưa chọn file";
-            return;
-        }
-
-        if (label) label.textContent = file.name;
-        setStatus('Đang đọc dữ liệu CSV để xem trước...');
-
-        // Dùng FileReader để đọc lướt qua file CSV trên trình duyệt (không cần gửi lên Server)
-        const reader = new FileReader();
-        reader.onload = function(event) {
-            const csvData = event.target.result;
-            const parsedData = CSVToArray(csvData);
-            
-            // Render ra cái bảng Preview nhỏ gọn (Giả sử bạn có thẻ div id="csv_preview_table")
-            renderPreviewTable(parsedData);
+        const handleOk = () => {
+            overlay.style.display = 'none';
+            cleanup();
+            resolve(true);
         };
-        reader.readAsText(file);
+
+        const handleCancel = () => {
+            overlay.style.display = 'none';
+            cleanup();
+            resolve(false);
+        };
+
+        const cleanup = () => {
+            okBtn.removeEventListener('click', handleOk);
+            cancelBtn.removeEventListener('click', handleCancel);
+        };
+
+        okBtn.addEventListener('click', handleOk);
+        cancelBtn.addEventListener('click', handleCancel);
     });
 }
 
-// Hàm render bảng xem trước 5 dòng đầu tiên của CSV
-function renderPreviewTable(data) {
-    const previewContainer = document.getElementById('csv_preview_table');
-    if (!previewContainer) return; // Nếu trong HTML không có id này thì bỏ qua
+// --- THÔNG BÁO TOAST ---
+function showToast(message, type = 'success') {
+    const container = document.getElementById('kb-toast-container');
+    const toast = document.createElement('div');
+    toast.className = `kb-toast ${type}`;
+    let icon = 'fa-check-circle';
+    if (type === 'error') icon = 'fa-exclamation-circle';
+    if (type === 'info') icon = 'fa-info-circle';
+    toast.innerHTML = `<i class="fas ${icon}"></i><span>${message}</span>`;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.add('fade-out');
+        setTimeout(() => toast.remove(), 500);
+    }, 4000);
+}
 
-    let html = '<table class="preview-table" style="width:100%; border-collapse: collapse; margin-top: 15px; font-size: 13px;">';
+function addLog(msg, type = 'info') {
+    const now = new Date().toLocaleTimeString();
+    const logMsg = `[${now}] [${type.toUpperCase()}] ${msg}`;
     
-    // Lặp qua tối đa 6 dòng (1 dòng tiêu đề + 5 dòng dữ liệu) để tránh lag nếu file quá lớn
-    const maxRows = Math.min(data.length, 6); 
-    
-    for (let i = 0; i < maxRows; i++) {
-        const row = data[i];
-        // Bỏ qua dòng trống
-        if (row.length === 1 && row[0].trim() === '') continue;
+    switch(type) {
+        case 'error':
+            console.error(logMsg);
+            break;
+        case 'success':
+            console.log('%c' + logMsg, 'color: #28a745; font-weight: bold;');
+            break;
+        case 'info':
+            console.info(logMsg);
+            break;
+        default:
+            console.log(logMsg);
+    }
+}
 
-        html += '<tr>';
-        row.forEach(col => {
-            if (i === 0) {
-                // Dòng tiêu đề
-                html += `<th style="border: 1px solid #ddd; padding: 8px; background: #f4f4f4;">${col}</th>`;
+async function loadProductList() {
+    const data = await dbStore.get();
+    if (data) {
+        renderTable(data);
+        addLog('Đã nạp ' + data.length + ' sản phẩm từ bộ nhớ IndexedDB.', 'info');
+        return;
+    }
+
+    fetch('import_csv.php?ajax_action=get_products')
+        .then(res => res.json())
+        .then(async data => {
+            await dbStore.save(data);
+            renderTable(data);
+            addLog('Đã đồng bộ ' + data.length + ' sản phẩm từ Database.', 'success');
+        });
+}
+
+function renderTable(data) {
+    const tbody = document.getElementById('product-list-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:50px; color:#999;">Chưa có sản phẩm nào.</td></tr>';
+        return;
+    }
+    data.forEach(p => {
+        const tr = document.createElement('tr');
+        tr.setAttribute('data-sku', p.sku);
+        
+        let galleryHtml = '';
+        let allImages = [];
+        if (p.image_1) allImages = p.image_1.split(',').filter(i => i.trim() !== '');
+        if (p.temp_images && Array.isArray(p.temp_images)) allImages = [...allImages, ...p.temp_images];
+        allImages = allImages.slice(0, 5);
+
+        allImages.forEach((img, idx) => {
+            const isBase64 = img.startsWith('data:image');
+            const imgSrc = isBase64 ? img : `../uploads/${img.trim()}`;
+            
+            // Tính toán dung lượng hiển thị khi hover
+            let sizeInfo = '';
+            if (isBase64) {
+                const kb = ((img.length * 3/4) / 1024).toFixed(0);
+                sizeInfo = `Dung lượng: ${kb}KB (Đã nén)`;
             } else {
-                // Dòng dữ liệu
-                // Highlight cột hình ảnh (giả sử cột hình ảnh là cột số 5 - index 4) để khách dễ nhìn
-                const cellStyle = 'border: 1px solid #ddd; padding: 8px;';
-                html += `<td style="${cellStyle}">${col}</td>`;
+                sizeInfo = `Ảnh đã lưu trên Server`;
+            }
+
+            galleryHtml += `
+                <div class="gallery-item ${idx === 0 ? 'main' : ''}" title="${sizeInfo}">
+                    <img src="${imgSrc}" onclick="openLightbox('${imgSrc}')">
+                    <span class="remove-badge" onclick="handleRemoveImageLocal('${p.sku}', ${idx})">×</span>
+                </div>
+            `;
+        });
+
+        if (allImages.length < 5) {
+            galleryHtml += `
+                <div class="gallery-item add-btn" onclick="triggerFileUpload('${p.sku}')">
+                    <i class="fas fa-plus"></i>
+                </div>
+            `;
+        }
+
+        tr.innerHTML = `
+            <td>
+                <div class="gallery-grid-container" ondrop="dropImageHandler(event, '${p.sku}')" ondragover="allowDrop(event)">
+                    ${galleryHtml}
+                </div>
+            </td>
+            <td><code style="font-weight:600; color:#000;">${p.sku}</code></td>
+            <td>
+                <div class="editable" contenteditable="true" data-field="name" style="font-weight:600; color:#323130; margin-bottom:4px;">${p.name}</div>
+                <span style="font-size:12px; color:#605e5c; background:#f3f2f1; padding:2px 8px; border-radius:2px; border:1px solid #edebe9;">${p.cat_code || 'N/A'}</span>
+            </td>
+            <td>
+                <div style="color:var(--danger-color); font-weight:700; font-size:15px;">
+                    <span class="editable" contenteditable="true" data-field="sale_price">${parseInt(p.sale_price || 0).toLocaleString()}</span>đ
+                </div>
+                <div style="text-decoration:line-through; color:#a19f9d; font-size:12px;">
+                    <span class="editable" contenteditable="true" data-field="price">${parseInt(p.price || 0).toLocaleString()}</span>đ
+                </div>
+            </td>
+            <td style="text-align:center;">
+                <div style="display:flex; flex-direction:column; gap:4px; align-items:center;">
+                    <button class="btn btn-outline" style="padding:4px 10px; width:100px;" onclick='editProduct(${JSON.stringify(p).replace(/'/g, "&apos;")})'><i class="fas fa-edit"></i> Sửa</button>
+                    <button class="btn btn-outline" style="padding:4px 10px; width:100px; color:var(--danger-color);" onclick="handleDeleteProduct('${p.sku}')"><i class="fas fa-trash"></i> Xóa</button>
+                </div>
+            </td>
+        `;
+        tbody.appendChild(tr);
+    });
+}
+
+async function updateLocalProduct(sku, field, val) {
+    const data = await dbStore.get();
+    if (!data) return;
+    const idx = data.findIndex(p => p.sku === sku);
+    if (idx !== -1) {
+        data[idx][field] = val;
+        await dbStore.save(data);
+    }
+}
+
+async function handleRemoveImage(sku, filename) {
+    const ok = await kbConfirm("Bạn có chắc chắn muốn xóa ảnh này?", "Xác nhận");
+    if (ok) {
+        const fd = new FormData();
+        fd.append('ajax_action', 'remove_image');
+        fd.append('sku', sku);
+        fd.append('filename', filename);
+        fetch('import_csv.php', { method: 'POST', body: fd }).then(res => res.json()).then(data => {
+            if(data.success) loadProductList();
+        });
+    }
+}
+
+async function handleDeleteProduct(sku) {
+    const ok = await kbConfirm(`Xóa vĩnh viễn sản phẩm ${sku}?`, "Cảnh báo");
+    if (ok) {
+        const fd = new FormData();
+        fd.append('ajax_action', 'delete_product');
+        fd.append('sku', sku);
+        fetch('import_csv.php', { method: 'POST', body: fd }).then(res => res.json()).then(data => {
+            if (data.success) loadProductList();
+        });
+    }
+}
+
+async function bulkUpdate() {
+    const products = await dbStore.get();
+    if (!products) return;
+
+    const formData = new FormData();
+    formData.append('ajax_action', 'bulk_update');
+    products.forEach((p, idx) => {
+        formData.append(`products[${idx}][sku]`, p.sku);
+        formData.append(`products[${idx}][name]`, p.name);
+        formData.append(`products[${idx}][sale_price]`, String(p.sale_price).replace(/[^0-9]/g, ''));
+        formData.append(`products[${idx}][price]`, String(p.price).replace(/[^0-9]/g, ''));
+        formData.append(`products[${idx}][cat_code]`, p.cat_code || '');
+        if (p.temp_images) {
+            p.temp_images.forEach((base64, imgIdx) => {
+                formData.append(`products[${idx}][temp_images][${imgIdx}]`, base64);
+            });
+        }
+    });
+
+    const btn = document.getElementById('btn-save-all');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ĐANG CHỐT...';
+    btn.disabled = true;
+
+    fetch('import_csv.php', { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(async data => {
+            btn.innerHTML = '<i class="fas fa-save"></i> CHỐT LƯU DATABASE';
+            btn.disabled = false;
+            if (data.success) {
+                showToast('Đã lưu thành công!', 'success');
+                await dbStore.clear();
+                loadProductList();
             }
         });
-        html += '</tr>';
-    }
-    
-    html += '</table>';
-    
-    if (data.length > 6) {
-        html += `<p style="color: #666; font-size: 12px; font-style: italic; margin-top: 5px;">* Chỉ hiển thị xem trước 5 dòng đầu tiên. Tổng cộng có ${data.length - 1} sản phẩm.</p>`;
-    }
+}
 
-    previewContainer.innerHTML = html;
-    setStatus('Đã load xong bản xem trước CSV.');
+function openLightbox(src) {
+    const modal = document.getElementById('lightbox-modal');
+    const img = document.getElementById('lightbox-img');
+    img.src = src;
+    modal.style.display = 'flex';
+}
+
+function showProductModal() { document.getElementById('product-modal').style.display = 'flex'; }
+function hideProductModal() { document.getElementById('product-modal').style.display = 'none'; }
+
+function editProduct(p) {
+    document.getElementById('p_sku').value = p.sku;
+    document.getElementById('p_name').value = p.name;
+    document.getElementById('p_price').value = p.price;
+    document.getElementById('p_sale').value = p.sale_price;
+    document.getElementById('product-modal').style.display = 'flex';
+}
+
+function saveProduct(formData) {
+    formData.append('ajax_action', 'save_product');
+    fetch('import_csv.php', { method: 'POST', body: formData }).then(res => res.json()).then(data => {
+        if (data.success) { hideProductModal(); loadProductList(); }
+    });
+}
+
+function allowDrop(e) { e.preventDefault(); }
+function dropImageHandler(e, sku) {
+    e.preventDefault();
+    processFiles(e.dataTransfer.files, sku);
+}
+
+function triggerFileUpload(sku) {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.multiple = true;
+    input.accept = 'image/*';
+    input.onchange = (e) => processFiles(e.target.files, sku);
+    input.click();
+}
+
+// --- HÀM NÉN ẢNH TẠI TRÌNH DUYỆT ---
+async function compressImage(file, maxWidth = 800, quality = 0.7) {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                let width = img.width;
+                let height = img.height;
+
+                // Tính toán tỷ lệ để giảm kích thước nếu vượt quá maxWidth
+                if (width > maxWidth) {
+                    height = (maxWidth / width) * height;
+                    width = maxWidth;
+                }
+
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Xuất ra Base64 với chất lượng nén mong muốn
+                resolve(canvas.toDataURL('image/jpeg', quality));
+            };
+        };
+    });
+}
+
+async function processFiles(files, sku) {
+    const data = await dbStore.get();
+    if (!data) return;
+    const idx = data.findIndex(p => p.sku === sku);
+    if (idx === -1) return;
+    if (!data[idx].temp_images) data[idx].temp_images = [];
+    
+    let currentTotal = (data[idx].image_1 ? data[idx].image_1.split(',').length : 0) + data[idx].temp_images.length;
+    
+    for (let file of Array.from(files)) {
+        if (currentTotal >= 5) {
+            showToast('Chỉ cho phép tối đa 5 ảnh!', 'info');
+            break;
+        }
+        
+        const originalSize = (file.size / 1024).toFixed(1); // KB
+        
+        // Nén ảnh
+        const compressedBase64 = await compressImage(file);
+        
+        // Tính toán dung lượng Base64 (Chuỗi Base64 dài hơn thực tế ~33%)
+        const compressedSize = ( (compressedBase64.length * 3/4) / 1024 ).toFixed(1); // KB
+        const savedPercent = (100 - (compressedSize / originalSize * 100)).toFixed(0);
+
+        data[idx].temp_images.push(compressedBase64);
+        currentTotal++;
+
+        addLog(`📸 Nén ảnh ${sku}: ${originalSize}KB → ${compressedSize}KB (Giảm ${savedPercent}%)`, 'success');
+    }
+    
+    await dbStore.save(data);
+    renderTable(data);
+}
+
+async function handleRemoveImageLocal(sku, imgIdx) {
+    const data = await dbStore.get();
+    if (!data) return;
+    const pIdx = data.findIndex(p => p.sku === sku);
+    if (pIdx === -1) return;
+    let dbImages = data[pIdx].image_1 ? data[pIdx].image_1.split(',').filter(i => i.trim() !== '') : [];
+    let tempImages = data[pIdx].temp_images || [];
+    if (imgIdx < dbImages.length) {
+        dbImages.splice(imgIdx, 1);
+        data[pIdx].image_1 = dbImages.join(',');
+    } else {
+        tempImages.splice(imgIdx - dbImages.length, 1);
+        data[pIdx].temp_images = tempImages;
+    }
+    await dbStore.save(data);
+    renderTable(data);
+}
+
+function showImportModal() { document.getElementById('import-modal').style.display = 'flex'; }
+function hideImportModal() { document.getElementById('import-modal').style.display = 'none'; }
+function previewCSV(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const text = e.target.result;
+        const delimiter = (text.split(';').length > text.split(',').length) ? ';' : ',';
+        const rows = text.split('\n').slice(0, 6);
+        let html = '<table class="data-table">';
+        rows.forEach(row => {
+            const cols = row.split(delimiter);
+            html += '<tr>' + cols.map(c => `<td>${c}</td>`).join('') + '</tr>';
+        });
+        document.getElementById('csv-preview-table').innerHTML = html + '</table>';
+        document.getElementById('csv-preview-wrap').style.display = 'block';
+    };
+    reader.readAsText(file);
+}
+
+function startImport(file) {
+    const btn = document.getElementById('btn_confirm_import');
+    btn.innerHTML = 'Đang phân tích...';
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const text = e.target.result;
+        const delimiter = (text.split(';').length > text.split(',').length) ? ';' : ',';
+        const lines = text.split('\n').filter(line => line.trim() !== '');
+        const products = [];
+        for (let i = 1; i < lines.length; i++) {
+            const cols = lines[i].split(delimiter);
+            if (cols.length < 3) continue;
+            products.push({
+                sku: cols[0].trim(), cat_code: cols[1].trim(), name: cols[2].trim(),
+                price: cols[3].replace(/[^0-9]/g, ''), sale_price: cols[4].replace(/[^0-9]/g, ''),
+                image_1: ''
+            });
+        }
+        let combinedData = await dbStore.get() || [];
+        products.forEach(newP => {
+            const idx = combinedData.findIndex(oldP => oldP.sku === newP.sku);
+            if (idx !== -1) combinedData[idx] = newP; else combinedData.push(newP);
+        });
+        await dbStore.save(combinedData);
+        hideImportModal(); renderTable(combinedData);
+    };
+    reader.readAsText(file);
+}
+
+async function clearLocalData() {
+    await dbStore.clear();
+    loadProductList();
+    showToast('Đã xóa bộ nhớ tạm và đồng bộ lại từ Database.', 'info');
+}
+
+async function deleteAllProducts() {
+    const ok1 = await kbConfirm("CẢNH BÁO: Hành động này sẽ xóa VĨNH VIỄN toàn bộ sản phẩm trong Database. Bạn có chắc chắn không?", "XÁC NHẬN XÓA TẤT CẢ");
+    if (!ok1) return;
+
+    const ok2 = await kbConfirm("BẠN CÓ THẬT SỰ CHẮC CHẮN? Dữ liệu không thể khôi phục sau khi xóa!", "CẢNH BÁO CUỐI CÙNG");
+    if (!ok2) return;
+
+    const fd = new FormData();
+    fd.append('ajax_action', 'delete_all_products');
+
+    showToast('Đang thực hiện xóa sạch dữ liệu...', 'info');
+
+    fetch('import_csv.php', { method: 'POST', body: fd })
+        .then(res => res.json())
+        .then(async data => {
+            if (data.success) {
+                await dbStore.clear(); // Xóa luôn bộ nhớ tạm
+                showToast('Đã xóa sạch toàn bộ sản phẩm!', 'success');
+                loadProductList();
+                addLog('Hệ thống đã thực hiện lệnh xóa sạch toàn bộ Database.', 'error');
+            } else {
+                showToast('Lỗi: ' + data.error, 'error');
+            }
+        });
 }

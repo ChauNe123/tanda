@@ -6,6 +6,13 @@ ini_set('display_errors', 1);
 
 require_once '../cores/db_config.php';
 
+// TỰ ĐỘNG CẬP NHẬT CẤU TRÚC DATABASE (MIGRATION)
+try {
+    $conn->exec("ALTER TABLE products ADD COLUMN IF NOT EXISTS image_file TEXT AFTER description");
+} catch (Exception $e) {
+    // Nếu đã có cột hoặc có lỗi khác thì bỏ qua
+}
+
 // =========================================================
 // HÀM TỐI ƯU DUNG LƯỢNG & KÍCH THƯỚC ẢNH UPLOAD (GD LIBRARY)
 // =========================================================
@@ -113,14 +120,84 @@ function createSlug($str) {
 }
 
 // ---------------------------------------------------------
-// Existing lightweight image upload handler (kept)
+// API: IMPORT CSV ĐƠN GIẢN (TỪ MODAL PREVIEW)
+// ---------------------------------------------------------
+if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'import_csv_simple') {
+    if (!isset($_FILES['csv_file']) || $_FILES['csv_file']['error'] != 0) {
+        echo json_encode(['success'=>0,'error'=>'Thiếu file CSV']); exit;
+    }
+
+    $file = $_FILES['csv_file']['tmp_name'];
+    $count = 0;
+    
+    // Tự động phát hiện dấu phân cách ( , hoặc ; )
+    $file_content = file_get_contents($file);
+    $delimiter = (substr_count($file_content, ';') > substr_count($file_content, ',')) ? ';' : ',';
+
+    try {
+        if (($handle = fopen($file, "r")) !== FALSE) {
+            // Bỏ qua dòng đầu (header)
+            $headers = fgetcsv($handle, 10000, $delimiter); 
+            
+            while (($row = fgetcsv($handle, 10000, $delimiter)) !== FALSE) {
+                if (count($row) < 3) continue;
+                
+                $sku = trim($row[0] ?? '');
+                $cat_code = trim($row[1] ?? '');
+                $name = trim($row[2] ?? '');
+                $price = (int)str_replace(['.', ','], '', $row[3] ?? 0);
+                $sale_price = (int)str_replace(['.', ','], '', $row[4] ?? 0);
+                $specs = trim($row[5] ?? '');
+                $desc = trim($row[6] ?? '');
+                $status = (int)($row[7] ?? 1);
+
+                if ($sku === '' || $name === '') continue;
+
+                // TỰ ĐỘNG TẠO DANH MỤC NẾU CHƯA CÓ
+                if ($cat_code !== '') {
+                    $chkCat = $conn->prepare("SELECT cat_code FROM categories WHERE cat_code = :code");
+                    $chkCat->execute([':code' => $cat_code]);
+                    if ($chkCat->rowCount() == 0) {
+                        $insCat = $conn->prepare("INSERT INTO categories (cat_code, name, slug, status) VALUES (:code, :name, :slug, 1)");
+                        $insCat->execute([':code' => $cat_code, ':name' => $cat_code, ':slug' => createSlug($cat_code)]);
+                    }
+                }
+
+                $slug = createSlug($name);
+                // CHỈ INSERT/UPDATE CÁC TRƯỜNG THÔNG TIN, GIỮ NGUYÊN ẢNH TRONG IMAGE_1
+                $sql = "INSERT INTO products (sku, cat_code, name, slug, price, sale_price, specs_summary, description, status, sort_order) 
+                        VALUES (:sku, :cat, :name, :slug, :price, :sale, :specs, :desc, :stt, :sort)
+                        ON DUPLICATE KEY UPDATE cat_code=VALUES(cat_code), name=VALUES(name), slug=VALUES(slug), price=VALUES(price), 
+                        sale_price=VALUES(sale_price), specs_summary=VALUES(specs_summary), description=VALUES(description), status=VALUES(status), sort_order=VALUES(sort_order)";
+                
+                $stmt = $conn->prepare($sql);
+                $stmt->execute([
+                    ':sku'=>$sku, ':cat'=>$cat_code, ':name'=>$name, ':slug'=>$slug,
+                    ':price'=>$price, ':sale'=>$sale_price, ':specs'=>$specs, ':desc'=>$desc, ':stt'=>$status, ':sort'=>$count
+                ]);
+                $count++;
+            }
+            fclose($handle);
+        }
+        echo json_encode(['success'=>1, 'count'=>$count]);
+    } catch (Exception $e) {
+        echo json_encode(['success'=>0, 'error'=> 'Lỗi SQL: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+// ---------------------------------------------------------
+// API: UPLOAD ẢNH & CẬP NHẬT DATABASE NGAY LẬP TỨC
 // ---------------------------------------------------------
 if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'upload_images') {
-    $folder_name = (isset($_POST['target_folder']) && $_POST['target_folder'] == 'banners') ? 'banners' : 'uploads';
-    $target_dir = __DIR__ . '/../' . $folder_name . '/';
+    $sku = isset($_POST['sku']) ? trim($_POST['sku']) : '';
+    if ($sku === '') { echo json_encode(['success' => 0, 'error' => 'Missing SKU']); exit; }
+
+    $target_dir = __DIR__ . '/../uploads/';
     if (!is_dir($target_dir)) { mkdir($target_dir, 0777, true); }
 
-    $count_success = 0; $count_error = 0;
+    $count_success = 0;
+    $new_filenames = [];
     $allowed_types = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
 
     if (!empty($_FILES['images']['name'][0])) {
@@ -128,25 +205,227 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'upload_images') {
             $tmp_name = $_FILES['images']['tmp_name'][$key];
             $error = $_FILES['images']['error'][$key];
             if ($error === UPLOAD_ERR_OK) {
-                $imageFileType = strtolower(pathinfo($name, PATHINFO_EXTENSION));
-                $new_name_post = isset($_POST['new_names'][$key]) ? trim($_POST['new_names'][$key]) : '';
-                $final_name = ($new_name_post !== '') ? $new_name_post : $name;
+                $ext = strtolower(pathinfo($name, PATHINFO_EXTENSION));
+                // Đặt tên theo SKU để quản lý gọn (vd: WIFI-001-timestamp.jpg)
+                $final_name = $sku . '-' . time() . '-' . $key . '.' . $ext;
                 $target_file = $target_dir . $final_name;
-                if (in_array($imageFileType, $allowed_types)) {
-                    if (optimizeAndSaveImage($tmp_name, $target_file, 800, 80)) $count_success++;
-                    else if (move_uploaded_file($tmp_name, $target_file)) $count_success++;
-                    else $count_error++;
-                } else $count_error++;
-            } else $count_error++;
+
+                if (in_array($ext, $allowed_types)) {
+                    if (optimizeAndSaveImage($tmp_name, $target_file, 800, 80)) {
+                        $new_filenames[] = $final_name;
+                        $count_success++;
+                    }
+                }
+            }
         }
     }
-    echo json_encode(['success' => $count_success, 'error' => $count_error]);
+
+    if ($count_success > 0) {
+        // Cập nhật Database: Lấy danh sách ảnh cũ + ảnh mới
+        $stmt = $conn->prepare("SELECT image_1 FROM products WHERE sku = :sku");
+        $stmt->execute([':sku' => $sku]);
+        $row = $stmt->fetch();
+        
+        $current_images = [];
+        if ($row && !empty($row['image_1'])) {
+            $current_images = array_map('trim', explode(',', $row['image_1']));
+        }
+        
+        $updated_images = array_merge($current_images, $new_filenames);
+        $image_string = implode(',', $updated_images);
+
+        $upd = $conn->prepare("UPDATE products SET image_1 = :imgs WHERE sku = :sku");
+        $upd->execute([':imgs' => $image_string, ':sku' => $sku]);
+    }
+
+    echo json_encode(['success' => $count_success, 'filenames' => $new_filenames]);
     exit;
 }
 
 // ---------------------------------------------------------
-// API Step 1: Validate ZIP + CSV
+// API: LẤY DANH SÁCH SẢN PHẨM (READ)
 // ---------------------------------------------------------
+if (isset($_GET['ajax_action']) && $_GET['ajax_action'] == 'get_products') {
+    // Sắp xếp theo sort_order để khớp hoàn toàn với thứ tự trong file Excel
+    $stmt = $conn->query("SELECT * FROM products ORDER BY sort_order ASC, sku DESC");
+    echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+    exit;
+}
+
+// ---------------------------------------------------------
+// API: LƯU SẢN PHẨM (CREATE / UPDATE)
+// ---------------------------------------------------------
+if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'delete_all_products') {
+    try {
+        // TRUNCATE xóa sạch dữ liệu và reset luôn cả ID tự tăng
+        $conn->exec("TRUNCATE TABLE products");
+        echo json_encode(['success' => 1]);
+    } catch (Exception $e) {
+        echo json_encode(['success' => 0, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
+if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'save_product') {
+    $sku = trim($_POST['sku'] ?? '');
+    $name = trim($_POST['name'] ?? '');
+    $price = (int)($_POST['price'] ?? 0);
+    $sale_price = (int)($_POST['sale_price'] ?? 0);
+    $cat_code = trim($_POST['cat_code'] ?? '');
+    $desc = $_POST['description'] ?? '';
+    $specs = $_POST['specs_summary'] ?? '';
+    $status = (int)($_POST['status'] ?? 1);
+
+    if ($sku === '' || $name === '') { echo json_encode(['success'=>0,'error'=>'Thiếu SKU hoặc Tên']); exit; }
+
+    $slug = createSlug($name);
+    $sql = "INSERT INTO products (sku, cat_code, name, slug, price, sale_price, specs_summary, description, status) 
+            VALUES (:sku, :cat, :name, :slug, :price, :sale, :specs, :desc, :stt)
+            ON DUPLICATE KEY UPDATE cat_code=VALUES(cat_code), name=VALUES(name), slug=VALUES(slug), price=VALUES(price), 
+            sale_price=VALUES(sale_price), specs_summary=VALUES(specs_summary), description=VALUES(description), status=VALUES(status)";
+    
+    try {
+        $stmt = $conn->prepare($sql);
+        $stmt->execute([
+            ':sku'=>$sku, ':cat'=>$cat_code, ':name'=>$name, ':slug'=>$slug,
+            ':price'=>$price, ':sale'=>$sale_price, ':specs'=>$specs, ':desc'=>$desc, ':stt'=>$status
+        ]);
+        echo json_encode(['success'=>1]);
+    } catch (Exception $e) {
+        echo json_encode(['success'=>0, 'error'=>$e->getMessage()]);
+    }
+    exit;
+}
+
+// ---------------------------------------------------------
+// API: XÓA SẢN PHẨM (DELETE)
+// ---------------------------------------------------------
+if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'delete_product') {
+    $sku = $_POST['sku'] ?? '';
+    if ($sku) {
+        $stmt = $conn->prepare("DELETE FROM products WHERE sku = :sku");
+        $stmt->execute([':sku' => $sku]);
+        echo json_encode(['success'=>1]);
+    } else {
+        echo json_encode(['success'=>0]);
+    }
+    exit;
+}
+
+// ---------------------------------------------------------
+// API: XÓA 1 ẢNH KHỎI DANH SÁCH (GALLERY)
+// ---------------------------------------------------------
+if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'remove_image') {
+    $sku = $_POST['sku'] ?? '';
+    $filename = $_POST['filename'] ?? '';
+    if ($sku && $filename) {
+        $stmt = $conn->prepare("SELECT image_1 FROM products WHERE sku = :sku");
+        $stmt->execute([':sku' => $sku]);
+        $row = $stmt->fetch();
+        if ($row) {
+            $imgs = array_map('trim', explode(',', $row['image_1']));
+            $updated = array_filter($imgs, function($i) use ($filename) { return $i !== $filename; });
+            $image_string = implode(',', $updated);
+
+            $upd = $conn->prepare("UPDATE products SET image_1 = :imgs WHERE sku = :sku");
+            $upd->execute([':imgs' => $image_string, ':sku' => $sku]);
+            
+            // Tùy chọn: Xóa file vật lý trong uploads (cẩn thận nếu ảnh dùng chung)
+            // @unlink(__DIR__ . '/../uploads/' . $filename);
+            
+            echo json_encode(['success'=>1]); exit;
+        }
+    }
+    echo json_encode(['success'=>0]);
+    exit;
+}
+
+// ---------------------------------------------------------
+// API: CẬP NHẬT HÀNG LOẠT (BULK UPDATE)
+// ---------------------------------------------------------
+if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'bulk_update') {
+    $products = $_POST['products'] ?? [];
+    $count = 0;
+    if (is_array($products)) {
+        $conn->beginTransaction();
+        try {
+            $uploadsDir = __DIR__ . '/../uploads/';
+            if (!is_dir($uploadsDir)) mkdir($uploadsDir, 0777, true);
+
+            foreach ($products as $p) {
+                $sku = $p['sku'] ?? '';
+                $name = $p['name'] ?? '';
+                $price = (int)str_replace(['.', ','], '', $p['price'] ?? 0);
+                $sale_price = (int)str_replace(['.', ','], '', $p['sale_price'] ?? 0);
+                $cat_code = $p['cat_code'] ?? '';
+                
+                if ($sku && $name) {
+                    // 1. Xử lý ảnh mới (Base64) nếu có
+                    $new_image_paths = [];
+                    if (!empty($p['temp_images']) && is_array($p['temp_images'])) {
+                        foreach ($p['temp_images'] as $idx => $base64) {
+                            if (preg_match('/^data:image\/(\w+);base64,/', $base64, $type)) {
+                                $data = substr($base64, strpos($base64, ',') + 1);
+                                $type = strtolower($type[1]); // jpg, png, gif
+                                $data = base64_decode($data);
+                                if ($data === false) continue;
+
+                                $filename = $sku . '-' . time() . '-new-' . $idx . '.' . $type;
+                                $filepath = $uploadsDir . $filename;
+                                
+                                // Lưu file tạm trước khi optimize
+                                file_put_contents($filepath, $data);
+                                optimizeAndSaveImage($filepath, $filepath, 800, 80);
+                                $new_image_paths[] = $filename;
+                            }
+                        }
+                    }
+
+                    // 2. Lấy danh sách ảnh cũ hiện tại trong DB
+                    $stmtOld = $conn->prepare("SELECT image_1 FROM products WHERE sku = :sku");
+                    $stmtOld->execute([':sku' => $sku]);
+                    $oldRow = $stmtOld->fetch();
+                    $current_images = [];
+                    if ($oldRow && !empty($oldRow['image_1'])) {
+                        $current_images = array_map('trim', explode(',', $oldRow['image_1']));
+                    }
+
+                    // 3. Gộp ảnh cũ và ảnh mới
+                    $final_images = array_merge($current_images, $new_image_paths);
+                    $final_images = array_slice($final_images, 0, 5); // Chốt chặn 5 ảnh cuối cùng
+                    $image_string = implode(',', $final_images);
+
+                    // 4. Cập nhật Database
+                    $slug = createSlug($name);
+                    $sql = "INSERT INTO products (sku, cat_code, name, slug, price, sale_price, image_1, status) 
+                            VALUES (:sku, :cat, :name, :slug, :price, :sale, :imgs, 1)
+                            ON DUPLICATE KEY UPDATE 
+                                cat_code=VALUES(cat_code), 
+                                name=VALUES(name), 
+                                slug=VALUES(slug), 
+                                price=VALUES(price), 
+                                sale_price=VALUES(sale_price),
+                                image_1=VALUES(image_1)";
+                    
+                    $stmt = $conn->prepare($sql);
+                    $stmt->execute([
+                        ':sku'=>$sku, ':cat'=>$cat_code, ':name'=>$name, ':slug'=>$slug,
+                        ':price'=>$price, ':sale'=>$sale_price, ':imgs'=>$image_string
+                    ]);
+                    $count++;
+                }
+            }
+            $conn->commit();
+            echo json_encode(['success'=>1, 'count'=>$count]);
+        } catch (Exception $e) {
+            $conn->rollBack();
+            echo json_encode(['success'=>0, 'error'=>$e->getMessage()]);
+        }
+    } else {
+        echo json_encode(['success'=>0, 'error'=>'Dữ liệu không hợp lệ']);
+    }
+    exit;
+}
 if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'validate_zip_csv') {
     if (!isset($_FILES['zip_file']) || $_FILES['zip_file']['error'] != 0) {
         echo json_encode(['success'=>0,'error'=>'ZIP file missing']); exit;
@@ -375,170 +654,134 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'cleanup_temp') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Import CSV + ZIP - Admin</title>
+    <title>Quản trị Hệ thống - TANDA</title>
+    <script>
+    // BỊT MIỆNG LỖI TỪ TIỆN ÍCH TRÌNH DUYỆT (ONBOARDING.JS)
+    window.addEventListener('unhandledrejection', function (event) {
+        if (event.reason === undefined || (event.reason && event.reason.stack && event.reason.stack.includes('onboarding.js'))) {
+            event.preventDefault();
+        }
+    });
+    </script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="../assets/css/admin.css?v=<?php echo time(); ?>">
-    <style>
-        .center { max-width:900px; margin:30px auto; padding:18px; }
-        .progress { width:100%; background:#eee; border-radius:6px; overflow:hidden; height:18px; }
-        .progress > .bar { height:18px; background:#28a745; width:0%; color:#fff; text-align:center; font-size:12px; line-height:18px; }
-        .card { background:#fff; padding:16px; border-radius:8px; box-shadow:0 1px 3px rgba(0,0,0,0.05); }
-        .muted { color:#666; font-size:13px; }
-        .btn { padding:8px 14px; border:none; border-radius:6px; cursor:pointer; }
-        .btn-green { background:#28a745; color:#fff; }
-        .btn-gray { background:#f0f0f0; color:#333; }
-        pre { white-space:pre-wrap; word-break:break-word; background:#f8f9fa; padding:10px; border-radius:6px; }
-    </style>
 </head>
 <body>
-<div class="center">
-    <div class="card">
-        <h2>📦 Import: ZIP (images) + CSV (data)</h2>
-        <p class="muted">CSV column must contain image filenames in a column named <strong>Image</strong> (comma-separated). Max 5 images per product.</p>
 
-        <form id="import-form" enctype="multipart/form-data" method="post">
-            <div style="margin-bottom:12px;">
-                <label>Chọn file ZIP (hình ảnh):</label><br>
-                <input type="file" id="zip_file" name="zip_file" accept=".zip" required>
-            </div>
-            <div style="margin-bottom:12px;">
-                <label>Chọn file CSV (dữ liệu):</label><br>
-                <input type="file" id="csv_file" name="csv_file" accept=".csv" required>
-            </div>
+<div class="admin-container">
+    <!-- STICKY HEADER TOOLBAR -->
+    <header class="admin-header">
+        <h1 class="admin-title"><i class="fas fa-box-open" style="color: var(--primary-color);"></i> Quản lý Sản phẩm</h1>
+        <div style="display: flex; gap: 12px;">
+            <button type="button" class="btn btn-success" id="btn-save-all">
+                <i class="fas fa-save"></i> CHỐT LƯU 
+            </button>
+            <button type="button" class="btn btn-danger" onclick="deleteAllProducts()">
+                <i class="fas fa-trash-alt"></i> XÓA TẤT CẢ SẢN PHẨM
+            </button>
+            <button type="button" class="btn btn-outline" onclick="showImportModal()">
+                <i class="fas fa-file-import"></i> Nhập từ Excel
+            </button>
+            <button type="button" class="btn btn-primary" onclick="showProductModal()">
+                <i class="fas fa-plus"></i> Thêm sản phẩm
+            </button>
+        </div>
+    </header>
 
-            <div style="margin:12px 0;">
-                <button type="button" id="btn_start" class="btn btn-green">🚀 BẮT ĐẦU NẠP</button>
-                <button type="button" id="btn_cancel" class="btn btn-gray" style="margin-left:8px; display:none;">HỦY</button>
-            </div>
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <div style="padding: 15px 24px; background: #faf9f8; border-bottom: 1px solid #edebe9;">
+            <span class="muted" style="font-size: 13px; color: #605e5c;">
+                <i class="fas fa-info-circle"></i> <strong>Hướng dẫn:</strong> Nhấp trực tiếp vào <strong>Tên</strong> hoặc <strong>Giá</strong> để sửa nhanh. Kéo thả ảnh trực tiếp vào cột <strong>Ảnh</strong>.
+            </span>
+        </div>
+        
+        <div style="overflow-x:auto;">
+            <table class="data-table" id="product-table">
+                <thead>
+                    <tr>
+                        <th style="width: 120px;">Hình ảnh sản phẩm</th>
+                        <th style="width: 100px;">Mã SKU</th>
+                        <th>Thông tin sản phẩm & Danh mục</th>
+                        <th style="width: 180px;">Giá bán / Khuyến mãi</th>
+                        <th style="width: 150px; text-align: center;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody id="product-list-body">
+                    <!-- Dữ liệu được nạp qua AJAX -->
+                </tbody>
+            </table>
+        </div>
+    </div>
 
-            <div style="margin-top:14px;">
-                <div class="progress"><div class="bar" id="progress-bar">0%</div></div>
-                <div id="status-line" style="margin-top:8px;" class="muted">Chưa bắt đầu</div>
-            </div>
+    <!-- Log has been moved to Browser Console (DevTools) -->
+</div>
 
-            <div id="log" style="margin-top:12px; display:none;">
-                <h4>Log</h4>
-                <pre id="logbox"></pre>
+<!-- MODALS (Giữ nguyên logic cũ nhưng cập nhật Style) -->
+<div id="import-modal" class="modal-overlay">
+    <div class="modal-card">
+        <h3><i class="fas fa-file-excel" style="color: #107c10;"></i> Nhập dữ liệu từ Excel (CSV)</h3>
+        <p style="color: #666; font-size: 14px;">Vui lòng chọn file CSV đúng định dạng mapping để nạp sản phẩm hàng loạt.</p>
+        <div style="margin: 20px 0; padding: 20px; background: #f3f2f1; border-radius: 4px; text-align: center;">
+            <input type="file" id="csv_file_input" accept=".csv">
+        </div>
+        <div id="csv-preview-wrap" style="display:none; margin-top:15px;">
+            <h4 style="font-size: 14px;">Xem trước dữ liệu:</h4>
+            <div id="csv-preview-table" style="max-height:200px; overflow-y:auto; border:1px solid #edebe9;"></div>
+            <div style="margin-top:20px; text-align:right; display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn btn-outline" onclick="hideImportModal()">Hủy bỏ</button>
+                <button type="button" class="btn btn-success" id="btn_confirm_import">Bắt đầu nạp dữ liệu</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Các Modals khác giữ nguyên logic ẩn/hiện -->
+<div id="product-modal" class="modal-overlay">
+    <div class="modal-card" style="width: 800px;">
+        <h3 id="modal-title">Sản phẩm</h3>
+        <form id="product-form">
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+                <div class="form-group">
+                    <label>Mã sản phẩm (SKU)</label>
+                    <input type="text" id="p_sku" name="sku" required>
+                </div>
+                <div class="form-group">
+                    <label>Mã danh mục</label>
+                    <input type="text" id="p_cat" name="cat_code">
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Tên sản phẩm</label>
+                    <input type="text" id="p_name" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label>Giá niêm yết (Price)</label>
+                    <input type="number" id="p_price" name="price">
+                </div>
+                <div class="form-group">
+                    <label>Giá khuyến mãi (Sale)</label>
+                    <input type="number" id="p_sale" name="sale_price">
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Thông số kỹ thuật tóm tắt</label>
+                    <input type="text" id="p_specs" name="specs_summary" placeholder="Cách nhau bằng dấu |">
+                </div>
+                <div class="form-group" style="grid-column: span 2;">
+                    <label>Mô tả chi tiết</label>
+                    <textarea id="p_desc" name="description" rows="6"></textarea>
+                </div>
+            </div>
+            <div style="margin-top:25px; text-align:right; display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" class="btn btn-outline" onclick="hideProductModal()">Đóng</button>
+                <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
             </div>
         </form>
     </div>
 </div>
 
-<script>
-(function(){
-    const btnStart = document.getElementById('btn_start');
-    const btnCancel = document.getElementById('btn_cancel');
-    const zipInput = document.getElementById('zip_file');
-    const csvInput = document.getElementById('csv_file');
-    const progressBar = document.getElementById('progress-bar');
-    const statusLine = document.getElementById('status-line');
-    const logBox = document.getElementById('logbox');
-    const logWrap = document.getElementById('log');
+<div id="lightbox-modal" onclick="this.style.display='none'">
+    <img id="lightbox-img" src="">
+</div>
 
-    let abortFlag = false;
-
-    function log(msg) {
-        if (!logWrap) return;
-        logWrap.style.display = 'block';
-        const now = new Date().toLocaleTimeString();
-        logBox.textContent += `[${now}] ${msg}\n`;
-        logBox.scrollTop = logBox.scrollHeight;
-    }
-
-    btnStart.addEventListener('click', async function(){
-        abortFlag = false;
-        if (!zipInput.files[0] || !csvInput.files[0]) { alert('Chọn ZIP và CSV trước.'); return; }
-        btnStart.disabled = true; btnCancel.style.display = 'inline-block';
-        statusLine.textContent = 'Đang gửi file để kiểm tra...';
-
-        // Step 1: validate
-        const fd = new FormData();
-        fd.append('ajax_action','validate_zip_csv');
-        fd.append('zip_file', zipInput.files[0]);
-        fd.append('csv_file', csvInput.files[0]);
-
-        try {
-            const res = await fetch(window.location.href, { method: 'POST', body: fd });
-            const j = await res.json();
-            if (!j.success) {
-                btnStart.disabled = false; btnCancel.style.display = 'none';
-                if (j.error === 'missing_images' && j.missing) {
-                    let msg = 'Thiếu ảnh theo CSV:\\n';
-                    j.missing.slice(0,20).forEach(m => msg += `- Row ${m.row}: ${m.image}\\n`);
-                    alert(msg);
-                    statusLine.textContent = 'Lỗi: Thiếu ảnh trong ZIP theo CSV.';
-                    log(msg);
-                    return;
-                }
-                alert('Validation lỗi: ' + (j.error || 'unknown'));
-                statusLine.textContent = 'Validation thất bại.';
-                log('Validation lỗi: ' + JSON.stringify(j));
-                return;
-            }
-
-            const total = j.total || 0;
-            const token = j.token;
-            statusLine.textContent = 'Validation thành công. Số sản phẩm: ' + total;
-
-            // batch loop
-            let processed = 0;
-            const batchSize = 10;
-            while (processed < total) {
-                if (abortFlag) { statusLine.textContent = 'Đã hủy bởi người dùng.'; break; }
-                statusLine.textContent = `Đang nạp ${processed + 1}..${Math.min(processed + batchSize, total)} / ${total}`;
-                log(`Xử lý batch bắt đầu tại ${processed}`);
-
-                const fd2 = new FormData();
-                fd2.append('ajax_action','process_batch');
-                fd2.append('token', token);
-                fd2.append('start', processed);
-                fd2.append('batch', batchSize);
-
-                const r2 = await fetch(window.location.href, { method: 'POST', body: fd2 });
-                const j2 = await r2.json();
-                if (!j2.success) {
-                    alert('Lỗi khi nạp batch: ' + (j2.error || 'unknown'));
-                    log('Lỗi batch: ' + JSON.stringify(j2));
-                    break;
-                }
-                const got = j2.processed || 0;
-                processed += got;
-                const percent = Math.round((processed/total)*100);
-                progressBar.style.width = percent + '%';
-                progressBar.textContent = percent + '%';
-                log(`Batch hoàn thành: ${got} sản phẩm.`);
-                // small pause to avoid hammering
-                await new Promise(r => setTimeout(r, 200));
-            }
-
-            if (!abortFlag) {
-                statusLine.textContent = 'Hoàn tất. Dọn dẹp tạm...';
-                // cleanup
-                const fd3 = new FormData();
-                fd3.append('ajax_action','cleanup_temp');
-                fd3.append('token', token);
-                await fetch(window.location.href, { method: 'POST', body: fd3 });
-                progressBar.style.width = '100%'; progressBar.textContent = '100%';
-                statusLine.textContent = 'Đã hoàn tất import!';
-                log('Import hoàn tất.');
-            }
-
-        } catch (err) {
-            console.error(err);
-            alert('Có lỗi xảy ra. Kiểm tra console.');
-            log('Exception: ' + err.message);
-            statusLine.textContent = 'Lỗi khi nạp.';
-        } finally {
-            btnStart.disabled = false;
-            btnCancel.style.display = 'none';
-        }
-    });
-
-    btnCancel.addEventListener('click', function(){
-        if (!confirm('Bạn có muốn hủy tiến trình hiện tại?')) return;
-        abortFlag = true;
-        btnStart.disabled = false; btnCancel.style.display = 'none';
-    });
-})();
-</script>
+<script src="../assets/js/admin_import.js?v=<?php echo time(); ?>"></script>
 </body>
 </html>

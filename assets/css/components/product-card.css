@@ -53,9 +53,14 @@
 /* --- Hình ảnh --- */
 .tgdd-card-img {
     width: 100%;
+    height: 160px; /* Cố định chiều cao khung chứa ảnh */
     margin-bottom: 15px;
     text-align: center;
     position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fdfdfd; /* Nền mờ cho vùng ảnh */
 }
 
 .tgdd-card-img img {

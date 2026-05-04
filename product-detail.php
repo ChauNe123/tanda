@@ -74,10 +74,10 @@ $pct = $hasDiscount ? round((($p['price'] - $chot_gia) / $p['price']) * 100) : 0
         <!-- ==== CỘT TRÁI (ẢNH VÀ THÔNG TIN CHI TIẾT) ==== -->
         <div class="pd-left">
             <?php
-            // Lấy toàn bộ ảnh từ cột image_file (nếu có)
+            // Lấy toàn bộ ảnh từ cột image_1 (Theo quy tắc mapping mới)
             $gallery_images = [];
-            if (!empty($p['image_file'])) {
-                $image_files = explode(',', $p['image_file']); // Giả sử các ảnh được lưu cách nhau bởi dấu phẩy
+            if (!empty($p['image_1'])) {
+                $image_files = explode(',', $p['image_1']); // Các ảnh được lưu cách nhau bởi dấu phẩy
                 foreach ($image_files as $image) {
                     $image = trim($image);
                     if (!empty($image) && file_exists('uploads/' . $image)) {
@@ -85,24 +85,84 @@ $pct = $hasDiscount ? round((($p['price'] - $chot_gia) / $p['price']) * 100) : 0
                     }
                 }
             }
-
             ?>
             <!-- Box Gallery (Ảnh SP) -->
             <div class="pd-box pd-gallery-wrapper" style="padding-bottom: 15px;">
-                <div class="pd-gallery-box" style="position: relative; width: 100%; aspect-ratio: 1 / 1; max-height: 500px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #fff; border-radius: 8px;">
+                <div class="pd-gallery-box" style="position: relative; width: 100%; aspect-ratio: 1 / 1; max-height: 500px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #fff; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #f1f1f1;">
                     <?php $main_show = !empty($gallery_images) ? $gallery_images[0] : 'placeholder.png'; ?>
-                    <img id="main-product-image" src="uploads/<?php echo htmlspecialchars($main_show); ?>" alt="<?php echo htmlspecialchars($p['name']); ?>" class="pd-img-main" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; transform: none; margin: 0; padding: 0;">
+                    <img id="main-product-image" src="uploads/<?php echo htmlspecialchars($main_show); ?>" alt="<?php echo htmlspecialchars($p['name']); ?>" class="pd-img-main" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; transition: 0.3s ease; cursor: zoom-in;" onclick="openLightbox(this.src)">
+                    
+                    <?php if(count($gallery_images) > 1): ?>
+                        <!-- Nút mũi tên -->
+                        <button class="gallery-nav-btn prev" onclick="prevImage()" style="position:absolute; left:10px; top:50%; transform:translateY(-50%); width:40px; height:40px; border-radius:50%; border:none; background:rgba(255,255,255,0.8); cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.1); z-index:10; transition:0.2s;">
+                            <i class="fas fa-chevron-left" style="font-size:18px; color:#333;"></i>
+                        </button>
+                        <button class="gallery-nav-btn next" onclick="nextImage()" style="position:absolute; right:10px; top:50%; transform:translateY(-50%); width:40px; height:40px; border-radius:50%; border:none; background:rgba(255,255,255,0.8); cursor:pointer; display:flex; align-items:center; justify-content:center; box-shadow:0 2px 10px rgba(0,0,0,0.1); z-index:10; transition:0.2s;">
+                            <i class="fas fa-chevron-right" style="font-size:18px; color:#333;"></i>
+                        </button>
+                    <?php endif; ?>
                 </div>
                 
                 <!-- Thumbnails Slider -->
                 <?php if(count($gallery_images) > 1): ?>
-                <div class="pd-thumbnails" style="display: flex; gap: 10px; margin-top: 15px; justify-content: center; overflow-x: auto;">
+                <div class="pd-thumbnails" id="gallery-thumbnails" style="display: flex; gap: 10px; margin-top: 15px; justify-content: center; overflow-x: auto; padding: 5px 0;">
                     <?php foreach($gallery_images as $index => $img): ?>
-                    <img src="uploads/<?php echo htmlspecialchars($img); ?>" class="pd-thumb-item" style="width: 60px; height: 60px; min-width: 60px; object-fit: contain; background: #fff; border: 2px solid <?php echo $index === 0 ? '#288ad6' : '#eee'; ?>; border-radius: 4px; cursor: pointer; transition: 0.2s;" onclick="changeMainImage('<?php echo htmlspecialchars($img); ?>', this)">
+                    <img src="uploads/<?php echo htmlspecialchars($img); ?>" 
+                         class="pd-thumb-item <?php echo $index === 0 ? 'active' : ''; ?>" 
+                         data-index="<?php echo $index; ?>"
+                         style="width: 60px; height: 60px; min-width: 60px; object-fit: contain; background: #fff; border: 2px solid <?php echo $index === 0 ? '#288ad6' : '#eee'; ?>; border-radius: 4px; cursor: pointer; transition: 0.2s;" 
+                         loading="lazy" 
+                         onclick="changeMainImage('<?php echo htmlspecialchars($img); ?>', this)">
                     <?php endforeach; ?>
                 </div>
                 <?php endif; ?>
             </div>
+
+            <script>
+                // Logic Gallery Ảnh
+                let currentImgIndex = 0;
+                const galleryImages = <?php echo json_encode($gallery_images); ?>;
+
+                function changeMainImage(imgName, thumb) {
+                    const mainImg = document.getElementById('main-product-image');
+                    mainImg.style.opacity = '0.5';
+                    setTimeout(() => {
+                        mainImg.src = 'uploads/' + imgName;
+                        mainImg.style.opacity = '1';
+                    }, 150);
+
+                    // Cập nhật viền cho Thumbnails
+                    const thumbs = document.querySelectorAll('.pd-thumb-item');
+                    thumbs.forEach(t => {
+                        t.style.borderColor = '#eee';
+                        t.classList.remove('active');
+                    });
+                    thumb.style.borderColor = '#288ad6';
+                    thumb.classList.add('active');
+                    
+                    if (thumb.dataset.index !== undefined) {
+                        currentImgIndex = parseInt(thumb.dataset.index);
+                    }
+                }
+
+                function nextImage() {
+                    currentImgIndex = (currentImgIndex + 1) % galleryImages.length;
+                    const nextThumb = document.querySelector(`.pd-thumb-item[data-index="${currentImgIndex}"]`);
+                    if(nextThumb) changeMainImage(galleryImages[currentImgIndex], nextThumb);
+                }
+
+                function prevImage() {
+                    currentImgIndex = (currentImgIndex - 1 + galleryImages.length) % galleryImages.length;
+                    const prevThumb = document.querySelector(`.pd-thumb-item[data-index="${currentImgIndex}"]`);
+                    if(prevThumb) changeMainImage(galleryImages[currentImgIndex], prevThumb);
+                }
+
+                // Hỗ trợ phím mũi tên
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowLeft') prevImage();
+                    if (e.key === 'ArrowRight') nextImage();
+                });
+            </script>
 
             <!-- Cam kết TGDĐ Style -->
             <div class="pd-policy-box">
@@ -295,4 +355,33 @@ function changeMainImage(imgFile, el) {
 }
 </script>
 
-<?php include 'includes/footer.php'; ?>
+    <?php include 'includes/footer.php'; ?>
+
+    <!-- KB LIGHTBOX SYSTEM -->
+    <div id="kb-lightbox" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.9); z-index:99999; align-items:center; justify-content:center; backdrop-filter:blur(10px); cursor:zoom-out;" onclick="closeLightbox()">
+        <span style="position:absolute; top:20px; right:30px; color:#fff; font-size:40px; cursor:pointer;">&times;</span>
+        <img id="lightbox-img" src="" style="max-width:90%; max-height:90%; object-fit:contain; border-radius:8px; box-shadow:0 0 50px rgba(0,0,0,0.5); transform:scale(0.9); transition:0.3s ease;">
+    </div>
+
+    <script>
+        function openLightbox(src) {
+            const lightbox = document.getElementById('kb-lightbox');
+            const img = document.getElementById('lightbox-img');
+            img.src = src;
+            lightbox.style.display = 'flex';
+            setTimeout(() => {
+                img.style.transform = 'scale(1)';
+            }, 50);
+        }
+
+        function closeLightbox() {
+            const lightbox = document.getElementById('kb-lightbox');
+            const img = document.getElementById('lightbox-img');
+            img.style.transform = 'scale(0.9)';
+            setTimeout(() => {
+                lightbox.style.display = 'none';
+            }, 200);
+        }
+    </script>
+</body>
+</html>

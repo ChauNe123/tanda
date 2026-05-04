@@ -1,14 +1,5 @@
 <?php include 'includes/header.php'; ?>
 
-    <div class="container hero-banner">
-        <div class="banner-main">
-            <img src="banners/1.png" alt="Banner Chính">
-        </div>
-        <div class="banner-sub">
-            <img src="banners/2.png" alt="Banner Phụ 1">
-            <img src="banners/3.png" alt="Banner Phụ 2">
-        </div>
-    </div>
 
 <style>
 /* CSS cho bố cục Trang chủ mới */
@@ -84,10 +75,14 @@
 <main class="container" id="mainContent">
 
     <?php
-    function fitGridBySix($items) {
-        $perRow = 6;
-        $visibleCount = (int)(floor(count($items) / $perRow) * $perRow);
-        return array_slice($items, 0, $visibleCount);
+    if (!function_exists('fitGridBySix')) {
+        function fitGridBySix($items) {
+            // Chỉ lấy số lượng sản phẩm chia hết cho 6 để đẹp giao diện ban đầu
+            $count = count($items);
+            $fitCount = floor($count / 6) * 6;
+            if ($fitCount == 0 && $count > 0) return $items; // Nếu có ít hơn 6 thì hiện hết
+            return array_slice($items, 0, $fitCount);
+        }
     }
     ?>
 
@@ -233,16 +228,25 @@ function loadProducts(catCode, btn) {
     fetch(`ajax_get_products.php?cat=${catCode}`)
         .then(res => res.json())
         .then(data => {
-            // Thay thế cục HTML
-            grid.innerHTML = data.html;
-            document.getElementById('suggest-btn-wrap').innerHTML = data.btnHtml;
+            console.log("--- TANDA AJAX DEBUG ---");
+            if(data.success) {
+                console.log("✅ Dữ liệu nạp thành công!");
+                console.log("Số lượng SP nhận được:", data.debug_count);
+                // Thay thế cục HTML
+                grid.innerHTML = data.html;
+                document.getElementById('suggest-btn-wrap').innerHTML = data.btnHtml;
+            } else {
+                console.error("❌ Lỗi Backend:", data.error);
+                console.error("Vết lỗi (Trace):", data.trace);
+                grid.innerHTML = `<p style="color:red; padding:20px;">Lỗi nạp dữ liệu: ${data.error}</p>`;
+            }
             
             // Xóa mờ
             grid.style.opacity = '1';
             grid.style.pointerEvents = 'auto';
         })
         .catch(err => {
-            console.error(err);
+            console.error("❌ Lỗi kết nối (Fetch error):", err);
             grid.style.opacity = '1';
             grid.style.pointerEvents = 'auto';
         });

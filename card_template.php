@@ -1,14 +1,18 @@
 <?php 
 // Tiền xử lý dữ liệu
-$outOfStock = ($p['status'] == 0);
-$chot_gia = ($p['sale_price'] > 0) ? $p['sale_price'] : $p['price'];
-$hasDiscount = ($p['sale_price'] > 0 && $p['price'] > $p['sale_price']);
-$pct = $hasDiscount ? round((($p['price'] - $p['sale_price']) / $p['price']) * 100) : 0;
+// Tiền xử lý dữ liệu - Ép kiểu số để tránh lỗi Fatal trên PHP 8
+$p_price = floatval($p['price'] ?? 0);
+$p_sale_price = floatval($p['sale_price'] ?? 0);
 
-// Ưu tiên lấy ảnh từ cột image_file
+$outOfStock = ($p['status'] == 0);
+$chot_gia = ($p_sale_price > 0) ? $p_sale_price : $p_price;
+$hasDiscount = ($p_sale_price > 0 && $p_price > $p_sale_price);
+$pct = $hasDiscount ? round((($p_price - $p_sale_price) / $p_price) * 100) : 0;
+
+// Ưu tiên lấy ảnh từ cột image_1
 $display_img = 'placeholder.png';
-if (!empty($p['image_file'])) {
-    $image_files = explode(',', $p['image_file']); // Giả sử các ảnh được lưu cách nhau bởi dấu phẩy
+if (!empty($p['image_1'])) {
+    $image_files = explode(',', $p['image_1']); // Các ảnh được lưu cách nhau bởi dấu phẩy
     $first_image = trim($image_files[0]);
     if (!empty($first_image) && file_exists('uploads/' . $first_image)) {
         $display_img = $first_image;
@@ -29,7 +33,7 @@ if (!empty($p['image_file'])) {
 
     <!-- Hình ảnh nguyên bản -->
     <a href="product-detail.php?slug=<?php echo htmlspecialchars($p['slug']); ?>" class="tgdd-card-img">
-        <img src="uploads/<?php echo htmlspecialchars($display_img); ?>" alt="<?php echo htmlspecialchars($p['name']); ?>">
+        <img src="uploads/<?php echo htmlspecialchars($display_img); ?>" alt="<?php echo htmlspecialchars($p['name']); ?>" loading="lazy">
     </a>
     
     <!-- Tên Sản Phẩm Giới Hạn 2 Dòng -->
@@ -43,7 +47,7 @@ if (!empty($p['image_file'])) {
     <div class="tgdd-card-price">
         <span class="tgdd-price-new"><?php echo number_format($chot_gia, 0, ',', '.'); ?>đ</span>
         <?php if($hasDiscount): ?>
-            <span class="tgdd-price-old"><?php echo number_format($p['price'], 0, ',', '.'); ?>đ</span>
+            <span class="tgdd-price-old"><?php echo number_format($p_price, 0, ',', '.'); ?>đ</span>
             <span class="tgdd-price-percent">-<?php echo $pct; ?>%</span>
         <?php endif; ?>
     </div>

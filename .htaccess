@@ -1,13 +1,32 @@
-RewriteEngine On
-RewriteBase /tanda/
+# Nén dữ liệu Gzip
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript application/x-javascript application/json
+</IfModule>
 
-# Bỏ đuôi .php cho các trang cơ bản
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_FILENAME}\.php -f
-RewriteRule ^(.*)$ $1.php [L]
+# Caching file tĩnh (Ảnh, CSS, JS)
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType image/jpg "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/gif "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType text/css "access plus 1 month"
+  ExpiresByType application/pdf "access plus 1 month"
+  ExpiresByType text/javascript "access plus 1 month"
+  ExpiresByType application/javascript "access plus 1 month"
+  ExpiresByType application/x-javascript "access plus 1 month"
+  ExpiresByType application/x-shockwave-flash "access plus 1 month"
+  ExpiresByType image/x-icon "access plus 1 year"
+  ExpiresDefault "access plus 2 days"
+</IfModule>
 
-# Link cho trang Danh mục (VD: /danh-muc/camera-wifi)
-RewriteRule ^danh-muc/([a-zA-Z0-9-]+)$ category.php?slug=$1 [L,QSA]
+# Bảo mật: Chặn xem thư mục
+Options -Indexes
 
-# Link cho trang Chi tiết sản phẩm (VD: /san-pham/camera-tapo-c200)
-RewriteRule ^san-pham/([a-zA-Z0-9-]+)$ product-detail.php?slug=$1 [L,QSA]
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ index.php [L]
+</IfModule>
