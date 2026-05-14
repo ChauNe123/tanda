@@ -377,15 +377,27 @@ $pct = $hasDiscount ? round((($p['price'] - $chot_gia) / $p['price']) * 100) : 0
         <!-- ==== CỘT PHẢI (HÀNH ĐỘNG VÀ LIÊN HỆ) ==== -->
         <div class="pd-right-action">
             
+            <!-- Trạng thái còn hàng / hết hàng -->
+            <div class="pd-stock-status" style="margin-bottom:12px; padding:10px 14px; border-radius:6px; text-align:center; font-weight:600; font-size:14px; <?php echo $p['status'] == 1 ? 'background:#e8f5e9; color:#2e7d32;' : 'background:#ffebee; color:#c62828;'; ?>">
+                <i class="fas <?php echo $p['status'] == 1 ? 'fa-check-circle' : 'fa-times-circle'; ?>"></i>
+                <?php echo $p['status'] == 1 ? 'Còn hàng' : 'Tạm hết hàng'; ?>
+            </div>
+
             <!-- Các Nút chức năng -->
             <div class="pd-actions">
                 <div class="btn-row">
+                    <?php if($p['status'] == 1): ?>
                     <button type="button" class="btn-outline-blue" onclick="addToCart('<?php echo htmlspecialchars($p['sku']); ?>', '<?php echo addslashes($p['name']); ?>', <?php echo $chot_gia; ?>, '<?php echo htmlspecialchars($first_image); ?>')">
                         <i class="fas fa-cart-plus"></i>Thêm vào giỏ
                     </button>
                     <button type="button" class="btn-solid-orange" onclick="addToCart('<?php echo htmlspecialchars($p['sku']); ?>', '<?php echo addslashes($p['name']); ?>', <?php echo $chot_gia; ?>, '<?php echo htmlspecialchars($first_image); ?>'); window.location.href='cart.php';">
                         MUA NGAY
                     </button>
+                    <?php else: ?>
+                    <button type="button" class="btn-outline-blue" disabled style="opacity:0.5; cursor:not-allowed; flex:1;">
+                        <i class="fas fa-cart-plus"></i>Hết hàng tạm thời
+                    </button>
+                    <?php endif; ?>
                 </div>
             </div>
 

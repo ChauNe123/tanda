@@ -120,6 +120,7 @@ function showSkeleton() {
                     <div class="skeleton-block" style="width:80px;height:20px;margin-bottom:4px;"></div>
                     <div class="skeleton-block" style="width:60px;height:14px;"></div>
                 </td>
+                <td><div class="skeleton-block" style="width:48px;height:26px;border-radius:26px;"></div></td>
                 <td><div class="skeleton-block" style="width:60px;height:30px;"></div></td>
             </tr>`;
     }
@@ -167,7 +168,7 @@ async function loadProductList() {
             addLog(`Đã tải ${result.data.length}/${result.total} sản phẩm (Trang ${result.page}/${result.total_pages})`, 'success');
         }
     } catch (err) {
-        if (tbody) tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:50px;color:#d70018;">⚠ Lỗi tải dữ liệu: ' + err.message + '</td></tr>';
+        if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:50px;color:#d70018;">⚠ Lỗi tải dữ liệu: ' + err.message + '</td></tr>';
     }
     adminState.isLoading = false;
 }
@@ -180,7 +181,7 @@ function renderTable(data) {
     if (!tbody) return;
     
     if (!data || data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:50px; color:#999;">' + 
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:50px; color:#999;">' + 
             (adminState.search ? 'Không tìm thấy sản phẩm khớp với "' + escapeHtml(adminState.search) + '"' : 'Chưa có sản phẩm nào.') + 
             '</td></tr>';
         return;
@@ -237,11 +238,18 @@ function renderTable(data) {
             </td>
             <td style="vertical-align: top;">
                 <div style="color:var(--danger-color); font-weight:700; font-size:15px; margin-top: 5px;">
-                    <span class="editable" contenteditable="true" data-field="sale_price">${parseInt(p.sale_price || 0).toLocaleString()}</span>đ
+                    <span class="editable price-inline" contenteditable="true" data-field="sale_price">${parseInt(p.sale_price || 0).toLocaleString('vi-VN')}</span><span class="currency-suffix">₫</span>
                 </div>
                 <div style="text-decoration:line-through; color:#a19f9d; font-size:12px;">
-                    <span class="editable" contenteditable="true" data-field="price">${parseInt(p.price || 0).toLocaleString()}</span>đ
+                    <span class="editable price-inline" contenteditable="true" data-field="price">${parseInt(p.price || 0).toLocaleString('vi-VN')}</span><span class="currency-suffix">₫</span>
                 </div>
+            </td>
+            <td style="text-align:center; vertical-align: top; padding-top: 12px;">
+                <label class="stock-toggle" title="${p.status == 1 ? 'Đang Còn hàng - Click để chuyển Hết hàng' : 'Đang Hết hàng - Click để chuyển Còn hàng'}">
+                    <input type="checkbox" ${p.status == 1 ? 'checked' : ''} onchange="toggleProductStatus('${escapeHtml(p.sku)}', this.checked)">
+                    <span class="toggle-slider"></span>
+                </label>
+                <div class="stock-status-text" style="font-size:11px; margin-top:4px; font-weight:600; color:${p.status == 1 ? '#107c10' : '#d83b01'};">${p.status == 1 ? 'Còn hàng' : 'Hết hàng'}</div>
             </td>
             <td style="text-align:center; vertical-align: top; padding-top: 15px;">
                 <div style="display:flex; flex-direction:column; gap:8px; align-items:center;">
@@ -411,6 +419,63 @@ async function updateLocalProduct(sku, field, val) {
 }
 
 // ============================================================
+// BẬT/TẮT TRẠNG THÁI CÒN HÀNG / HẾT HÀNG
+// ============================================================
+async function toggleProductStatus(sku, checked) {
+    const newStatus = checked ? 1 : 0;
+    const tr = document.querySelector(`tr[data-sku="${sku}"]`);
+    const statusText = tr ? tr.querySelector('.stock-status-text') : null;
+    const toggleLabel = tr ? tr.querySelector('.stock-toggle') : null;
+    
+    // Cập nhật UI ngay lập tức
+    if (statusText) {
+        statusText.textContent = newStatus ? 'Còn hàng' : 'Hết hàng';
+        statusText.style.color = newStatus ? '#107c10' : '#d83b01';
+    }
+    if (toggleLabel) {
+        toggleLabel.title = newStatus ? 'Đang Còn hàng - Click để chuyển Hết hàng' : 'Đang Hết hàng - Click để chuyển Còn hàng';
+    }
+    
+    const formData = new FormData();
+    formData.append('ajax_action', 'toggle_status');
+    formData.append('sku', sku);
+    formData.append('status', newStatus);
+    
+    try {
+        const resp = await fetch('import_csv.php', { method: 'POST', body: formData });
+        const data = await resp.json();
+        if (data.success) {
+            // Flash xanh nhẹ dòng
+            if (tr) {
+                tr.style.transition = 'background 0.3s';
+                tr.style.background = '#d4edda';
+                setTimeout(() => { tr.style.background = ''; }, 600);
+            }
+        } else {
+            // Revert nếu lỗi
+            if (statusText) {
+                const revertStatus = checked ? 0 : 1;
+                statusText.textContent = revertStatus ? 'Còn hàng' : 'Hết hàng';
+                statusText.style.color = revertStatus ? '#107c10' : '#d83b01';
+            }
+        }
+    } catch (err) {
+        // Revert nếu lỗi mạng
+        if (statusText) {
+            const revertStatus = checked ? 0 : 1;
+            statusText.textContent = revertStatus ? 'Còn hàng' : 'Hết hàng';
+            statusText.style.color = revertStatus ? '#107c10' : '#d83b01';
+        }
+    }
+    
+    // Cập nhật local state
+    const idx = adminState.data.findIndex(p => p.sku === sku);
+    if (idx !== -1) {
+        adminState.data[idx].status = newStatus;
+    }
+}
+
+// ============================================================
 // TÌM KIẾM (DEBOUNCED 400ms)
 // ============================================================
 const debouncedSearch = debounce(function(query) {
@@ -511,7 +576,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         });
     }
     
-    // Inline edit với debounce
+    // Inline edit: GIÁ → lưu trực tiếp DB, các field khác → dirty edit
     document.addEventListener('blur', function(e) {
         if (e.target.classList.contains('editable')) {
             const tr = e.target.closest('tr');
@@ -519,16 +584,61 @@ document.addEventListener('DOMContentLoaded', async function() {
             const sku = tr.getAttribute('data-sku');
             const field = e.target.getAttribute('data-field');
             let val = e.target.innerText.trim();
+            
             if (field === 'price' || field === 'sale_price') {
+                // Lưu TRỰC TIẾP vào DB (không cần bấm CHỐT LƯU)
                 val = val.replace(/[^0-9]/g, '');
-                e.target.innerText = val ? parseInt(val).toLocaleString() : '0';
+                e.target.innerText = val ? parseInt(val).toLocaleString('vi-VN') : '0';
+                
+                // Gửi AJAX lưu ngay
+                const formData = new FormData();
+                formData.append('ajax_action', 'save_price_inline');
+                formData.append('sku', sku);
+                formData.append('field', field);
+                formData.append('value', val || '0');
+                
+                fetch('import_csv.php', { method: 'POST', body: formData })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Cập nhật ô giá còn lại nếu cần
+                            const otherField = field === 'price' ? 'sale_price' : 'price';
+                            const otherSpan = tr.querySelector(`.editable[data-field="${otherField}"]`);
+                            if (otherSpan) {
+                                otherSpan.innerText = parseInt(data[otherField] || 0).toLocaleString('vi-VN');
+                            }
+                            // Flash xanh để báo lưu OK
+                            e.target.style.transition = 'background 0.3s';
+                            e.target.style.background = '#d4edda';
+                            setTimeout(() => { e.target.style.background = ''; }, 800);
+                        } else {
+                            e.target.style.background = '#f8d7da';
+                            setTimeout(() => { e.target.style.background = ''; }, 800);
+                        }
+                    })
+                    .catch(() => {
+                        e.target.style.background = '#f8d7da';
+                        setTimeout(() => { e.target.style.background = ''; }, 800);
+                    });
+                
+                // Cũng cập nhật local state
+                updateLocalProduct(sku, field, val || '0');
+            } else {
+                // Field khác: dirty edit như cũ
+                updateLocalProduct(sku, field, val);
             }
-            updateLocalProduct(sku, field, val);
         }
     }, true);
     
-    // Phím tắt: Ctrl+S để lưu
+    // Phím tắt: Enter trong ô giá → blur để trigger lưu
     document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' && e.target.classList.contains('editable')) {
+            const field = e.target.getAttribute('data-field');
+            if (field === 'price' || field === 'sale_price') {
+                e.preventDefault();
+                e.target.blur();
+            }
+        }
         if ((e.ctrlKey || e.metaKey) && e.key === 's') {
             e.preventDefault();
             bulkUpdate();

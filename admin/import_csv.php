@@ -398,6 +398,65 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'save_product') {
 }
 
 // ---------------------------------------------------------
+// API: LƯU GIÁ TRỰC TIẾP (INLINE EDIT - CHỈ CẬP NHẬT GIÁ)
+// ---------------------------------------------------------
+if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'save_price_inline') {
+    $sku = trim($_POST['sku'] ?? '');
+    $field = trim($_POST['field'] ?? '');
+    $value = trim($_POST['value'] ?? '');
+    
+    if ($sku === '' || !in_array($field, ['price', 'sale_price'])) {
+        echo json_encode(['success'=>0, 'error'=>'Dữ liệu không hợp lệ']);
+        exit;
+    }
+    
+    // Chỉ nhận số, bỏ hết ký tự không phải số
+    $value = preg_replace('/[^0-9]/', '', $value);
+    $value = $value === '' ? '0' : $value;
+    
+    try {
+        $stmt = $conn->prepare("UPDATE products SET {$field} = :val WHERE sku = :sku");
+        $stmt->execute([':val' => $value, ':sku' => $sku]);
+        
+        // Lấy giá trị mới để trả về
+        $fetch = $conn->prepare("SELECT price, sale_price FROM products WHERE sku = :sku");
+        $fetch->execute([':sku' => $sku]);
+        $row = $fetch->fetch();
+        
+        echo json_encode([
+            'success' => 1,
+            'price' => (int)$row['price'],
+            'sale_price' => (int)$row['sale_price']
+        ]);
+    } catch (Exception $e) {
+        echo json_encode(['success'=>0, 'error'=>$e->getMessage()]);
+    }
+    exit;
+}
+
+// ---------------------------------------------------------
+// API: BẬT/TẮT TRẠNG THÁI CÒN HÀNG / HẾT HÀNG (TOGGLE)
+// ---------------------------------------------------------
+if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'toggle_status') {
+    $sku = trim($_POST['sku'] ?? '');
+    $status = (int)($_POST['status'] ?? 0);
+    
+    if ($sku === '') {
+        echo json_encode(['success'=>0, 'error'=>'Thiếu SKU']);
+        exit;
+    }
+    
+    try {
+        $stmt = $conn->prepare("UPDATE products SET status = :stt WHERE sku = :sku");
+        $stmt->execute([':stt' => $status, ':sku' => $sku]);
+        echo json_encode(['success'=>1, 'new_status' => $status]);
+    } catch (Exception $e) {
+        echo json_encode(['success'=>0, 'error'=>$e->getMessage()]);
+    }
+    exit;
+}
+
+// ---------------------------------------------------------
 // API: XÓA SẢN PHẨM (DELETE)
 // ---------------------------------------------------------
 if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'delete_product') {
@@ -649,7 +708,8 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'cleanup_temp') {
                         <th style="width: 100px;">Mã SKU</th>
                         <th>Thông tin sản phẩm & Danh mục</th>
                         <th style="width: 180px;">Giá bán / Khuyến mãi</th>
-                        <th style="width: 150px; text-align: center;">Thao tác</th>
+                        <th style="width: 100px; text-align: center;">Trạng thái</th>
+                        <th style="width: 130px; text-align: center;">Thao tác</th>
                     </tr>
                 </thead>
                 <tbody id="product-list-body">

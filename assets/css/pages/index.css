@@ -1,5 +1,152 @@
 /* ====== TRANG CHỦ (index.php) ====== */
 
+/* ====== KHỐI 0: THANH LỌC & SẮP XẾP (chuẩn TGDĐ) ====== */
+.filter-sort-wrapper {
+    background: #fff;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    padding: 16px 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+.fs-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #333;
+    margin: 0 0 14px 0;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+/* --- Dòng 1: Thanh lọc nhanh --- */
+.quick-filter-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 2px;
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+}
+/* Ẩn scrollbar nhưng vẫn vuốt được */
+.quick-filter-container::-webkit-scrollbar {
+    display: none;
+}
+.quick-filter-container {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* Nút chung trong thanh lọc */
+.qf-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 36px;
+    padding: 0 14px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    white-space: nowrap;
+    border: 1px solid transparent;
+}
+
+/* Nút "Lọc" (filter) */
+.qf-btn-filter {
+    background: #fff;
+    border-color: #288ad6;
+    color: #288ad6;
+    font-weight: 600;
+}
+.qf-btn-filter i {
+    font-size: 12px;
+}
+.qf-btn-filter:hover {
+    background: #e8f4fd;
+}
+
+/* Nút danh mục (text) */
+.qf-btn-cat {
+    background: #f3f4f6;
+    color: #444;
+    border-color: transparent;
+}
+.qf-btn-cat:hover {
+    background: #e5e7eb;
+    color: #288ad6;
+}
+
+/* Nút logo hãng */
+.qf-btn-brand {
+    background: #fff;
+    border-color: #e0e0e0;
+    color: #555;
+    gap: 6px;
+    padding: 0 12px;
+}
+.qf-btn-brand img {
+    height: 18px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+.qf-btn-brand span {
+    font-size: 12px;
+    font-weight: 500;
+}
+.qf-btn-brand:hover {
+    border-color: #288ad6;
+    color: #288ad6;
+}
+
+
+/* --- Dòng 2: Thanh sắp xếp --- */
+.sort-bar {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    margin-top: 15px;
+    padding-top: 14px;
+    border-top: 1px solid #f0f0f0;
+    flex-wrap: wrap;
+}
+.sort-label {
+    font-size: 14px;
+    color: #666;
+    margin-right: 16px;
+    font-weight: 500;
+    flex-shrink: 0;
+}
+.sort-option {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    font-size: 14px;
+    color: #666;
+    text-decoration: none;
+    padding: 4px 0;
+    transition: color 0.2s;
+    cursor: pointer;
+}
+.sort-option:not(:last-child)::after {
+    content: '•';
+    margin: 0 12px;
+    color: #ccc;
+    font-size: 10px;
+    pointer-events: none;
+}
+.sort-option:hover {
+    color: #288ad6;
+}
+.sort-option.active {
+    color: #288ad6;
+    font-weight: 600;
+}
+
+
 /* Khối Flash Sale */
 .section-flash-sale {
     background: #d70018;
@@ -72,7 +219,54 @@
 }
 
 /* === RESPONSIVE === */
+@media (max-width: 1024px) {
+    .filter-sort-wrapper {
+        padding: 14px 16px;
+    }
+    .sort-bar {
+        gap: 0;
+    }
+}
+
 @media (max-width: 768px) {
+    .filter-sort-wrapper {
+        padding: 12px 14px;
+        margin-bottom: 15px;
+    }
+    .fs-title {
+        font-size: 17px;
+        margin-bottom: 10px;
+    }
+    .qf-btn {
+        height: 32px;
+        padding: 0 10px;
+        font-size: 12px;
+    }
+    .qf-btn-brand img {
+        height: 15px;
+    }
+    .qf-btn-brand span {
+        font-size: 11px;
+    }
+    .quick-filter-container {
+        gap: 8px;
+    }
+    .sort-bar {
+        margin-top: 10px;
+        padding-top: 10px;
+        gap: 0;
+    }
+    .sort-label {
+        font-size: 13px;
+        margin-right: 10px;
+    }
+    .sort-option {
+        font-size: 13px;
+    }
+    .sort-option:not(:last-child)::after {
+        margin: 0 8px;
+    }
+
     .section-flash-sale { padding: 15px; margin-bottom: 20px; }
     .section-flash-sale .section-title { font-size: 18px; }
     .filter-pill { padding: 6px 12px; font-size: 12px; }
@@ -81,6 +275,49 @@
 }
 
 @media (max-width: 480px) {
+    .filter-sort-wrapper {
+        padding: 10px 12px;
+        border-radius: 6px;
+        margin-bottom: 12px;
+    }
+    .fs-title {
+        font-size: 15px;
+        margin-bottom: 8px;
+    }
+    .qf-btn {
+        height: 30px;
+        padding: 0 8px;
+        font-size: 11px;
+        gap: 4px;
+    }
+    .qf-btn-brand {
+        padding: 0 8px;
+    }
+    .qf-btn-brand img {
+        height: 14px;
+    }
+    .qf-btn-brand span {
+        font-size: 10px;
+    }
+    .quick-filter-container {
+        gap: 6px;
+    }
+    .sort-bar {
+        margin-top: 8px;
+        padding-top: 8px;
+    }
+    .sort-label {
+        font-size: 12px;
+        margin-right: 8px;
+    }
+    .sort-option {
+        font-size: 12px;
+    }
+    .sort-option:not(:last-child)::after {
+        margin: 0 6px;
+        font-size: 8px;
+    }
+
     .section-flash-sale { padding: 12px; margin-bottom: 15px; }
     .section-flash-sale .section-title { font-size: 16px; }
     .filter-pill { padding: 5px 10px; font-size: 11px; }

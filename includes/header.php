@@ -77,6 +77,134 @@ global $sys_settings;
             transition: border-color 0.2s;
         }
         .tgdd-search:focus-within { border-color: #000; }
+        
+        /* === DROPDOWN GỢI Ý TÌM KIẾM THÔNG MINH === */
+        .search-wrapper { position: relative; }
+        .search-suggest-dropdown {
+            position: absolute;
+            top: 40%;
+            left: 0;
+            right: 0;
+            background: #fff;
+            border: 1px solid #e0e0e0;
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+            z-index: 10000;
+            max-height: 420px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .suggest-scroll {
+            overflow-y: auto;
+            max-height: 340px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .suggest-scroll::-webkit-scrollbar { width: 4px; }
+        .suggest-scroll::-webkit-scrollbar-thumb { background: #ccc; border-radius: 2px; }
+        
+        .suggest-list { padding: 4px 0; }
+        
+        .suggest-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 14px;
+            text-decoration: none;
+            color: #333;
+            transition: background 0.15s;
+            cursor: pointer;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        .suggest-item:last-child { border-bottom: none; }
+        .suggest-item:hover,
+        .suggest-item.active {
+            background: #f0f7ff;
+        }
+        .suggest-item-img {
+            width: 48px;
+            height: 48px;
+            flex-shrink: 0;
+            border-radius: 4px;
+            overflow: hidden;
+            background: #fafafa;
+            border: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .suggest-item-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        .suggest-item-info {
+            flex: 1;
+            min-width: 0;
+        }
+        .suggest-item-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: #333;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 4px;
+        }
+        .suggest-item-price {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .suggest-price-new {
+            font-size: 14px;
+            font-weight: 700;
+            color: #d70018;
+        }
+        .suggest-price-old {
+            font-size: 12px;
+            color: #999;
+            text-decoration: line-through;
+        }
+        .suggest-price-pct {
+            font-size: 11px;
+            background: #fff0f0;
+            color: #d70018;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+        
+        .suggest-view-all {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px;
+            background: #f8f9fa;
+            color: #288ad6;
+            font-size: 13px;
+            font-weight: 600;
+            text-decoration: none;
+            border-top: 1px solid #eee;
+            transition: background 0.2s;
+        }
+        .suggest-view-all:hover { background: #e8f4fd; }
+        
+        .suggest-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 30px 20px;
+            color: #999;
+            font-size: 14px;
+        }
+        .suggest-empty i { font-size: 18px; color: #ccc; }
+        
         .sugg-list {
             display: flex;
             align-items: center;
@@ -235,6 +363,23 @@ global $sys_settings;
             body.nav-open { padding-top: 56px; overflow: hidden; }
             body.header-compact { padding-top: 56px; }
             
+            /* Search dropdown full-width trên mobile */
+            .search-suggest-dropdown {
+                position: fixed;
+                top: 56px;
+                left: 0;
+                right: 0;
+                width: 100%;
+                max-height: 60vh;
+                border-radius: 0 0 12px 12px;
+                box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+                z-index: 10001;
+            }
+            .suggest-scroll { max-height: 45vh; }
+            .suggest-item { padding: 12px 14px; }
+            .suggest-item-img { width: 52px; height: 52px; }
+            .suggest-item-name { font-size: 14px; }
+            
             .hamburger-toggle { 
                 display: flex !important; 
                 align-items: center; 
@@ -374,6 +519,11 @@ global $sys_settings;
             
             .tgdd-nav { top: 50px; }
             .nav-overlay { top: 50px; }
+            .search-suggest-dropdown { top: 50px; }
+            .suggest-item { padding: 10px 12px; gap: 8px; }
+            .suggest-item-img { width: 44px; height: 44px; }
+            .suggest-item-name { font-size: 13px; }
+            .suggest-price-new { font-size: 13px; }
             
             .header-top { padding: 4px 6px; gap: 4px; }
             .tgdd-logo { font-size: 16px; }
@@ -513,6 +663,166 @@ global $sys_settings;
     });
     </script>
 
+    <!-- ====== SMART SEARCH SUGGEST ====== -->
+    <script>
+    (function() {
+        var searchInput = null;
+        var dropdown = null;
+        var suggestList = null;
+        var viewAll = null;
+        var emptyMsg = null;
+        var queryText = null;
+        var debounceTimer = null;
+        var activeIndex = -1;
+        var currentResults = [];
+        var isOpen = false;
+
+        function init() {
+            searchInput = document.getElementById('searchInput');
+            dropdown = document.getElementById('searchSuggestDropdown');
+            suggestList = document.getElementById('suggestList');
+            viewAll = document.getElementById('suggestViewAll');
+            emptyMsg = document.getElementById('suggestEmpty');
+            queryText = document.getElementById('suggestQueryText');
+            
+            if (!searchInput) return;
+
+            searchInput.addEventListener('input', function() {
+                clearTimeout(debounceTimer);
+                var q = this.value.trim();
+                if (q.length < 1) { closeDropdown(); return; }
+                debounceTimer = setTimeout(function() { fetchSuggestions(q); }, 250);
+            });
+
+            searchInput.addEventListener('focus', function() {
+                var q = this.value.trim();
+                if (q.length >= 1) fetchSuggestions(q);
+            });
+
+            searchInput.addEventListener('keydown', function(e) {
+                if (!isOpen) return;
+                if (e.key === 'ArrowDown') { e.preventDefault(); moveHighlight(1); }
+                else if (e.key === 'ArrowUp') { e.preventDefault(); moveHighlight(-1); }
+                else if (e.key === 'Enter') {
+                    var active = suggestList.querySelector('.suggest-item.active');
+                    if (active) { e.preventDefault(); active.click(); }
+                }
+                else if (e.key === 'Escape') { closeDropdown(); searchInput.blur(); }
+            });
+
+            document.addEventListener('click', function(e) {
+                if (!searchInput || !dropdown) return;
+                if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
+                    closeDropdown();
+                }
+            });
+
+            // Touch devices: close on scroll
+            document.addEventListener('touchstart', function(e) {
+                if (!dropdown || !isOpen) return;
+                if (!dropdown.contains(e.target) && e.target !== searchInput) {
+                    closeDropdown();
+                }
+            }, { passive: true });
+        }
+
+        function fetchSuggestions(q) {
+            fetch('ajax_search_suggest.php?q=' + encodeURIComponent(q) + '&limit=8')
+                .then(function(r) { return r.json(); })
+                .then(function(data) {
+                    if (!data.success || data.count === 0) {
+                        showEmpty(q);
+                        return;
+                    }
+                    currentResults = data.data;
+                    activeIndex = -1;
+                    renderSuggestions(data.data, q);
+                })
+                .catch(function() {
+                    closeDropdown();
+                });
+        }
+
+        function renderSuggestions(items, q) {
+            var html = '';
+            items.forEach(function(item, i) {
+                var saleHtml = '';
+                if (item.has_sale) {
+                    saleHtml = '<span class="suggest-price-old">' + item.price.toLocaleString('vi-VN') + '₫</span>' +
+                               '<span class="suggest-price-pct">-' + item.pct + '%</span>';
+                }
+                html += '<a href="product-detail.php?slug=' + item.slug + '" class="suggest-item" data-index="' + i + '">' +
+                    '<div class="suggest-item-img"><img src="uploads/' + item.image + '" alt="' + escapeHtml(item.name) + '" loading="lazy" onerror="this.style.display=\'none\'"></div>' +
+                    '<div class="suggest-item-info">' +
+                        '<div class="suggest-item-name">' + highlightMatch(item.name, q) + '</div>' +
+                        '<div class="suggest-item-price">' +
+                            '<span class="suggest-price-new">' + item.chot_gia.toLocaleString('vi-VN') + '₫</span>' +
+                            saleHtml +
+                        '</div>' +
+                    '</div>' +
+                '</a>';
+            });
+
+            suggestList.innerHTML = html;
+            viewAll.style.display = 'flex';
+            if (queryText) queryText.textContent = q;
+            emptyMsg.style.display = 'none';
+            dropdown.style.display = 'flex';
+            isOpen = true;
+        }
+
+        function showEmpty(q) {
+            suggestList.innerHTML = '';
+            viewAll.style.display = 'flex';
+            if (queryText) queryText.textContent = q;
+            emptyMsg.style.display = 'flex';
+            dropdown.style.display = 'flex';
+            isOpen = true;
+            currentResults = [];
+        }
+
+        function closeDropdown() {
+            if (dropdown) dropdown.style.display = 'none';
+            isOpen = false;
+            activeIndex = -1;
+            currentResults = [];
+        }
+
+        function moveHighlight(dir) {
+            var items = suggestList.querySelectorAll('.suggest-item');
+            if (items.length === 0) return;
+            items.forEach(function(el) { el.classList.remove('active'); });
+            activeIndex += dir;
+            if (activeIndex < 0) activeIndex = items.length - 1;
+            if (activeIndex >= items.length) activeIndex = 0;
+            items[activeIndex].classList.add('active');
+            items[activeIndex].scrollIntoView({ block: 'nearest' });
+        }
+
+        function highlightMatch(text, query) {
+            var words = query.split(/\s+/).filter(function(w) { return w.length > 0; });
+            var result = escapeHtml(text);
+            words.forEach(function(word) {
+                var escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                result = result.replace(new RegExp('(' + escaped + ')', 'gi'), '<mark style="background:#fff3cd;color:#333;padding:0 2px;border-radius:2px;">$1</mark>');
+            });
+            return result;
+        }
+
+        function escapeHtml(str) {
+            var div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', init);
+        } else {
+            init();
+        }
+    })();
+    </script>
+
     <!-- Cụm script chặn lỗi và ĐIỀU TRA NGUỒN GỐC LỖI -->
     <script>
     console.log("%c--- TANDA FORENSIC INVESTIGATION ---", "color: #ff5722; font-weight: bold; font-size: 14px;");
@@ -563,10 +873,23 @@ global $sys_settings;
             <!-- Cụm Tìm Kiếm & Gợi ý -->
             <div class="search-wrapper">
                 <div class="tgdd-search">
-                    <form action="search.php" method="GET" style="display: flex; width: 100%; align-items: center; margin: 0;">
+                    <form action="search.php" method="GET" style="display: flex; width: 100%; align-items: center; margin: 0;" autocomplete="off">
                         <button type="submit" style="background: none; border: none; color: #999; cursor: pointer; padding: 0 6px 0 0;"><i class="fas fa-search"></i></button>
-                        <input type="text" name="q" placeholder="Bạn tìm camera gì..." style="border: none; outline: none; flex: 1; padding: 10px 8px; background: transparent; font-size: 14px;">
+                        <input type="text" name="q" id="searchInput" placeholder="Bạn tìm camera gì..." style="border: none; outline: none; flex: 1; padding: 10px 8px; background: transparent; font-size: 14px;" autocomplete="off">
                     </form>
+                </div>
+                
+                <!-- Dropdown gợi ý tìm kiếm thông minh -->
+                <div class="search-suggest-dropdown" id="searchSuggestDropdown" style="display:none;">
+                    <div class="suggest-scroll">
+                        <div class="suggest-list" id="suggestList"></div>
+                    </div>
+                    <a href="search.php" class="suggest-view-all" id="suggestViewAll" style="display:none;">
+                        <i class="fas fa-search"></i> Xem tất cả kết quả cho "<span id="suggestQueryText"></span>"
+                    </a>
+                    <div class="suggest-empty" id="suggestEmpty" style="display:none;">
+                        <i class="fas fa-search"></i> Không tìm thấy sản phẩm phù hợp
+                    </div>
                 </div>
                 
                 <div class="sugg-list">

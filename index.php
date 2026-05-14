@@ -71,6 +71,44 @@ function safeUpper($str) {
 
 <main class="container" id="mainContent">
 
+    <!-- KHỐI 0: THANH LỌC & SẮP XẾP (chuẩn TGDĐ) -->
+    <div class="filter-sort-wrapper">
+        <h2 class="fs-title">DANH SÁCH SẢN PHẨM</h2>
+
+        <!-- Dòng 1: Lọc nhanh -->
+        <div class="quick-filter-container">
+            <?php
+            $homeCategories = getCategoriesSafe($conn);
+            foreach($homeCategories as $cat):
+            ?>
+            <a href="category.php?slug=<?php echo htmlspecialchars($cat['slug']); ?>" class="qf-btn qf-btn-cat">
+                <?php echo htmlspecialchars($cat['name']); ?>
+                <i class="fas fa-arrow-trend-up" style="font-size:10px; color:#4CAF50; margin-left:2px;"></i>
+            </a>
+            <?php endforeach; ?>
+
+            <?php
+            // Logo hãng camera
+            $brands = [
+                ['name' => 'Dahua',     'logo' => 'dahua.png',     'slug' => 'dahua'],
+                ['name' => 'Hikvision', 'logo' => 'hikvision.png', 'slug' => 'hikvision'],
+                ['name' => 'KBVision',  'logo' => 'kbvision.png',  'slug' => 'kbvision'],
+                ['name' => 'Ezviz',     'logo' => 'ezviz.png',     'slug' => 'ezviz'],
+                ['name' => 'Imou',      'logo' => 'imou.png',      'slug' => 'imou'],
+                ['name' => 'Xiaomi',    'logo' => 'xiaomi.png',    'slug' => 'xiaomi'],
+            ];
+            foreach($brands as $brand):
+                $logoPath = 'banners/' . $brand['logo'];
+                $logoSrc = file_exists($logoPath) ? $logoPath : 'https://via.placeholder.com/60x20/333333/FFFFFF?text=' . urlencode($brand['name']);
+            ?>
+            <a href="search.php?q=<?php echo urlencode($brand['slug']); ?>" class="qf-btn qf-btn-brand" title="<?php echo $brand['name']; ?>">
+                <img src="<?php echo $logoSrc; ?>" alt="<?php echo $brand['name']; ?>" style="height:18px; object-fit:contain;">
+                <span><?php echo $brand['name']; ?></span>
+            </a>
+            <?php endforeach; ?>
+        </div>
+    </div>
+
     <!-- KHỐI 1: KHUYẾN MÃI HOT -->
     <?php
     $saleProds = [];
