@@ -19,6 +19,8 @@
     --shadow-medium: 0 2px 8px rgba(0, 0, 0, 0.12);
 }
 
+
+
 /* === RESET & BASE STYLES === */
 * {
     margin: 0;
@@ -35,7 +37,12 @@ body {
     background-color: var(--color-bg-light);
     color: var(--color-text-dark);
     line-height: 1.6;
-    padding-top: 210px; /* Đảm bảo nội dung bắt đầu dưới Header (Top + Nav) */
+    padding-top: 160px; /* Khoảng trống cho header fixed */
+    transition: padding-top 0.35s ease;
+}
+/* Khi nav bị ẩn (cuộn xuống), giảm padding */
+body.header-compact {
+    padding-top: 90px;
 }
 
 a {
@@ -59,246 +66,28 @@ button {
 }
 
 .container {
-    max-width: 1200px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
     padding: 0 15px;
     width: 100%;
 }
 
-/* === TGDĐ STYLE HEADER REPLICATION === */
-.tgdd-header {
-    background-color: #ffd400; /* Màu vàng chuẩn TGDD */
-    position: fixed; 
-    width: 100%;
-    top: 0;
-    left: 0;
-    z-index: 9999; /* Luôn nằm trên cùng */
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+/* Màn hình lớn 2K (2560px) - tăng container lên 1400px */
+@media (min-width: 1600px) {
+    .container {
+        max-width: 1400px;
+    }
 }
 
-.tgdd-header.shrink {
-    box-shadow: 0 4px 10px rgba(0,0,0,0.12);
+/* Màn hình 4K (3840px) - tăng container lên 1600px */
+@media (min-width: 2560px) {
+    .container {
+        max-width: 1600px;
+    }
 }
 
-.tgdd-header.shrink .header-top {
-    padding: 6px 16px; /* Giảm padding để header gọn hơn */
-    gap: 30px; /* Tăng gap để các thành phần không bị khít */
-}
-
-.tgdd-header.shrink .tgdd-logo {
-    font-size: 22px; /* Thu nhỏ logo một chút */
-}
-/* === HEADER TOP (Dòng trên) === */
-.header-top {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 18px 0;
-    gap: 30px;
-}
-
-.tgdd-logo {
-    font-size: 32px;
-    font-weight: 800; /* Dày nhưng không quá thô */
-    color: #000;
-    text-decoration: none;
-    display: flex;
-    align-items: center;
-    flex-shrink: 0;
-    letter-spacing: -0.5px;
-}
-.tgdd-logo span { font-weight: 300; }
-
-/* === SEARCH & SUGGESTIONS CONTAINER === */
-.tgdd-search-container {
-    flex: 1;
-    max-width: 700px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.tgdd-search {
-    background: #fff;
-    border: 1px solid #e0e0e0; /* Viền mảnh thay vì bóng đổ */
-    border-radius: 4px; /* Bo góc nhẹ, hiện đại */
-    display: flex;
-    align-items: center;
-    padding: 0 15px;
-    height: 44px;
-    transition: border-color 0.2s;
-}
-.tgdd-search:focus-within {
-    border-color: #000;
-}
-.tgdd-search i {
-    color: #999;
-    font-size: 16px;
-}
-.tgdd-search input {
-    flex: 1;
-    border: none;
-    outline: none;
-    font-size: 15px;
-    background: transparent;
-    padding: 0 12px;
-}
-
-/* === HEADER ACTIONS & CART (TGDĐ Style) === */
-.header-actions {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-
-.cart-pill {
-    background: transparent; /* Tiệp màu với Header vàng */
-    border: 1px solid rgba(0, 0, 0, 0.15); /* Viền mảnh như TGDĐ */
-    padding: 8px 12px;
-    border-radius: 4px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-weight: 500;
-    font-size: 13px;
-    color: #000;
-}
-.cart-pill:hover {
-    background: rgba(255, 255, 255, 0.3);
-    border-color: #000;
-}
-.cart-icon-wrap {
-    position: relative;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-}
-.cart-badge {
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    background: #d70018;
-    color: #fff;
-    font-size: 10px;
-    padding: 1px 5px;
-    border-radius: 10px;
-    font-weight: bold;
-    border: 1px solid #ffd400; /* Viền vàng quanh badge đỏ cho nổi */
-    line-height: 1.2;
-}
-.cart-pill span {
-    white-space: nowrap;
-}
-
-/* === HEADER SUGGESTIONS (Modern Tags) === */
-.header-suggestions {
-    padding: 0;
-}
-.suggestion-list {
-    display: flex;
-    align-items: center;
-    gap: 15px;
-    flex-wrap: nowrap;
-    overflow-x: auto;
-    scrollbar-width: none;
-}
-
-.sugg-label {
-    font-size: 12px;
-    font-weight: 700;
-    color: #333;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-.sugg-pill {
-    display: inline-block;
-    padding: 4px 0;
-    font-size: 13px;
-    color: #555;
-    text-decoration: none;
-    white-space: nowrap;
-    transition: color 0.2s;
-    font-weight: 500;
-    position: relative;
-}
-.sugg-pill:after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 0;
-    height: 1px;
-    background: #000;
-    transition: width 0.2s;
-}
-.sugg-pill:hover {
-    color: #000;
-}
-.sugg-pill:hover:after {
-    width: 100%;
-}
-.sugg-pill.active {
-    color: #d70018;
-    font-weight: 700;
-}
-.sugg-pill.active:after {
-    background: #d70018;
-    width: 100%;
-}
-
-.promo-pill {
-    color: #d70018;
-    font-weight: 700;
-}
-
-/* Sticky Header Shrink */
-.tgdd-header.shrink .header-top { padding: 10px 0; }
-.tgdd-header.shrink .header-suggestions { display: none; }
-.tgdd-header.shrink .tgdd-search { height: 38px; }
-
-/* === MAIN NAV MENU === */
-.tgdd-nav {
-    background-color: #ffd400;
-    padding-bottom: 5px;
-    max-height: 60px; /* Chiều cao cố định để hiệu ứng trượt hoạt động mượt */
-    overflow: hidden;
-    transition: max-height 0.3s ease, opacity 0.2s ease, padding-bottom 0.3s ease;
-}
-.tgdd-menu-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 5px;
-    padding: 0 16px;
-}
-.tgdd-menu-item {
-    position: relative;
-}
-.tgdd-menu-item > a {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: #000;
-    font-size: 14px;
-    padding: 10px 12px;
-    text-decoration: none;
-    border-radius: 6px;
-    transition: background-color 0.2s;
-    font-weight: 400;
-}
-
-/* HIỆU ỨNG HIGHLIGHT MENU CHUẨN THEGIOIDIDONG */
-.tgdd-menu-item > a:hover {
-    background-color: rgba(255, 255, 255, 0.3); /* Sáng lên một chút xíu trên nền vàng */
-}
-.tgdd-menu-item > a i.arrow {
-    font-size: 10px;
-    margin-left: 2px;
-}
-
-/* DROPDOWN MENU CON */
+/* === MENU CON DROPDOWN === */
 .tgdd-menu-item .dropdown {
     position: absolute;
     top: 100%;
@@ -330,17 +119,8 @@ button {
     transition: 0.2s;
 }
 .tgdd-menu-item .dropdown li a:hover {
-    color: #288ad6; /* Chữ xanh nước biển đặc trưng khi trỏ vào menu con */
+    color: #288ad6;
     background: #f8f9fa;
-}
-
-/* RESPONSIVE TRÊN ĐIỆN THOẠI */
-@media (max-width: 768px) {
-    .header-top { flex-wrap: wrap; padding: 10px; gap: 10px; }
-    .tgdd-search { order: 3; max-width: 100%; flex: 1 1 100%; }
-    .location-btn { display: none; /* Ẩn vị trí trên mobile cho gọn */ }
-    .tgdd-menu-list { overflow-x: auto; flex-wrap: nowrap; padding-bottom: 10px; }
-    .tgdd-menu-item > a { white-space: nowrap; }
 }
 
 /* === HERO BANNERS - RESPONSIVE FIT === */
@@ -672,3 +452,19 @@ button {
     .footer-top-grid { grid-template-columns: 1fr; gap: 15px; padding: 20px 0; }
     .kw-list a { padding: 6px 12px; font-size: 12px; }
 }
+
+/* =========================================
+           ẨN MENU DANH MỤC TRÊN PC (Desktop)
+           ========================================= */
+        @media (min-width: 769px) {
+            /* 1. Giấu toàn bộ thanh menu màu vàng đi */
+            #tgddNav {
+                display: none !important;
+            }
+            
+            /* 2. Cực kỳ quan trọng: Rút gọn khoảng trống đỉnh trang */
+            /* Vì menu đã bị ẩn, nếu không rút gọn padding, web sẽ bị hở 1 khoảng trắng siêu to */
+            body, body.header-compact {
+                padding-top: 75px !important; 
+            }
+        }

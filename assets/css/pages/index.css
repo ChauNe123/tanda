@@ -1,0 +1,88 @@
+/* ====== TRANG CHỦ (index.php) ====== */
+
+/* Khối Flash Sale */
+.section-flash-sale {
+    background: #d70018;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 30px;
+}
+.section-flash-sale .section-title {
+    color: #fff;
+    font-size: 22px;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Thanh bộ lọc nhanh (quick filter pills) */
+.quick-filter-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    overflow-x: auto;
+    padding-bottom: 5px;
+}
+.quick-filter-row::-webkit-scrollbar {
+    height: 4px;
+}
+.quick-filter-row::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 4px;
+}
+.filter-pill {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    color: #333;
+    white-space: nowrap;
+    text-decoration: none;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.filter-pill:hover,
+.filter-pill.active {
+    background: #d70018;
+    color: #fff;
+    border-color: #d70018;
+}
+
+/* Nút Xem thêm */
+.btn-view-more-wrap {
+    text-align: center;
+    margin-top: 20px;
+}
+.btn-view-more {
+    display: inline-block;
+    padding: 10px 40px;
+    background: #fff;
+    border: 1px solid #d70018;
+    color: #d70018;
+    border-radius: 4px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.3s;
+}
+.btn-view-more:hover {
+    background: #d70018;
+    color: #fff;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 768px) {
+    .section-flash-sale { padding: 15px; margin-bottom: 20px; }
+    .section-flash-sale .section-title { font-size: 18px; }
+    .filter-pill { padding: 6px 12px; font-size: 12px; }
+    .btn-view-more { padding: 8px 30px; font-size: 14px; }
+    .quick-filter-row { gap: 6px; }
+}
+
+@media (max-width: 480px) {
+    .section-flash-sale { padding: 12px; margin-bottom: 15px; }
+    .section-flash-sale .section-title { font-size: 16px; }
+    .filter-pill { padding: 5px 10px; font-size: 11px; }
+    .btn-view-more { padding: 8px 25px; font-size: 13px; }
+}

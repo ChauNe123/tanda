@@ -1,4 +1,4 @@
-/* ====== PRODUCT CARD THẾ GIỚI DI ĐỘNG STYLE ====== */
+/* ====== PRODUCT CARD THẾ GIỚI DI ĐỘNG STYLE V2 ====== */
 
 .tgdd-product-card {
     display: flex;
@@ -6,20 +6,22 @@
     position: relative;
     background: #fff;
     padding: 15px;
-    
-    /* Thay vì fix cứng chiều cao gây ra khoảng trắng, dùng 100% để bám theo lưới (Grid) */
     height: 100%;
     width: 100%;
-    
-    /* Bỏ viền cứng vì đã dùng gap trong grid */
-    transition: all 0.3s ease;
+    transition: all 0.25s ease;
     text-decoration: none;
     color: #333;
     overflow: hidden;
+    border-radius: 4px;
 }
 
-/* Xóa bỏ hiệu ứng đổ bóng hoặc làm viền nổi toàn bộ card khi hover theo đúng ý bạn */
-
+/* Hover nổi nhẹ + shadow đặc trưng TGDĐ */
+.tgdd-product-card:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    transform: translateY(-2px);
+    z-index: 3;
+    border-radius: 8px;
+}
 
 /* --- Badge Trả góp, Giảm giá --- */
 .tgdd-badge-wrap {
@@ -29,61 +31,57 @@
     z-index: 2;
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 4px;
 }
-
 .tgdd-badge {
     font-size: 11px;
-    background: #f1f1f1;
-    color: #333;
-    padding: 3px 6px;
-    border-radius: 2px;
-    font-weight: bold;
+    padding: 3px 7px;
+    border-radius: 3px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
 }
-
 .tgdd-badge.badge-installment {
     background: #f1f1f1;
+    color: #333;
 }
-
 .tgdd-badge.badge-discount {
-    background: #d70018;
+    background: linear-gradient(135deg, #d70018, #ff1744);
     color: #fff;
 }
 
 /* --- Hình ảnh --- */
 .tgdd-card-img {
     width: 100%;
-    height: 160px; /* Cố định chiều cao khung chứa ảnh */
-    margin-bottom: 15px;
+    height: 170px;
+    margin-bottom: 12px;
     text-align: center;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #fdfdfd; /* Nền mờ cho vùng ảnh */
+    background: #fafafa;
+    border-radius: 6px;
+    overflow: hidden;
 }
-
 .tgdd-card-img img {
-    width: 160px; /* Nhỏ hơn width card để tạo khoảng thở */
+    width: 160px;
     height: 160px;
     object-fit: contain;
-    transition: transform 0.3s ease;
+    transition: transform 0.35s ease;
     margin: 0 auto;
     display: block;
 }
-
 .tgdd-product-card:hover .tgdd-card-img img {
-    transform: translateY(-5px); /* Phóng/Trượt nhẹ lên khi hover */
+    transform: scale(1.05);
 }
 
 /* --- Tên sản phẩm --- */
 .tgdd-card-title {
-    font-size: 14px;
-    line-height: 1.4;
-    font-weight: 700;
-    color: #333;
-    margin-bottom: 12px;
-    /* Khóa độ cao tối đa 2 dòng */
+    font-size: 13px;
+    line-height: 1.45;
+    font-weight: 600;
+    color: #222;
+    margin-bottom: 10px;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     line-clamp: 2;
@@ -92,7 +90,6 @@
     text-overflow: ellipsis;
     height: 38px;
 }
-
 .tgdd-product-card:hover .tgdd-card-title {
     color: #288ad6;
 }
@@ -100,78 +97,111 @@
 /* --- Box Giá --- */
 .tgdd-card-price {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 10px;
+    gap: 6px;
+    margin-bottom: 8px;
 }
-
 .tgdd-price-new {
     color: #d70018;
     font-size: 16px;
-    font-weight: bold;
+    font-weight: 800;
 }
-
 .tgdd-price-old {
     color: #999;
-    font-size: 13px;
+    font-size: 12px;
     text-decoration: line-through;
 }
-
 .tgdd-price-percent {
     color: #d70018;
-    font-size: 13px;
-    font-weight: bold;
+    font-size: 12px;
+    font-weight: 700;
+    background: #fff0f0;
+    padding: 1px 5px;
+    border-radius: 3px;
 }
 
-/* --- Gift / Promo text --- */
+/* --- Promo / Status --- */
 .tgdd-card-promo {
     font-size: 12px;
     color: #333;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
-    line-clamp: 2;
+    -webkit-line-clamp: 1;
+    line-clamp: 1;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    min-height: 20px;
+    min-height: 18px;
 }
+.tgdd-status-label {
+    font-size: 11px;
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 500;
+}
+.tgdd-status-in  { background: #e8f5e9; color: #2e7d32; }
+.tgdd-status-out { background: #ffebee; color: #c62828; }
 
-/* Nút bấm (Luôn hiển thị ở cuối thẻ) */
+/* --- Nút Thêm Vào Giỏ --- */
 .tgdd-card-actions {
     margin-top: auto;
     display: flex;
     gap: 5px;
-    transition: all 0.3s ease;
 }
-
 .tgdd-btn-add {
     flex: 1;
-    background: #f1f1f1;
+    background: #f5f5f5;
     border: 1px solid #e0e0e0;
     color: #333;
-    padding: 6px 0;
-    border-radius: 4px;
+    padding: 8px 0;
+    border-radius: 6px;
     font-size: 13px;
-    font-weight: bold;
+    font-weight: 700;
     cursor: pointer;
-    transition: background 0.3s, color 0.3s;
+    transition: all 0.2s;
     text-align: center;
+    letter-spacing: 0.3px;
 }
-
 .tgdd-btn-add:hover {
     background: #288ad6;
     color: #fff;
     border-color: #288ad6;
 }
 
-.tgdd-status-label {
-    font-size: 11px;
-    display: inline-block;
-    padding: 2px 4px;
-    border-radius: 2px;
-    margin-bottom: 5px;
+/* --- Out of stock --- */
+.tgdd-product-card.out-of-stock {
+    opacity: 0.7;
+}
+.tgdd-product-card.out-of-stock .tgdd-card-img img {
+    filter: grayscale(0.5);
 }
 
-.tgdd-status-in { background: #e8f5e9; color: #28a745; }
-.tgdd-status-out { background: #ffebee; color: #d70018; }
+/* === RESPONSIVE - MOBILE CARD TỐI ƯU === */
+@media (max-width: 768px) {
+    .tgdd-product-card { padding: 10px; }
+    .tgdd-card-img { height: 130px; margin-bottom: 8px; }
+    .tgdd-card-img img { width: 120px; height: 120px; }
+    .tgdd-card-title { font-size: 12px; height: 34px; margin-bottom: 6px; }
+    .tgdd-price-new { font-size: 14px; }
+    .tgdd-price-old { font-size: 11px; }
+    .tgdd-card-promo { font-size: 11px; min-height: 16px; }
+    .tgdd-btn-add { font-size: 11px; padding: 6px 0; }
+    
+    /* Compare checkbox nhỏ hơn */
+    .compare-check-wrap { font-size: 10px; top: 6px; right: 6px; }
+    .compare-check-label { font-size: 10px; }
+    
+    /* Badge */
+    .tgdd-badge { font-size: 10px; padding: 2px 5px; }
+}
+
+@media (max-width: 480px) {
+    .tgdd-product-card { padding: 8px; }
+    .tgdd-card-img { height: 110px; margin-bottom: 6px; }
+    .tgdd-card-img img { width: 100px; height: 100px; }
+    .tgdd-card-title { font-size: 11px; height: 30px; -webkit-line-clamp: 2; }
+    .tgdd-price-new { font-size: 13px; }
+    .tgdd-price-old { font-size: 10px; }
+    .tgdd-btn-add { font-size: 10px; padding: 5px 0; border-radius: 4px; }
+}

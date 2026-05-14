@@ -13,7 +13,8 @@ try {
     }
 
     $suggestProds = $stmtSuggest->fetchAll();
-    $suggestProdsGrid = $suggestProds; // Hiện tất cả sản phẩm đang có
+    // Hiển thị TẤT CẢ sản phẩm, không cắt xén
+    $suggestProdsGrid = $suggestProds;
 
     $html = '';
     if(count($suggestProdsGrid) > 0) {

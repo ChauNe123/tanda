@@ -97,12 +97,9 @@ include 'includes/header.php';
     </div>
 
     <?php if (count($products) > 0): ?>
-        <div class="product-grid" style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px;">
+        <div class="product-grid">
             <?php
-$maxShow = floor(count($products) / 6) * 6; // chỉ lấy bội số của 6
-
-for ($i = 0; $i < $maxShow; $i++) {
-    $p = $products[$i];
+foreach ($products as $p) {
     include 'card_template.php';
 }
 ?>
@@ -115,13 +112,5 @@ for ($i = 0; $i < $maxShow; $i++) {
         </div>
     <?php endif; ?>
 </main>
-
-<style>
-/* Đảm bảo grid luôn chuẩn trên các màn hình */
-@media (max-width: 1200px) { .product-grid { grid-template-columns: repeat(5, 1fr) !important; } }
-@media (max-width: 1024px) { .product-grid { grid-template-columns: repeat(4, 1fr) !important; } }
-@media (max-width: 768px) { .product-grid { grid-template-columns: repeat(3, 1fr) !important; } }
-@media (max-width: 480px) { .product-grid { grid-template-columns: repeat(2, 1fr) !important; } }
-</style>
 
 <?php include 'includes/footer.php'; ?>

@@ -7,10 +7,31 @@ ini_set('display_errors', 1);
 require_once '../cores/db_config.php';
 
 // TỰ ĐỘNG CẬP NHẬT CẤU TRÚC DATABASE (MIGRATION)
+// Lấy danh sách cột hiện có để kiểm tra trước khi ALTER
 try {
-    $conn->exec("ALTER TABLE products ADD COLUMN IF NOT EXISTS image_file TEXT AFTER description");
+    $existingCols = [];
+    $colQuery = $conn->query("SHOW COLUMNS FROM products");
+    while ($col = $colQuery->fetch(PDO::FETCH_ASSOC)) {
+        $existingCols[] = $col['Field'];
+    }
+
+    $migrations = [
+        'image_1'       => "ALTER TABLE products ADD COLUMN image_1 TEXT NULL AFTER description",
+        'image_file'    => "ALTER TABLE products ADD COLUMN image_file TEXT AFTER description",
+        'specs_group_1' => "ALTER TABLE products ADD COLUMN specs_group_1 LONGTEXT NULL AFTER specs_summary",
+        'specs_group_2' => "ALTER TABLE products ADD COLUMN specs_group_2 LONGTEXT NULL AFTER specs_group_1",
+        'specs_group_3' => "ALTER TABLE products ADD COLUMN specs_group_3 LONGTEXT NULL AFTER specs_group_2",
+        'specs_group_4' => "ALTER TABLE products ADD COLUMN specs_group_4 LONGTEXT NULL AFTER specs_group_3",
+    ];
+
+    foreach ($migrations as $colName => $sql) {
+        if (!in_array($colName, $existingCols)) {
+            $conn->exec($sql);
+        }
+    }
 } catch (Exception $e) {
-    // Nếu đã có cột hoặc có lỗi khác thì bỏ qua
+    // Ghi log lỗi migration để debug, không làm gián đoạn trang
+    error_log("TANDA import_csv migration error: " . $e->getMessage());
 }
 
 // =========================================================
@@ -120,7 +141,7 @@ function createSlug($str) {
 }
 
 // ---------------------------------------------------------
-// API: IMPORT CSV ĐƠN GIẢN (TỪ MODAL PREVIEW)
+// API: IMPORT CSV ĐƠN GIẢN (TỐI ƯU SIÊU TỐC - TRANSACTION & RAM CACHE)
 // ---------------------------------------------------------
 if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'import_csv_simple') {
     if (!isset($_FILES['csv_file']) || $_FILES['csv_file']['error'] != 0) {
@@ -130,14 +151,28 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'import_csv_simple'
     $file = $_FILES['csv_file']['tmp_name'];
     $count = 0;
     
-    // Tự động phát hiện dấu phân cách ( , hoặc ; )
     $file_content = file_get_contents($file);
     $delimiter = (substr_count($file_content, ';') > substr_count($file_content, ',')) ? ';' : ',';
 
     try {
         if (($handle = fopen($file, "r")) !== FALSE) {
-            // Bỏ qua dòng đầu (header)
             $headers = fgetcsv($handle, 10000, $delimiter); 
+            
+            // 1. TỐI ƯU BỘ NHỚ: Load sẵn toàn bộ mã danh mục lên RAM (Chỉ tốn 1 query duy nhất)
+            $stmtAllCats = $conn->query("SELECT cat_code FROM categories");
+            $existingCats = array_flip($stmtAllCats->fetchAll(PDO::FETCH_COLUMN)); 
+            
+            // 2. CHUẨN BỊ SẴN CÂU LỆNH (Tránh việc MySQL phải dịch lại mã SQL hàng ngàn lần)
+            $insCat = $conn->prepare("INSERT INTO categories (cat_code, name, slug, status) VALUES (:code, :name, :slug, 1) ON DUPLICATE KEY UPDATE status=1");
+            
+            $sqlProd = "INSERT INTO products (sku, cat_code, name, slug, price, sale_price, specs_summary, specs_group_1, specs_group_2, specs_group_3, specs_group_4, description, status, sort_order) 
+                        VALUES (:sku, :cat, :name, :slug, :price, :sale, :specs, :sg1, :sg2, :sg3, :sg4, :desc, :stt, :sort)
+                        ON DUPLICATE KEY UPDATE cat_code=VALUES(cat_code), name=VALUES(name), slug=VALUES(slug), price=VALUES(price), 
+                        sale_price=VALUES(sale_price), specs_summary=VALUES(specs_summary), specs_group_1=VALUES(specs_group_1), specs_group_2=VALUES(specs_group_2), specs_group_3=VALUES(specs_group_3), specs_group_4=VALUES(specs_group_4), description=VALUES(description), status=VALUES(status), sort_order=VALUES(sort_order)";
+            $stmtProd = $conn->prepare($sqlProd);
+
+            // 3. KHỞI ĐỘNG TRANSACTION: Khóa Database, gom tất cả dữ liệu nạp vào 1 cục
+            $conn->beginTransaction();
             
             while (($row = fgetcsv($handle, 10000, $delimiter)) !== FALSE) {
                 if (count($row) < 3) continue;
@@ -147,40 +182,58 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'import_csv_simple'
                 $name = trim($row[2] ?? '');
                 $price = (int)str_replace(['.', ','], '', $row[3] ?? 0);
                 $sale_price = (int)str_replace(['.', ','], '', $row[4] ?? 0);
-                $specs = trim($row[5] ?? '');
-                $desc = trim($row[6] ?? '');
+                $specs = $row[5] ?? '';
+                // Convert newlines to pipe separator for specs
+                $specs = str_replace(["\r\n", "\r", "\n"], '|', $specs);
+                $specs = preg_replace('/\|+/', '|', $specs);
+                $specs = trim($specs, "| \t");
+
+                $specsG1 = $row[8] ?? '';
+                $specsG2 = $row[9] ?? '';
+                $specsG3 = $row[10] ?? '';
+                $specsG4 = $row[11] ?? '';
+
+                // Auto-map: Dồn tất cả specs vào group 1 (Thông số kỹ thuật chung).
+                // KH có thể thêm group 2-4 thủ công sau nếu muốn phân loại chi tiết.
+                // Group nào rỗng sẽ KHÔNG hiển thị trên website.
+                if (!empty($specs) && empty($specsG1) && empty($specsG2) && empty($specsG3) && empty($specsG4)) {
+                    $specsG1 = $specs;
+                }
+
+                $desc = $row[6] ?? '';
+                // Decode HTML entities, preserve HTML content
+                $desc = html_entity_decode($desc, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                $desc = trim($desc);
+
                 $status = (int)($row[7] ?? 1);
 
                 if ($sku === '' || $name === '') continue;
 
-                // TỰ ĐỘNG TẠO DANH MỤC NẾU CHƯA CÓ
-                if ($cat_code !== '') {
-                    $chkCat = $conn->prepare("SELECT cat_code FROM categories WHERE cat_code = :code");
-                    $chkCat->execute([':code' => $cat_code]);
-                    if ($chkCat->rowCount() == 0) {
-                        $insCat = $conn->prepare("INSERT INTO categories (cat_code, name, slug, status) VALUES (:code, :name, :slug, 1)");
-                        $insCat->execute([':code' => $cat_code, ':name' => $cat_code, ':slug' => createSlug($cat_code)]);
-                    }
+                // TỐI ƯU: Kiểm tra trên RAM thay vì query Database
+                if ($cat_code !== '' && !isset($existingCats[$cat_code])) {
+                    $insCat->execute([':code' => $cat_code, ':name' => $cat_code, ':slug' => createSlug($cat_code)]);
+                    // Thêm ngay vào mảng RAM để dòng sau không bị trùng
+                    $existingCats[$cat_code] = true; 
                 }
 
                 $slug = createSlug($name);
-                // CHỈ INSERT/UPDATE CÁC TRƯỜNG THÔNG TIN, GIỮ NGUYÊN ẢNH TRONG IMAGE_1
-                $sql = "INSERT INTO products (sku, cat_code, name, slug, price, sale_price, specs_summary, description, status, sort_order) 
-                        VALUES (:sku, :cat, :name, :slug, :price, :sale, :specs, :desc, :stt, :sort)
-                        ON DUPLICATE KEY UPDATE cat_code=VALUES(cat_code), name=VALUES(name), slug=VALUES(slug), price=VALUES(price), 
-                        sale_price=VALUES(sale_price), specs_summary=VALUES(specs_summary), description=VALUES(description), status=VALUES(status), sort_order=VALUES(sort_order)";
                 
-                $stmt = $conn->prepare($sql);
-                $stmt->execute([
+                $stmtProd->execute([
                     ':sku'=>$sku, ':cat'=>$cat_code, ':name'=>$name, ':slug'=>$slug,
-                    ':price'=>$price, ':sale'=>$sale_price, ':specs'=>$specs, ':desc'=>$desc, ':stt'=>$status, ':sort'=>$count
+                    ':price'=>$price, ':sale'=>$sale_price, ':specs'=>$specs, ':sg1'=>$specsG1, ':sg2'=>$specsG2, ':sg3'=>$specsG3, ':sg4'=>$specsG4, ':desc'=>$desc, ':stt'=>$status, ':sort'=>$count
                 ]);
                 $count++;
             }
+            // 4. CHỐT GHI VÀO Ổ CỨNG: (Chỉ tốn 1 lần thao tác vật lý)
+            $conn->commit();
             fclose($handle);
         }
         echo json_encode(['success'=>1, 'count'=>$count]);
     } catch (Exception $e) {
+        // Nếu lỡ có lỗi giữa chừng, RollBack (hủy toàn bộ) để DB không bị rác
+        if ($conn->inTransaction()) {
+            $conn->rollBack();
+        }
         echo json_encode(['success'=>0, 'error'=> 'Lỗi SQL: ' . $e->getMessage()]);
     }
     exit;
@@ -243,24 +296,66 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'upload_images') {
 }
 
 // ---------------------------------------------------------
-// API: LẤY DANH SÁCH SẢN PHẨM (READ)
+// API: LẤY DANH SÁCH SẢN PHẨM (READ) - CÓ PHÂN TRANG & TÌM KIẾM
 // ---------------------------------------------------------
 if (isset($_GET['ajax_action']) && $_GET['ajax_action'] == 'get_products') {
-    // Sắp xếp theo sort_order để khớp hoàn toàn với thứ tự trong file Excel
-    $stmt = $conn->query("SELECT * FROM products ORDER BY sort_order ASC, sku DESC");
-    echo json_encode($stmt->fetchAll(PDO::FETCH_ASSOC));
+    $page = max(1, (int)($_GET['page'] ?? 1));
+    $perPage = min(100, max(10, (int)($_GET['per_page'] ?? 25)));
+    $search = trim($_GET['search'] ?? '');
+    $offset = ($page - 1) * $perPage;
+    
+    $where = '';
+    $params = [];
+    
+    if (!empty($search)) {
+        $where = " WHERE (sku LIKE :s1 OR name LIKE :s2 OR cat_code LIKE :s3)";
+        $params[':s1'] = "%{$search}%";
+        $params[':s2'] = "%{$search}%";
+        $params[':s3'] = "%{$search}%";
+    }
+    
+    // Đếm tổng
+    $countStmt = $conn->prepare("SELECT COUNT(*) FROM products" . $where);
+    $countStmt->execute($params);
+    $total = (int)$countStmt->fetchColumn();
+    
+    // Lấy dữ liệu trang hiện tại
+    $stmt = $conn->prepare("SELECT * FROM products" . $where . " ORDER BY sort_order ASC, sku DESC LIMIT :limit OFFSET :offset");
+    foreach ($params as $k => $v) { $stmt->bindValue($k, $v); }
+    $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+    $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+    $stmt->execute();
+    
+    echo json_encode([
+        'success' => true,
+        'data' => $stmt->fetchAll(PDO::FETCH_ASSOC),
+        'total' => $total,
+        'page' => $page,
+        'per_page' => $perPage,
+        'total_pages' => ceil($total / $perPage)
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 // ---------------------------------------------------------
-// API: LƯU SẢN PHẨM (CREATE / UPDATE)
+// API: XÓA TẤT CẢ SẢN PHẨM & DANH MỤC
 // ---------------------------------------------------------
 if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'delete_all_products') {
     try {
-        // TRUNCATE xóa sạch dữ liệu và reset luôn cả ID tự tăng
-        $conn->exec("TRUNCATE TABLE products");
+        // 1. Tắt tạm thời kiểm tra ràng buộc khóa ngoại
+        $conn->exec("SET FOREIGN_KEY_CHECKS = 0;");
+
+        // 2. Xóa sạch dữ liệu và reset ID tự tăng của cả 2 bảng
+        $conn->exec("TRUNCATE TABLE products;");
+        $conn->exec("TRUNCATE TABLE categories;");
+
+        // 3. Bật lại kiểm tra khóa ngoại ngay lập tức để bảo vệ hệ thống
+        $conn->exec("SET FOREIGN_KEY_CHECKS = 1;");
+        
         echo json_encode(['success' => 1]);
     } catch (Exception $e) {
+        // Đảm bảo khóa ngoại luôn được bật lại kể cả khi có lỗi xảy ra
+        $conn->exec("SET FOREIGN_KEY_CHECKS = 1;");
         echo json_encode(['success' => 0, 'error' => $e->getMessage()]);
     }
     exit;
@@ -275,21 +370,25 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'save_product') {
     $cat_code = trim($_POST['cat_code'] ?? '');
     $desc = $_POST['description'] ?? '';
     $specs = $_POST['specs_summary'] ?? '';
+    $specsG1 = $_POST['specs_group_1'] ?? '';
+    $specsG2 = $_POST['specs_group_2'] ?? '';
+    $specsG3 = $_POST['specs_group_3'] ?? '';
+    $specsG4 = $_POST['specs_group_4'] ?? '';
     $status = (int)($_POST['status'] ?? 1);
 
     if ($sku === '' || $name === '') { echo json_encode(['success'=>0,'error'=>'Thiếu SKU hoặc Tên']); exit; }
 
     $slug = createSlug($name);
-    $sql = "INSERT INTO products (sku, cat_code, name, slug, price, sale_price, specs_summary, description, status) 
-            VALUES (:sku, :cat, :name, :slug, :price, :sale, :specs, :desc, :stt)
+    $sql = "INSERT INTO products (sku, cat_code, name, slug, price, sale_price, specs_summary, specs_group_1, specs_group_2, specs_group_3, specs_group_4, description, status) 
+            VALUES (:sku, :cat, :name, :slug, :price, :sale, :specs, :sg1, :sg2, :sg3, :sg4, :desc, :stt)
             ON DUPLICATE KEY UPDATE cat_code=VALUES(cat_code), name=VALUES(name), slug=VALUES(slug), price=VALUES(price), 
-            sale_price=VALUES(sale_price), specs_summary=VALUES(specs_summary), description=VALUES(description), status=VALUES(status)";
+            sale_price=VALUES(sale_price), specs_summary=VALUES(specs_summary), specs_group_1=VALUES(specs_group_1), specs_group_2=VALUES(specs_group_2), specs_group_3=VALUES(specs_group_3), specs_group_4=VALUES(specs_group_4), description=VALUES(description), status=VALUES(status)";
     
     try {
         $stmt = $conn->prepare($sql);
         $stmt->execute([
             ':sku'=>$sku, ':cat'=>$cat_code, ':name'=>$name, ':slug'=>$slug,
-            ':price'=>$price, ':sale'=>$sale_price, ':specs'=>$specs, ':desc'=>$desc, ':stt'=>$status
+            ':price'=>$price, ':sale'=>$sale_price, ':specs'=>$specs, ':sg1'=>$specsG1, ':sg2'=>$specsG2, ':sg3'=>$specsG3, ':sg4'=>$specsG4, ':desc'=>$desc, ':stt'=>$status
         ]);
         echo json_encode(['success'=>1]);
     } catch (Exception $e) {
@@ -341,9 +440,7 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'remove_image') {
     exit;
 }
 
-// ---------------------------------------------------------
-// API: CẬP NHẬT HÀNG LOẠT (BULK UPDATE)
-// ---------------------------------------------------------
+// --- THAY THẾ TOÀN BỘ API: CẬP NHẬT HÀNG LOẠT ---
 if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'bulk_update') {
     $products = $_POST['products'] ?? [];
     $count = 0;
@@ -353,36 +450,66 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'bulk_update') {
             $uploadsDir = __DIR__ . '/../uploads/';
             if (!is_dir($uploadsDir)) mkdir($uploadsDir, 0777, true);
 
+            $stmtAllCats = $conn->query("SELECT cat_code FROM categories");
+            $existingCats = array_flip($stmtAllCats->fetchAll(PDO::FETCH_COLUMN)); 
+            $insCat = $conn->prepare("INSERT INTO categories (cat_code, name, slug, status) VALUES (:code, :name, :slug, 1) ON DUPLICATE KEY UPDATE status=1");
+            $sqlProd = "INSERT INTO products (sku, cat_code, name, slug, price, sale_price, specs_summary, specs_group_1, specs_group_2, specs_group_3, specs_group_4, description, image_1, status) 
+                        VALUES (:sku, :cat, :name, :slug, :price, :sale, :specs, :sg1, :sg2, :sg3, :sg4, :desc, :imgs, 1)
+                        ON DUPLICATE KEY UPDATE 
+                            cat_code=VALUES(cat_code), 
+                            name=VALUES(name), 
+                            slug=VALUES(slug), 
+                            price=VALUES(price), 
+                            sale_price=VALUES(sale_price),
+                            specs_summary=VALUES(specs_summary),
+                            specs_group_1=VALUES(specs_group_1),
+                            specs_group_2=VALUES(specs_group_2),
+                            specs_group_3=VALUES(specs_group_3),
+                            specs_group_4=VALUES(specs_group_4),
+                            description=VALUES(description),
+                            image_1=VALUES(image_1)";
+            $stmtProd = $conn->prepare($sqlProd);
+
             foreach ($products as $p) {
                 $sku = $p['sku'] ?? '';
                 $name = $p['name'] ?? '';
                 $price = (int)str_replace(['.', ','], '', $p['price'] ?? 0);
                 $sale_price = (int)str_replace(['.', ','], '', $p['sale_price'] ?? 0);
                 $cat_code = $p['cat_code'] ?? '';
+                $specs = $p['specs_summary'] ?? '';
+                $specsG1 = $p['specs_group_1'] ?? '';
+                $specsG2 = $p['specs_group_2'] ?? '';
+                $specsG3 = $p['specs_group_3'] ?? '';
+                $specsG4 = $p['specs_group_4'] ?? '';
+                $desc = $p['description'] ?? '';
                 
                 if ($sku && $name) {
-                    // 1. Xử lý ảnh mới (Base64) nếu có
+                    if ($cat_code !== '' && !isset($existingCats[$cat_code])) {
+                        $insCat->execute([':code' => $cat_code, ':name' => $cat_code, ':slug' => createSlug($cat_code)]);
+                        $existingCats[$cat_code] = true;
+                    }
+
                     $new_image_paths = [];
                     if (!empty($p['temp_images']) && is_array($p['temp_images'])) {
                         foreach ($p['temp_images'] as $idx => $base64) {
                             if (preg_match('/^data:image\/(\w+);base64,/', $base64, $type)) {
                                 $data = substr($base64, strpos($base64, ',') + 1);
-                                $type = strtolower($type[1]); // jpg, png, gif
+                                $type = strtolower($type[1]);
                                 $data = base64_decode($data);
                                 if ($data === false) continue;
 
-                                $filename = $sku . '-' . time() . '-new-' . $idx . '.' . $type;
+                                $hash = md5($data);
+                                $filename = $sku . '-' . $hash . '.' . $type;
                                 $filepath = $uploadsDir . $filename;
-                                
-                                // Lưu file tạm trước khi optimize
-                                file_put_contents($filepath, $data);
-                                optimizeAndSaveImage($filepath, $filepath, 800, 80);
+                                if (!file_exists($filepath)) {
+                                    file_put_contents($filepath, $data);
+                                    optimizeAndSaveImage($filepath, $filepath, 800, 80);
+                                }
                                 $new_image_paths[] = $filename;
                             }
                         }
                     }
 
-                    // 2. Lấy danh sách ảnh cũ hiện tại trong DB
                     $stmtOld = $conn->prepare("SELECT image_1 FROM products WHERE sku = :sku");
                     $stmtOld->execute([':sku' => $sku]);
                     $oldRow = $stmtOld->fetch();
@@ -391,32 +518,29 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'bulk_update') {
                         $current_images = array_map('trim', explode(',', $oldRow['image_1']));
                     }
 
-                    // 3. Gộp ảnh cũ và ảnh mới
-                    $final_images = array_merge($current_images, $new_image_paths);
-                    $final_images = array_slice($final_images, 0, 5); // Chốt chặn 5 ảnh cuối cùng
+                    // Deduplicate: merge + unique + remove non-existent files
+                    $merged_images = array_merge($current_images, $new_image_paths);
+                    $merged_images = array_map('trim', $merged_images);
+                    $merged_images = array_filter($merged_images);
+                    $final_images = array_unique($merged_images);
+                    $final_images = array_values($final_images);
+                    // Remove images that no longer exist on disk
+                    $final_images = array_filter($final_images, function($img) use ($uploadsDir) {
+                        return file_exists($uploadsDir . $img);
+                    });
+                    $final_images = array_values($final_images);
+                    $final_images = array_slice($final_images, 0, 5);
                     $image_string = implode(',', $final_images);
 
-                    // 4. Cập nhật Database
                     $slug = createSlug($name);
-                    $sql = "INSERT INTO products (sku, cat_code, name, slug, price, sale_price, image_1, status) 
-                            VALUES (:sku, :cat, :name, :slug, :price, :sale, :imgs, 1)
-                            ON DUPLICATE KEY UPDATE 
-                                cat_code=VALUES(cat_code), 
-                                name=VALUES(name), 
-                                slug=VALUES(slug), 
-                                price=VALUES(price), 
-                                sale_price=VALUES(sale_price),
-                                image_1=VALUES(image_1)";
-                    
-                    $stmt = $conn->prepare($sql);
-                    $stmt->execute([
+                    $stmtProd->execute([
                         ':sku'=>$sku, ':cat'=>$cat_code, ':name'=>$name, ':slug'=>$slug,
-                        ':price'=>$price, ':sale'=>$sale_price, ':imgs'=>$image_string
+                        ':price'=>$price, ':sale'=>$sale_price, ':specs'=>$specs, ':sg1'=>$specsG1, ':sg2'=>$specsG2, ':sg3'=>$specsG3, ':sg4'=>$specsG4, ':desc'=>$desc, ':imgs'=>$image_string
                     ]);
                     $count++;
                 }
             }
-            $conn->commit();
+            $conn->commit(); 
             echo json_encode(['success'=>1, 'count'=>$count]);
         } catch (Exception $e) {
             $conn->rollBack();
@@ -425,206 +549,6 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'bulk_update') {
     } else {
         echo json_encode(['success'=>0, 'error'=>'Dữ liệu không hợp lệ']);
     }
-    exit;
-}
-if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'validate_zip_csv') {
-    if (!isset($_FILES['zip_file']) || $_FILES['zip_file']['error'] != 0) {
-        echo json_encode(['success'=>0,'error'=>'ZIP file missing']); exit;
-    }
-    if (!isset($_FILES['csv_file']) || $_FILES['csv_file']['error'] != 0) {
-        echo json_encode(['success'=>0,'error'=>'CSV file missing']); exit;
-    }
-
-    $token = uniqid('imp_', true);
-    $baseTemp = __DIR__ . '/../uploads/temp_unzip/';
-    $tempDir = $baseTemp . $token . '/';
-    if (!is_dir($tempDir)) mkdir($tempDir, 0777, true);
-
-    $zipTmp = $_FILES['zip_file']['tmp_name'];
-    $zipName = $_FILES['zip_file']['name'];
-    $savedZip = $tempDir . basename($zipName);
-    if (!move_uploaded_file($zipTmp, $savedZip)) {
-        echo json_encode(['success'=>0,'error'=>'Failed to move ZIP']); exit;
-    }
-
-    if (!unzip_file($savedZip, $tempDir)) {
-        echo json_encode(['success'=>0,'error'=>'Failed to unzip file']); exit;
-    }
-
-    $csvTmp = $_FILES['csv_file']['tmp_name'];
-    $csvSaved = $tempDir . 'data.csv';
-    if (!move_uploaded_file($csvTmp, $csvSaved)) {
-        echo json_encode(['success'=>0,'error'=>'Failed to save CSV']); exit;
-    }
-
-    $missing = [];
-    $totalRows = 0;
-    if (($handle = fopen($csvSaved, 'r')) !== FALSE) {
-        $headers = fgetcsv($handle, 10000, ',');
-        if (!$headers) { fclose($handle); echo json_encode(['success'=>0,'error'=>'CSV invalid header']); exit; }
-        $imageCol = -1;
-        foreach ($headers as $i => $h) {
-            if (preg_match('/image|images|image_file|anh/i', $h)) { $imageCol = $i; break; }
-        }
-        $rowNum = 0;
-        while (($row = fgetcsv($handle, 10000, ',')) !== FALSE) {
-            $rowNum++; $totalRows++;
-            if ($imageCol === -1) continue;
-            $imgs = array_map('trim', explode(',', $row[$imageCol] ?? ''));
-            foreach ($imgs as $img) {
-                if ($img === '') continue;
-                if (!file_exists($tempDir . $img)) {
-                    $missing[] = ['row'=>$rowNum, 'image'=>$img];
-                    if (count($missing) > 20) break;
-                }
-            }
-            if (count($missing) > 20) break;
-        }
-        fclose($handle);
-    }
-
-    if (!empty($missing)) {
-        echo json_encode(['success'=>0,'error'=>'missing_images','missing'=>array_slice($missing,0,20)]);
-        exit;
-    }
-
-    echo json_encode(['success'=>1,'total'=>$totalRows,'token'=>$token]);
-    exit;
-}
-
-// ---------------------------------------------------------
-// API Step 2: Process batch
-// ---------------------------------------------------------
-if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'process_batch') {
-    $token = $_POST['token'] ?? '';
-    $start = (int)($_POST['start'] ?? 0);
-    $batch = (int)($_POST['batch'] ?? 10);
-    if ($token === '') { echo json_encode(['success'=>0,'error'=>'no_token']); exit; }
-
-    $baseTemp = __DIR__ . '/../uploads/temp_unzip/';
-    $tempDir = $baseTemp . $token . '/';
-    $csvSaved = $tempDir . 'data.csv';
-    if (!is_dir($tempDir) || !file_exists($csvSaved)) { echo json_encode(['success'=>0,'error'=>'temp_missing']); exit; }
-
-    $uploadsDir = __DIR__ . '/../uploads/'; if (!is_dir($uploadsDir)) mkdir($uploadsDir,0777,true);
-
-    $processed = 0; $errors = [];
-    if (($handle = fopen($csvSaved,'r')) !== FALSE) {
-        $headers = fgetcsv($handle, 10000, ',');
-        $map = [];
-        foreach ($headers as $i => $h) { $key = trim(strtolower($h)); $map[$key] = $i; }
-
-        $getIdx = function($names, $default) use ($map) {
-            foreach ($names as $n) { $k = trim(strtolower($n)); if (isset($map[$k])) return $map[$k]; }
-            return $default;
-        };
-
-        $idx_sku = $getIdx(['sku'], 0);
-        $idx_cat = $getIdx(['cat_code','cat','category'], 1);
-        $idx_name = $getIdx(['name','title'], 2);
-        $idx_price = $getIdx(['price'], 3);
-        $idx_sale = $getIdx(['sale_price','sale'], 4);
-        $idx_coupon = $getIdx(['coupon','coupon_code'], 5);
-        $idx_image = $getIdx(['image','images','image_file','anh'], -1);
-        $idx_specs = $getIdx(['specs','specs_summary'], 8);
-        $idx_desc = $getIdx(['description','desc'], 9);
-        $idx_status = $getIdx(['status'], 10);
-
-        $rowIndex = 0;
-        while (($row = fgetcsv($handle, 10000, ',')) !== FALSE) {
-            if ($rowIndex < $start) { $rowIndex++; continue; }
-            if ($processed >= $batch) break;
-
-            $sku = trim($row[$idx_sku] ?? '');
-            $cat_code = trim($row[$idx_cat] ?? '');
-            $name = trim($row[$idx_name] ?? '');
-            $price = (int)($row[$idx_price] ?? 0);
-            $sale_price = (int)($row[$idx_sale] ?? 0);
-            $coupon = trim($row[$idx_coupon] ?? '');
-            $specs = trim($row[$idx_specs] ?? '');
-            $description = trim($row[$idx_desc] ?? '');
-            $status = (int)($row[$idx_status] ?? 1);
-
-            if ($sku === '' || $name === '') { $rowIndex++; continue; }
-
-            // create category if not exists (minimal)
-            if ($cat_code !== '') {
-                try {
-                    $chk = $conn->prepare("SELECT cat_code FROM categories WHERE cat_code = :code LIMIT 1");
-                    $chk->execute([':code'=>$cat_code]);
-                    if ($chk->rowCount() == 0) {
-                        $insc = $conn->prepare("INSERT INTO categories (cat_code, name) VALUES (:code, :name)");
-                        $insc->execute([':code'=>$cat_code, ':name'=>$cat_code]);
-                    }
-                } catch (Exception $e) { /* ignore */ }
-            }
-
-            // images
-            $image_list = [];
-            if ($idx_image !== -1 && isset($row[$idx_image])) {
-                $raw = $row[$idx_image];
-                $parts = array_map('trim', explode(',', $raw));
-                foreach ($parts as $p) if ($p !== '') $image_list[] = $p;
-            }
-            if (empty($image_list)) {
-                for ($i=0;$i<5;$i++) {
-                    $suf = $i==0? '': '-' . ($i+1);
-                    $found = findExistingSkuImage($sku, $suf);
-                    if ($found) $image_list[] = $found;
-                }
-            }
-
-            $savedNames = ['', '', '', '', ''];
-            $countImg = 0;
-            foreach ($image_list as $i => $imgName) {
-                if ($countImg >= 5) break;
-                $src = $tempDir . $imgName;
-                if (!file_exists($src)) continue;
-                $dest = $uploadsDir . basename($imgName);
-                $base = pathinfo($dest, PATHINFO_FILENAME);
-                $ext = pathinfo($dest, PATHINFO_EXTENSION);
-                $final = $base . '.' . $ext;
-                $j = 1;
-                while (file_exists($uploadsDir . $final)) { $final = $base . '-' . $j . '.' . $ext; $j++; }
-                $finalPath = $uploadsDir . $final;
-                if (optimizeAndSaveImage($src, $finalPath, 800, 80)) {
-                    $savedNames[$countImg] = $final;
-                    $countImg++;
-                } else if (@copy($src, $finalPath)) {
-                    $savedNames[$countImg] = $final; $countImg++;
-                }
-            }
-
-            $slug = createSlug($name);
-            $sql = "INSERT INTO products (sku, cat_code, name, slug, price, sale_price, coupon_code, image_file, image_2, image_3, image_4, image_5, specs_summary, description, status, sort_order) 
-                    VALUES (:sku, :cat, :name, :slug, :price, :sale, :coupon, :img, :img2, :img3, :img4, :img5, :specs, :desc, :stt, :sort)
-                    ON DUPLICATE KEY UPDATE cat_code=VALUES(cat_code), name=VALUES(name), slug=VALUES(slug), price=VALUES(price), sale_price=VALUES(sale_price), 
-                    coupon_code=VALUES(coupon_code), 
-                    image_file=IF(VALUES(image_file) != '', VALUES(image_file), image_file),
-                    image_2=IF(VALUES(image_2) != '', VALUES(image_2), image_2),
-                    image_3=IF(VALUES(image_3) != '', VALUES(image_3), image_3),
-                    image_4=IF(VALUES(image_4) != '', VALUES(image_4), image_4),
-                    image_5=IF(VALUES(image_5) != '', VALUES(image_5), image_5),
-                    specs_summary=VALUES(specs_summary), description=VALUES(description), status=VALUES(status), sort_order=VALUES(sort_order)";
-
-            try {
-                $stmt = $conn->prepare($sql);
-                $stmt->execute([
-                    ':sku'=>$sku, ':cat'=>$cat_code, ':name'=>$name, ':slug'=>$slug, 
-                    ':price'=>$price, ':sale'=>$sale_price, ':coupon'=>$coupon, 
-                    ':img'=>$savedNames[0], ':img2'=>$savedNames[1], ':img3'=>$savedNames[2], ':img4'=>$savedNames[3], ':img5'=>$savedNames[4],
-                    ':specs'=>$specs, ':desc'=>$description, ':stt'=>$status, ':sort'=>$start + $rowIndex
-                ]);
-            } catch (Exception $e) {
-                $errors[] = ['sku'=>$sku,'error'=>$e->getMessage()];
-            }
-
-            $processed++; $rowIndex++;
-        }
-        fclose($handle);
-    }
-
-    echo json_encode(['success'=>1,'processed'=>$processed,'errors'=>$errors]);
     exit;
 }
 
@@ -636,15 +560,17 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'cleanup_temp') {
     if ($token === '') { echo json_encode(['success'=>0]); exit; }
     $baseTemp = __DIR__ . '/../uploads/temp_unzip/';
     $tempDir = $baseTemp . $token . '/';
-    function rrmdir($dir) {
-        if (!is_dir($dir)) return;
-        $objects = scandir($dir);
-        foreach ($objects as $object) {
-            if ($object == '.' || $object == '..') continue;
-            $path = $dir . DIRECTORY_SEPARATOR . $object;
-            if (is_dir($path)) rrmdir($path); else @unlink($path);
+    if (!function_exists('rrmdir')) {
+        function rrmdir($dir) {
+            if (!is_dir($dir)) return;
+            $objects = scandir($dir);
+            foreach ($objects as $object) {
+                if ($object == '.' || $object == '..') continue;
+                $path = $dir . DIRECTORY_SEPARATOR . $object;
+                if (is_dir($path)) rrmdir($path); else @unlink($path);
+            }
+            @rmdir($dir);
         }
-        @rmdir($dir);
     }
     rrmdir($tempDir);
     echo json_encode(['success'=>1]); exit;
@@ -674,26 +600,45 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'cleanup_temp') {
     <header class="admin-header">
         <h1 class="admin-title"><i class="fas fa-box-open" style="color: var(--primary-color);"></i> Quản lý Sản phẩm</h1>
         <div style="display: flex; gap: 12px;">
+            <!-- Nút xuất Excel -->
+            <button type="button" class="btn btn-outline" onclick="exportToCSV()" style="border-color: #107c10; color: #107c10;">
+                <i class="fas fa-file-export"></i> Xuất Excel
+            </button>
             <button type="button" class="btn btn-success" id="btn-save-all">
                 <i class="fas fa-save"></i> CHỐT LƯU 
             </button>
             <button type="button" class="btn btn-danger" onclick="deleteAllProducts()">
                 <i class="fas fa-trash-alt"></i> XÓA TẤT CẢ SẢN PHẨM
             </button>
-            <button type="button" class="btn btn-outline" onclick="showImportModal()">
-                <i class="fas fa-file-import"></i> Nhập từ Excel
+            
+            <!-- Input ẩn để nạp file trực tiếp không cần Modal -->
+            <input type="file" id="direct_csv_upload" accept=".csv" style="display: none;">
+            <button type="button" class="btn btn-outline" onclick="document.getElementById('direct_csv_upload').click()">
+                <i class="fas fa-file-import"></i> Nạp Excel
             </button>
+            
             <button type="button" class="btn btn-primary" onclick="showProductModal()">
                 <i class="fas fa-plus"></i> Thêm sản phẩm
+            </button>
+            
+            <!-- Nút hủy pending - chỉ hiện khi đang ở chế độ CSV -->
+            <button type="button" class="btn btn-outline" id="btn-cancel-pending" onclick="cancelPendingMode()" style="display:none; border-color:#d83b01; color:#d83b01;">
+                <i class="fas fa-times"></i> HỦY IMPORT
             </button>
         </div>
     </header>
 
     <div class="card" style="padding: 0; overflow: hidden;">
-        <div style="padding: 15px 24px; background: #faf9f8; border-bottom: 1px solid #edebe9;">
-            <span class="muted" style="font-size: 13px; color: #605e5c;">
-                <i class="fas fa-info-circle"></i> <strong>Hướng dẫn:</strong> Nhấp trực tiếp vào <strong>Tên</strong> hoặc <strong>Giá</strong> để sửa nhanh. Kéo thả ảnh trực tiếp vào cột <strong>Ảnh</strong>.
+        <div style="padding: 15px 24px; background: #faf9f8; border-bottom: 1px solid #edebe9; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <span class="admin-info-bar" style="font-size: 13px; color: #605e5c;">
+                <i class="fas fa-spinner fa-spin"></i> Đang tải...
             </span>
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <div class="admin-search-wrap">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="admin-search-input" class="admin-search-input" placeholder="Tìm SKU, tên, danh mục..." oninput="debouncedSearch(this.value)">
+                </div>
+            </div>
         </div>
         
         <div style="overflow-x:auto;">
@@ -772,13 +717,31 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'cleanup_temp') {
                     <label>Ngày áp dụng (dd/mm/yyyy)</label>
                     <input type="text" id="p_date" name="apply_date" class="format-date" placeholder="Nhập số liền: 25122024...">
                 </div>
+                <input type="hidden" id="p_specs" name="specs_summary" value="">
                 <div class="form-group" style="grid-column: span 2;">
-                    <label>Thông số kỹ thuật tóm tắt</label>
-                    <input type="text" id="p_specs" name="specs_summary" placeholder="Cách nhau bằng dấu |">
+                    <label><i class="fas fa-microchip"></i> Thông số kỹ thuật (4 nhóm)</label>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:15px; margin-top: 5px;">
+                        <div class="spec-group-admin">
+                            <h4><i class="fas fa-video"></i> Thông số kỹ thuật</h4>
+                            <textarea id="specs_group_1" name="specs_group_1" rows="5" placeholder="Độ phân giải: 3MP&#10;Góc nhìn: 360 độ&#10;Đàm thoại: Có"></textarea>
+                        </div>
+                        <div class="spec-group-admin">
+                            <h4><i class="fas fa-wifi"></i> Kết nối & Lưu trữ</h4>
+                            <textarea id="specs_group_2" name="specs_group_2" rows="5" placeholder="Kết nối: WiFi&#10;Thẻ nhớ: 256GB&#10;Cloud: Có"></textarea>
+                        </div>
+                        <div class="spec-group-admin">
+                            <h4><i class="fas fa-bolt"></i> Nguồn điện & Điều kiện sử dụng</h4>
+                            <textarea id="specs_group_3" name="specs_group_3" rows="5" placeholder="Nguồn điện: 5V&#10;Nhiệt độ: -10°C ~ 45°C&#10;Chống nước: IP66"></textarea>
+                        </div>
+                        <div class="spec-group-admin">
+                            <h4><i class="fas fa-tools"></i> Lắp đặt & Thiết bị hỗ trợ</h4>
+                            <textarea id="specs_group_4" name="specs_group_4" rows="5" placeholder="Lắp đặt: Treo tường&#10;Hỗ trợ: Android / iOS&#10;Bảo hành: 24 tháng"></textarea>
+                        </div>
+                    </div>
                 </div>
                 <div class="form-group" style="grid-column: span 2;">
-                    <label>Mô tả chi tiết</label>
-                    <textarea id="p_desc" name="description" rows="6"></textarea>
+                    <label>Mô tả chi tiết (hỗ trợ HTML rich text)</label>
+                    <textarea id="p_desc" name="description" rows="8"></textarea>
                 </div>
             </div>
             <div style="margin-top:25px; text-align:right; display: flex; justify-content: flex-end; gap: 10px;">
@@ -794,5 +757,30 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'cleanup_temp') {
 </div>
 
 <script src="../assets/js/admin_import.js?v=<?php echo time(); ?>"></script>
+
+<!-- CKEditor 5 cho Mô tả chi tiết -->
+<script src="https://cdn.ckeditor.com/ckeditor5/39.0.1/classic/ckeditor.js"></script>
+<script>
+var tandaEditor = null;
+var editorInitialized = false;
+document.addEventListener('DOMContentLoaded', function() {
+    if (editorInitialized) return;
+    var editorEl = document.querySelector('#p_desc');
+    if (editorEl && typeof ClassicEditor !== 'undefined') {
+        editorInitialized = true;
+        ClassicEditor
+            .create(editorEl, {
+                toolbar: ['heading', '|', 'bold', 'italic', 'bulletedList', 'numberedList', '|', 'blockQuote', 'insertTable', '|', 'undo', 'redo']
+            })
+            .then(function(editor) {
+                tandaEditor = editor;
+            })
+            .catch(function(error) {
+                editorInitialized = false;
+                console.error('CKEditor error:', error);
+            });
+    }
+});
+</script>
 </body>
 </html>

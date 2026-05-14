@@ -80,6 +80,74 @@
         @keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
 
+    <!-- Sticky Compare Bar -->
+    <div class="compare-sticky-bar" id="compareStickyBar" style="display:none;">
+        <div class="compare-sticky-content">
+            <span class="compare-sticky-count">Đang so sánh <strong id="compareCount">0</strong> sản phẩm</span>
+            <div class="compare-sticky-actions">
+                <button class="btn-compare-action" onclick="clearCompare()"><i class="fas fa-trash-alt"></i> Xóa</button>
+                <a href="compare.php" class="btn-compare-action btn-compare-go"><i class="fas fa-balance-scale"></i> So sánh ngay</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Confirm Modal (thay thế confirm() của Chrome) -->
+    <div id="customConfirmModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.55); z-index: 999999; justify-content: center; align-items: center;">
+        <div style="background: #fff; width: 90%; max-width: 380px; padding: 25px 20px; border-radius: 10px; text-align: center; box-shadow: 0 8px 30px rgba(0,0,0,0.25); animation: fadeInScale 0.25s ease;">
+            <i class="fas fa-question-circle" style="font-size: 48px; color: #ff9f00; margin-bottom: 12px;"></i>
+            <p id="customConfirmMsg" style="color: #333; font-size: 15px; margin-bottom: 22px; line-height: 1.5; font-weight: 500;"></p>
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button id="customConfirmCancel" style="flex: 1; padding: 11px; background: #f1f1f1; color: #666; border: 1px solid #ddd; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; transition: 0.2s;">Hủy</button>
+                <button id="customConfirmOk" style="flex: 1; padding: 11px; background: #d70018; color: #fff; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; transition: 0.2s;">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+    <style>
+        @keyframes fadeInScale { from { transform: scale(0.85); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        #customConfirmCancel:hover { background: #e4e4e4; }
+        #customConfirmOk:hover { background: #b50014; }
+    </style>
+    <script>
+    // Hàm thay thế confirm() gốc của Chrome
+    function showConfirmDialog(message, callback) {
+        var modal = document.getElementById('customConfirmModal');
+        var msgEl = document.getElementById('customConfirmMsg');
+        var btnOk = document.getElementById('customConfirmOk');
+        var btnCancel = document.getElementById('customConfirmCancel');
+        
+        if (!modal || !msgEl) { 
+            // Fallback nếu modal chưa load
+            if (confirm(message)) callback();
+            return;
+        }
+        
+        msgEl.textContent = message;
+        modal.style.display = 'flex';
+        
+        function closeModal() {
+            modal.style.display = 'none';
+            btnOk.removeEventListener('click', onOk);
+            btnCancel.removeEventListener('click', onCancel);
+        }
+        
+        function onOk() {
+            closeModal();
+            if (typeof callback === 'function') callback();
+        }
+        
+        function onCancel() {
+            closeModal();
+        }
+        
+        btnOk.addEventListener('click', onOk);
+        btnCancel.addEventListener('click', onCancel);
+        
+        // Click ngoài modal để đóng
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) onCancel();
+        }, { once: true });
+    }
+    </script>
     <script src="assets/js/script.js?v=<?php echo time(); ?>"></script>
 </body>
 </html>

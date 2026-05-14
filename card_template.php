@@ -22,12 +22,17 @@ if (!empty($p['image_1'])) {
 ?>
 <div class="tgdd-product-card <?php echo $outOfStock ? 'out-of-stock' : ''; ?>">
     
+    <!-- Nút so sánh (checkbox) -->
+    <label class="compare-check-wrap" title="Chọn để so sánh" onclick="event.stopPropagation()">
+        <input type="checkbox" class="compare-checkbox" value="<?php echo htmlspecialchars($p['sku']); ?>" onchange="toggleCompareItem(this)" data-name="<?php echo htmlspecialchars(addslashes($p['name'])); ?>" data-img="<?php echo htmlspecialchars($display_img); ?>" data-price="<?php echo $chot_gia; ?>">
+        <span class="compare-check-label">So sánh</span>
+    </label>
+
     <!-- Badge Góc (Trả góp / Giảm giá) -->
     <div class="tgdd-badge-wrap">
         <?php if($hasDiscount): ?>
             <span class="tgdd-badge badge-discount">Giảm <?php echo $pct; ?>%</span>
         <?php else: ?>
-            <span class="tgdd-badge badge-installment">Trả góp 0%</span>
         <?php endif; ?>
     </div>
 

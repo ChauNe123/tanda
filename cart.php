@@ -128,7 +128,7 @@ include 'includes/header.php';
 
     function generateZaloMessage() {
         let cart = JSON.parse(localStorage.getItem('tanda_cart')) || [];
-        if(cart.length === 0) return alert('Giỏ hàng trống!');
+        if(cart.length === 0) { showToast('Giỏ hàng trống!', 'warning'); return; }
         
         let nameEl = document.getElementById('cusName');
         let phoneEl = document.getElementById('cusPhone');

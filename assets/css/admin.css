@@ -23,6 +23,14 @@ body {
     padding: 20px;
 }
 
+/* Màn hình lớn */
+@media (min-width: 1600px) {
+    .admin-container { max-width: 1600px; }
+}
+@media (min-width: 2560px) {
+    .admin-container { max-width: 1800px; }
+}
+
 .card {
     background: #ffffff;
     border-radius: 4px;
@@ -387,4 +395,232 @@ body {
     border-radius: 8px;
     box-shadow: 0 0 50px rgba(0,0,0,0.5);
     animation: zoomIn 0.25s ease-out;
+}
+/* ====== 4 KHUNG TH�NG S? ADMIN ====== */
+.spec-group-admin {
+    background: #fafbfc;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    padding: 12px;
+}
+.spec-group-admin h4 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #333;
+    margin: 0 0 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.spec-group-admin h4 i {
+    color: #288ad6;
+    font-size: 14px;
+}
+.spec-group-admin textarea {
+    width: 100%;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 10px;
+    resize: vertical;
+    min-height: 100px;
+    font-size: 13px;
+    line-height: 1.7;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    outline: none;
+    box-sizing: border-box;
+}
+.spec-group-admin textarea:focus {
+    border-color: #288ad6;
+    box-shadow: 0 0 0 2px rgba(40,138,214,0.1);
+}
+
+/* ====== ADMIN SPECS PREVIEW IN TABLE ====== */
+.admin-specs-preview {
+    margin-top: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.admin-spec-box {
+    border: 1px solid #eee;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+}
+.admin-spec-title {
+    background: #f5f5f5;
+    padding: 6px 10px;
+    font-weight: 600;
+    font-size: 12px;
+    color: #333;
+}
+.admin-spec-content {
+    padding: 6px 10px;
+}
+.admin-spec-line {
+    font-size: 11px;
+    margin-bottom: 4px;
+    color: #555;
+    line-height: 1.5;
+}
+.admin-desc-preview {
+    margin-top: 10px;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+}
+.admin-desc-title {
+    background: #f5f5f5;
+    padding: 6px 10px;
+    font-weight: 600;
+    font-size: 12px;
+}
+.admin-desc-content {
+    padding: 8px 10px;
+    line-height: 1.5;
+    font-size: 11px;
+    color: #666;
+}
+/* ====== ADMIN ACTION BUTTONS ====== */
+.btn-edit-admin {
+    background: #288ad6;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+    width: 100px;
+    transition: all 0.2s;
+}
+.btn-edit-admin:hover {
+    background: #1a6fb5;
+}
+.btn-delete-admin {
+    background: #fff;
+    color: #d0021b;
+    border: 1px solid #ffcaca;
+    border-radius: 6px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 12px;
+    width: 100px;
+    transition: all 0.2s;
+}
+.btn-delete-admin:hover {
+    background: #fff3f3;
+}
+
+/* ====== SKELETON LOADING ====== */
+.skeleton-row td {
+    padding: 12px 16px;
+}
+.skeleton-block {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 4px;
+}
+@keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ====== ADMIN SEARCH ====== */
+.admin-search-wrap {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border: 1px solid #d2d0ce;
+    border-radius: 4px;
+    padding: 0 8px;
+    transition: border-color 0.2s;
+}
+.admin-search-wrap:focus-within {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 1px var(--primary-color);
+}
+.admin-search-wrap i {
+    color: #a19f9d;
+    font-size: 14px;
+    margin-right: 6px;
+}
+.admin-search-input {
+    border: none;
+    outline: none;
+    padding: 8px 4px;
+    font-size: 14px;
+    width: 220px;
+    background: transparent;
+}
+
+/* ====== PAGINATION ====== */
+.admin-pagination {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 24px;
+    border-top: 1px solid #edebe9;
+    flex-wrap: wrap;
+    gap: 10px;
+    background: #faf9f8;
+}
+.pagination-info {
+    font-size: 13px;
+    color: #605e5c;
+}
+.pagination-btns {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.page-btn {
+    min-width: 32px;
+    height: 32px;
+    border: 1px solid #d2d0ce;
+    background: #fff;
+    color: #323130;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+}
+.page-btn:hover:not(:disabled):not(.active) {
+    background: #f3f2f1;
+    border-color: #c8c6c4;
+}
+.page-btn.active {
+    background: var(--primary-color);
+    color: #fff;
+    border-color: var(--primary-color);
+}
+.page-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.per-page-select {
+    margin-left: 12px;
+    padding: 6px 10px;
+    border: 1px solid #d2d0ce;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #323130;
+    background: #fff;
+    cursor: pointer;
+    outline: none;
+}
+.per-page-select:focus {
+    border-color: var(--primary-color);
+}
+
+/* ====== DIRTY ROW HIGHLIGHT ====== */
+tr[data-sku].dirty-row {
+    background: #fffde7 !important;
 }

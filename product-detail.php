@@ -26,15 +26,30 @@ if (!$p) {
     exit;
 }
 
-// 4. Lấy Tên Danh Mục (cho breadcrumb)
+// 4. Lấy Tên Danh Mục từ DB (cho breadcrumb) - KHÔNG hardcode nữa
 $cat_slug = 'camera-wifi';
 $cat_name = 'Camera WiFi';
-if($p['cat_code'] === 'CAM-DAY') { $cat_slug = 'camera-tron-bo'; $cat_name = 'Camera Trọn Bộ'; }
-elseif($p['cat_code'] === 'DAU-GHI') { $cat_slug = 'dau-ghi-hinh'; $cat_name = 'Đầu Ghi Hình'; }
-elseif($p['cat_code'] === 'PHU-KIEN') { $cat_slug = 'phu-kien'; $cat_name = 'Phụ Kiện'; }
-elseif($p['cat_code'] === 'THIET-BI-MANG') { $cat_slug = 'thiet-bi-mang'; $cat_name = 'Thiết Bị Mạng'; }
+if (!empty($p['cat_code'])) {
+    $stmtCat = $conn->prepare("SELECT slug, name FROM categories WHERE cat_code = :cat_code AND status = 1 LIMIT 1");
+    $stmtCat->execute(['cat_code' => $p['cat_code']]);
+    $cat = $stmtCat->fetch();
+    if ($cat) {
+        $cat_slug = $cat['slug'];
+        $cat_name = $cat['name'];
+    }
+}
 
-// 5. Require Header
+// 5. Lấy ảnh đầu tiên cho giỏ hàng
+$first_image = 'placeholder.png';
+if (!empty($p['image_1'])) {
+    $image_files = explode(',', $p['image_1']);
+    $first_img = trim($image_files[0]);
+    if (!empty($first_img) && file_exists('uploads/' . $first_img)) {
+        $first_image = $first_img;
+    }
+}
+
+// 6. Require Header
 include 'includes/header.php';
 
 // Tính Toán Giá Sale
@@ -183,49 +198,114 @@ $pct = $hasDiscount ? round((($p['price'] - $chot_gia) / $p['price']) * 100) : 0
                 </div>
             </div>
 
-            <!-- Tabs: Thông tin sản phẩm & Thông số -->
+            <!-- Tabs: Mô tả sản phẩm & Thông số kỹ thuật -->
             <div class="pd-tabs-container">
                 <div class="tabs-header">
-                    <button class="tab-btn active" onclick="switchProductTab(event, 'tab-mota')">Thông tin sản phẩm</button>
+                    <button class="tab-btn active" onclick="switchProductTab(event, 'tab-mota')">Mô tả sản phẩm</button>
                     <button class="tab-btn" onclick="switchProductTab(event, 'tab-thongso')">Thông số kỹ thuật</button>
                 </div>
                 
                 <!-- Tab Mô tả -->
-                <div id="tab-mota" class="tab-content active" style="padding: 0 15px 15px 15px;">
-                    <?php 
-                        if(!empty($p['description'])) {
-                            echo trim($p['description']); // Description thường đã chứa thẻ p từ lúc nhập
-                        } else {
-                            echo '<p style="color:#888; font-style:italic;">Nội dung chi tiết đang được cập nhật...</p>';
-                        }
-                    ?>
+                <div id="tab-mota" class="tab-content active">
+                    <div class="description-wrapper">
+                        <div id="descriptionContent" class="description-content collapsed">
+                            <?php 
+                                if(!empty($p['description'])) {
+                                    echo $p['description'];
+                                } else {
+                                    echo '<p style="color:#888;">Nội dung đang cập nhật...</p>';
+                                }
+                            ?>
+                        </div>
+                        <?php if(!empty($p['description']) && strlen(strip_tags($p['description'])) > 250): ?>
+                        <button type="button" id="toggleDescription" class="btn-show-more">Xem thêm</button>
+                        <?php endif; ?>
+                    </div>
                 </div>
 
-                <!-- Tab Thông số -->
+                <!-- Tab Thông số kỹ thuật -->
                 <div id="tab-thongso" class="tab-content">
-                    <ul class="specs-list">
-                        <?php 
-                        if(!empty($p['specs_summary'])) {
-                            // Chuyển các dấu phân cách phổ biến (✔️, xuống dòng, thẻ br, dấu phẩy) thành một ký tự chung '|'
-                            $raw_text = str_replace(['✔️', '✔', "\n", "\r", '<br>', '<br/>', ','], '|', $p['specs_summary']);
-                            $specs = explode('|', $raw_text);
-                            
-                            foreach($specs as $idx => $spec) {
-                                $spec = trim($spec, " \t\n\r\0\x0B-");
-                                if(empty($spec)) continue;
-                                
-                                $parts = explode(':', $spec, 2);
-                                if(count($parts) == 2) {
-                                    echo "<li><strong><i class='fas fa-check' style='color:#288ad6; margin-right:5px; font-size:12px;'></i> ".htmlspecialchars(trim($parts[0]))."</strong><span>".htmlspecialchars(trim($parts[1]))."</span></li>";
-                                } else {
-                                    echo "<li><strong><i class='fas fa-check' style='color:#288ad6; margin-right:5px; font-size:12px;'></i> Đặc điểm ".($idx+1)."</strong><span>".htmlspecialchars($spec)."</span></li>";
-                                }
-                            }
-                        } else {
-                            echo "<li><strong>Thông số</strong><span>Đang cập nhật...</span></li>";
+                    <?php
+                    // Gom spec từ 4 nhóm. Chỉ hiện nhóm nào CÓ NỘI DUNG.
+                    // Nếu chỉ có 1 nhóm duy nhất → hiện danh sách phẳng (không sub-header).
+                    // Nếu có nhiều nhóm → hiện dạng collapsible sub-groups.
+                    
+                    $g1 = trim($p['specs_group_1'] ?? '');
+                    $g2 = trim($p['specs_group_2'] ?? '');
+                    $g3 = trim($p['specs_group_3'] ?? '');
+                    $g4 = trim($p['specs_group_4'] ?? '');
+                    
+                    // Lọc ra các nhóm có nội dung
+                    $filledGroups = [];
+                    if (!empty($g1)) $filledGroups[] = ['title' => 'Camera & Tiện ích',              'content' => $g1];
+                    if (!empty($g2)) $filledGroups[] = ['title' => 'Kết nối & Lưu trữ',               'content' => $g2];
+                    if (!empty($g3)) $filledGroups[] = ['title' => 'Nguồn điện & Điều kiện sử dụng',  'content' => $g3];
+                    if (!empty($g4)) $filledGroups[] = ['title' => 'Lắp đặt & Thiết bị hỗ trợ',       'content' => $g4];
+                    
+                    // Nếu không có group nào, thử lấy specs_summary
+                    if (empty($filledGroups)) {
+                        $summary = trim($p['specs_summary'] ?? '');
+                        if (!empty($summary)) {
+                            $filledGroups[] = ['title' => '', 'content' => $summary];
                         }
-                        ?>
-                    </ul>
+                    }
+                    
+                    $hasAnySpec = !empty($filledGroups);
+                    $singleGroup = (count($filledGroups) === 1);
+                    ?>
+                    
+                    <?php if ($hasAnySpec): ?>
+                    <div class="specs-container">
+                        <?php if ($singleGroup): ?>
+                            <!-- CHỈ 1 NHÓM: hiện danh sách phẳng, không sub-header -->
+                            <div class="spec-group active" style="border: none;">
+                                <div class="spec-body" style="display: block;">
+                                    <?php
+                                    $rows = explode("\n", $filledGroups[0]['content']);
+                                    foreach($rows as $row):
+                                        $row = trim($row);
+                                        if(empty($row)) continue;
+                                        // Hỗ trợ "key: value" và "key|value"
+                                        $parts = explode(':', $row, 2);
+                                        if (count($parts) < 2) $parts = explode('|', $row, 2);
+                                    ?>
+                                    <div class="spec-row">
+                                        <span><?php echo htmlspecialchars(trim($parts[0] ?? '')); ?></span>
+                                        <span><?php echo htmlspecialchars(trim($parts[1] ?? '')); ?></span>
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                        <?php else: ?>
+                            <!-- NHIỀU NHÓM: hiện dạng collapsible sub-groups -->
+                            <?php $idx = 0; foreach($filledGroups as $group): ?>
+                            <div class="spec-group <?php echo $idx === 0 ? 'active' : ''; ?>">
+                                <div class="spec-header" onclick="toggleSpecGroup(this)">
+                                    <span><?php echo htmlspecialchars($group['title']); ?></span>
+                                    <span class="arrow">▼</span>
+                                </div>
+                                <div class="spec-body">
+                                    <?php
+                                    $rows = explode("\n", $group['content']);
+                                    foreach($rows as $row):
+                                        $row = trim($row);
+                                        if(empty($row)) continue;
+                                        $parts = explode(':', $row, 2);
+                                        if (count($parts) < 2) $parts = explode('|', $row, 2);
+                                    ?>
+                                    <div class="spec-row">
+                                        <span><?php echo htmlspecialchars(trim($parts[0] ?? '')); ?></span>
+                                        <span><?php echo htmlspecialchars(trim($parts[1] ?? '')); ?></span>
+                                    </div>
+                                    <?php endforeach; ?>
+                                </div>
+                            </div>
+                            <?php $idx++; endforeach; ?>
+                        <?php endif; ?>
+                    </div>
+                    <?php else: ?>
+                    <p style="color:#888; font-style:italic; padding: 20px; text-align: center;">Thông số kỹ thuật đang được cập nhật...</p>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -250,10 +330,18 @@ $pct = $hasDiscount ? round((($p['price'] - $chot_gia) / $p['price']) * 100) : 0
                 </div>
             </div>
             <?php else: ?>
-            <div class="normal-price-box" style="padding: 15px 0; margin-bottom: 15px;">
-                <div class="main-price-row" style="color: #d70018; font-size: 36px; font-weight: bold; line-height: 1;">
+            <!-- Giá không khuyến mãi - Thiết kế đẹp -->
+            <div class="pd-box" style="text-align: center; padding: 20px;">
+                <div class="main-price-row" style="color: #d70018; font-size: 32px; font-weight: bold; line-height: 1.2; margin-bottom: 5px;">
                     <?php echo number_format($chot_gia, 0, ',', '.'); ?>₫
                 </div>
+                <div style="font-size: 13px; color: #888; margin-top: 4px;">Giá niêm yết (Đã bao gồm VAT)</div>
+                <?php if(!empty($p['coupon_code'])): ?>
+                <div style="margin-top: 10px; background: #fff8e1; border: 1px dashed #ff9f00; border-radius: 6px; padding: 8px 12px; display: inline-block;">
+                    <i class="fas fa-ticket-alt" style="color: #ff9f00;"></i> 
+                    <span style="font-size: 13px; color: #333;">Mã giảm: <strong style="color: #d70018;"><?php echo htmlspecialchars($p['coupon_code']); ?></strong></span>
+                </div>
+                <?php endif; ?>
             </div>
             <?php endif; ?>
                 
@@ -292,10 +380,10 @@ $pct = $hasDiscount ? round((($p['price'] - $chot_gia) / $p['price']) * 100) : 0
             <!-- Các Nút chức năng -->
             <div class="pd-actions">
                 <div class="btn-row">
-                    <button type="button" class="btn-outline-blue" onclick="addToCart('<?php echo htmlspecialchars($p['sku']); ?>', '<?php echo addslashes($p['name']); ?>', <?php echo $chot_gia; ?>, '<?php echo htmlspecialchars($p['image_file']); ?>')">
+                    <button type="button" class="btn-outline-blue" onclick="addToCart('<?php echo htmlspecialchars($p['sku']); ?>', '<?php echo addslashes($p['name']); ?>', <?php echo $chot_gia; ?>, '<?php echo htmlspecialchars($first_image); ?>')">
                         <i class="fas fa-cart-plus"></i>Thêm vào giỏ
                     </button>
-                    <button type="button" class="btn-solid-orange" onclick="addToCart('<?php echo htmlspecialchars($p['sku']); ?>', '<?php echo addslashes($p['name']); ?>', <?php echo $chot_gia; ?>, '<?php echo htmlspecialchars($p['image_file']); ?>'); window.location.href='cart.php';">
+                    <button type="button" class="btn-solid-orange" onclick="addToCart('<?php echo htmlspecialchars($p['sku']); ?>', '<?php echo addslashes($p['name']); ?>', <?php echo $chot_gia; ?>, '<?php echo htmlspecialchars($first_image); ?>'); window.location.href='cart.php';">
                         MUA NGAY
                     </button>
                 </div>
@@ -322,7 +410,7 @@ $pct = $hasDiscount ? round((($p['price'] - $chot_gia) / $p['price']) * 100) : 0
             <h2 class="section-title" style="font-size: 18px; margin: 0; text-transform: uppercase;">CÓ THỂ BẠN CŨNG THÍCH</h2>
             <a href="category.php?slug=<?php echo htmlspecialchars($cat_slug); ?>" class="view-all-link" style="color: #288ad6; font-size: 14px;">Xem thêm &raquo;</a>
         </div>
-        <div class="product-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); background: #f1f1f1; gap: 1px; border: 1px solid #f1f1f1;">
+        <div class="product-grid">
             <?php 
             $p_backup = $p; 
             foreach($relatedProds as $p) {
