@@ -657,56 +657,54 @@ if (isset($_POST['ajax_action']) && $_POST['ajax_action'] == 'cleanup_temp') {
 <div class="admin-container">
     <!-- STICKY HEADER TOOLBAR -->
     <header class="admin-header">
-        <h1 class="admin-title"><i class="fas fa-box-open" style="color: var(--primary-color);"></i> Quản lý Sản phẩm</h1>
-        <div style="display: flex; gap: 12px;">
-            <!-- Nút xuất Excel -->
-            <button type="button" class="btn btn-outline" onclick="exportToCSV()" style="border-color: #107c10; color: #107c10;">
+        <h1 class="admin-title"><i class="fas fa-box-open"></i> Quản lý Sản phẩm</h1>
+        <div class="admin-header-actions">
+            <button type="button" class="btn btn-outline" onclick="exportToCSV()" style="color:#059669;border-color:#a7f3d0;">
                 <i class="fas fa-file-export"></i> Xuất Excel
             </button>
             <button type="button" class="btn btn-success" id="btn-save-all">
-                <i class="fas fa-save"></i> CHỐT LƯU 
+                <i class="fas fa-save"></i> CHỐT LƯU
             </button>
             <button type="button" class="btn btn-danger" onclick="deleteAllProducts()">
-                <i class="fas fa-trash-alt"></i> XÓA TẤT CẢ SẢN PHẨM
+                <i class="fas fa-trash-alt"></i> XÓA TẤT CẢ
             </button>
-            
-            <!-- Input ẩn để nạp file trực tiếp không cần Modal -->
             <input type="file" id="direct_csv_upload" accept=".csv" style="display: none;">
             <button type="button" class="btn btn-outline" onclick="document.getElementById('direct_csv_upload').click()">
                 <i class="fas fa-file-import"></i> Nạp Excel
             </button>
-            
             <button type="button" class="btn btn-primary" onclick="showProductModal()">
-                <i class="fas fa-plus"></i> Thêm sản phẩm
+                <i class="fas fa-plus"></i> Thêm SP
             </button>
-            
-            <!-- Nút hủy pending - chỉ hiện khi đang ở chế độ CSV -->
-            <button type="button" class="btn btn-outline" id="btn-cancel-pending" onclick="cancelPendingMode()" style="display:none; border-color:#d83b01; color:#d83b01;">
+            <button type="button" class="btn btn-outline" id="btn-cancel-pending" onclick="cancelPendingMode()" style="display:none;color:#dc2626;border-color:#fecaca;">
                 <i class="fas fa-times"></i> HỦY IMPORT
             </button>
         </div>
     </header>
 
     <div class="card" style="padding: 0; overflow: hidden;">
-        <div style="padding: 15px 24px; background: #faf9f8; border-bottom: 1px solid #edebe9; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-            <span class="admin-info-bar" style="font-size: 13px; color: #605e5c;">
+        <div class="toolbar-row">
+            <span class="admin-info-bar">
                 <i class="fas fa-spinner fa-spin"></i> Đang tải...
             </span>
-            <div style="display: flex; gap: 10px; align-items: center;">
-                <div class="admin-search-wrap">
-                    <i class="fas fa-search"></i>
-                    <input type="text" id="admin-search-input" class="admin-search-input" placeholder="Tìm SKU, tên, danh mục..." oninput="debouncedSearch(this.value)">
-                </div>
+            <div class="admin-search-wrap">
+                <i class="fas fa-search"></i>
+                <input type="text" id="admin-search-input" class="admin-search-input" placeholder="Tìm SKU, tên, danh mục..." oninput="debouncedSearch(this.value)">
             </div>
         </div>
         
-        <div style="overflow-x:auto;">
+        <!-- MOBILE CARD VIEW -->
+        <div class="mobile-cards" id="mobile-cards-container">
+            <!-- Rendered by JS -->
+        </div>
+        
+        <!-- DESKTOP TABLE VIEW -->
+        <div class="table-wrapper">
             <table class="data-table" id="product-table">
                 <thead>
                     <tr>
-                        <th style="width: 120px;">Hình ảnh sản phẩm</th>
+                        <th style="width: 120px;">Hình ảnh</th>
                         <th style="width: 100px;">Mã SKU</th>
-                        <th>Thông tin sản phẩm & Danh mục</th>
+                        <th>Thông tin & Danh mục</th>
                         <th style="width: 180px;">Giá bán / Khuyến mãi</th>
                         <th style="width: 100px; text-align: center;">Trạng thái</th>
                         <th style="width: 130px; text-align: center;">Thao tác</th>

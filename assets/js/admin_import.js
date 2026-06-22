@@ -107,7 +107,7 @@ function showSkeleton() {
     const tbody = document.getElementById('product-list-body');
     if (!tbody) return;
     let html = '';
-    for (let i = 0; i < adminState.perPage; i++) {
+    for (let i = 0; i < Math.min(adminState.perPage, 6); i++) {
         html += `
             <tr class="skeleton-row">
                 <td><div class="skeleton-block" style="width:100px;height:80px;"></div></td>
@@ -125,6 +125,26 @@ function showSkeleton() {
             </tr>`;
     }
     tbody.innerHTML = html;
+    
+    // Mobile skeleton
+    const mc = document.getElementById('mobile-cards-container');
+    if (mc) {
+        let mHtml = '';
+        for (let i = 0; i < Math.min(adminState.perPage, 5); i++) {
+            mHtml += `
+            <div class="product-card-mobile" style="padding:12px;">
+                <div style="display:flex;gap:12px;align-items:flex-start;">
+                    <div class="skeleton-block" style="width:80px;height:80px;"></div>
+                    <div style="flex:1;">
+                        <div class="skeleton-block" style="width:60px;height:16px;margin-bottom:8px;"></div>
+                        <div class="skeleton-block" style="width:80%;height:18px;margin-bottom:4px;"></div>
+                        <div class="skeleton-block" style="width:40%;height:14px;"></div>
+                    </div>
+                </div>
+            </div>`;
+        }
+        mc.innerHTML = mHtml;
+    }
 }
 
 // ============================================================
@@ -163,12 +183,15 @@ async function loadProductList() {
             }
             
             renderTable(adminState.data);
+            renderMobileCards(adminState.data);
             renderPagination();
             updateAdminInfo();
             addLog(`Đã tải ${result.data.length}/${result.total} sản phẩm (Trang ${result.page}/${result.total_pages})`, 'success');
         }
     } catch (err) {
         if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:50px;color:#d70018;">⚠ Lỗi tải dữ liệu: ' + err.message + '</td></tr>';
+        const mc = document.getElementById('mobile-cards-container');
+        if (mc) mc.innerHTML = '<div style="text-align:center;padding:40px;color:#dc2626;">⚠ Lỗi tải dữ liệu</div>';
     }
     adminState.isLoading = false;
 }
@@ -280,11 +303,88 @@ function renderTable(data) {
     
     tbody.innerHTML = '';
     tbody.appendChild(frag);
+    
+    // Đồng thời render mobile cards
+    renderMobileCards(data);
 }
 
 // ============================================================
-// RENDER PHÂN TRANG
+// RENDER MOBILE CARDS (HIỂN THỊ DẠNG THẺ TRÊN ĐIỆN THOẠI)
 // ============================================================
+function renderMobileCards(data) {
+    const container = document.getElementById('mobile-cards-container');
+    if (!container) return;
+
+    if (!data || data.length === 0) {
+        container.innerHTML = '<div style="text-align:center;padding:40px 20px;color:#94a3b8;font-size:14px;">' +
+            (adminState.search ? 'Không tìm thấy sản phẩm khớp với "' + escapeHtml(adminState.search) + '"' : 'Chưa có sản phẩm nào.') +
+            '</div>';
+        return;
+    }
+
+    let html = '';
+    data.forEach(p => {
+        const isDirty = adminState.dirtyEdits[p.sku] ? true : false;
+        const isPending = (adminState.isPendingMode || p._isPending) ? true : false;
+        const dirtyClass = isDirty ? ' dirty' : '';
+
+        // Ảnh đầu tiên
+        let firstImg = '';
+        let allImages = [];
+        if (p.image_1) allImages = p.image_1.split(',').filter(i => i.trim() !== '');
+        if (p.temp_images && Array.isArray(p.temp_images)) allImages = [...allImages, ...p.temp_images];
+        if (allImages.length > 0) {
+            const img = allImages[0];
+            const isBase64 = img.startsWith('data:image');
+            firstImg = isBase64 ? img : `../uploads/${img.trim()}`;
+        }
+
+        // Specs preview
+        let specsPreview = '';
+        if (p.specs_summary) {
+            specsPreview = escapeHtml(String(p.specs_summary).replace(/\|/g, ' | ').substring(0, 120));
+        }
+
+        const statusText = p.status == 1 ? 'Còn hàng' : 'Hết hàng';
+        const statusColor = p.status == 1 ? '#059669' : '#dc2626';
+        const checkedAttr = p.status == 1 ? ' checked' : '';
+
+        html += `
+        <div class="product-card-mobile${dirtyClass}" data-sku="${escapeHtml(p.sku)}">
+            <div class="pcm-header">
+                <div class="pcm-gallery" onclick="editProductBySku('${escapeHtml(p.sku)}')">
+                    ${firstImg ? `<img src="${firstImg}" loading="lazy" onerror="this.style.display='none'">` : '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#94a3b8;font-size:24px;"><i class="fas fa-image"></i></div>'}
+                    ${allImages.length > 1 ? `<span class="pcm-img-count">${allImages.length}</span>` : ''}
+                </div>
+                <div class="pcm-sku-wrap">
+                    <span class="pcm-sku">${escapeHtml(p.sku)}${isPending ? ' <span style="background:#f59e0b;color:#fff;font-size:9px;padding:1px 5px;border-radius:3px;margin-left:4px;">CHỜ LƯU</span>' : ''}</span>
+                    <div class="pcm-name">${escapeHtml(p.name)}</div>
+                    <span class="pcm-cat">${escapeHtml(p.cat_code || 'N/A')}</span>
+                </div>
+            </div>
+            <div class="pcm-prices">
+                <span class="pcm-sale-price">${parseInt(p.sale_price || 0).toLocaleString('vi-VN')}₫</span>
+                <span class="pcm-list-price">${parseInt(p.price || 0).toLocaleString('vi-VN')}₫</span>
+            </div>
+            ${specsPreview ? `<div class="pcm-specs">📋 ${specsPreview}</div>` : ''}
+            <div class="pcm-actions">
+                <div class="pcm-status">
+                    <label class="stock-toggle" title="${statusText}">
+                        <input type="checkbox"${checkedAttr} onchange="toggleProductStatus('${escapeHtml(p.sku)}', this.checked)">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span class="stock-status-text" style="color:${statusColor}">${statusText}</span>
+                </div>
+                <div class="pcm-btns">
+                    <button class="pcm-btn edit" onclick="editProductBySku('${escapeHtml(p.sku)}')"><i class="fas fa-edit"></i> Sửa</button>
+                    <button class="pcm-btn delete" onclick="handleDeleteProduct('${escapeHtml(p.sku)}')"><i class="fas fa-trash"></i> Xóa</button>
+                </div>
+            </div>
+        </div>`;
+    });
+
+    container.innerHTML = html;
+}
 function renderPagination() {
     let container = document.getElementById('pagination-container');
     if (!container) {
@@ -424,16 +524,30 @@ async function updateLocalProduct(sku, field, val) {
 async function toggleProductStatus(sku, checked) {
     const newStatus = checked ? 1 : 0;
     const tr = document.querySelector(`tr[data-sku="${sku}"]`);
+    const mobileCard = document.querySelector(`.product-card-mobile[data-sku="${sku}"]`);
     const statusText = tr ? tr.querySelector('.stock-status-text') : null;
     const toggleLabel = tr ? tr.querySelector('.stock-toggle') : null;
     
-    // Cập nhật UI ngay lập tức
+    // Cập nhật UI desktop
     if (statusText) {
         statusText.textContent = newStatus ? 'Còn hàng' : 'Hết hàng';
-        statusText.style.color = newStatus ? '#107c10' : '#d83b01';
+        statusText.style.color = newStatus ? '#059669' : '#dc2626';
     }
     if (toggleLabel) {
         toggleLabel.title = newStatus ? 'Đang Còn hàng - Click để chuyển Hết hàng' : 'Đang Hết hàng - Click để chuyển Còn hàng';
+    }
+    
+    // Cập nhật UI mobile card
+    if (mobileCard) {
+        const mobileStatusText = mobileCard.querySelector('.stock-status-text');
+        const mobileToggle = mobileCard.querySelector('.stock-toggle input');
+        if (mobileStatusText) {
+            mobileStatusText.textContent = newStatus ? 'Còn hàng' : 'Hết hàng';
+            mobileStatusText.style.color = newStatus ? '#059669' : '#dc2626';
+        }
+        if (mobileToggle) {
+            mobileToggle.checked = checked;
+        }
     }
     
     const formData = new FormData();
@@ -445,30 +559,32 @@ async function toggleProductStatus(sku, checked) {
         const resp = await fetch('import_csv.php', { method: 'POST', body: formData });
         const data = await resp.json();
         if (data.success) {
-            // Flash xanh nhẹ dòng
             if (tr) {
                 tr.style.transition = 'background 0.3s';
                 tr.style.background = '#d4edda';
                 setTimeout(() => { tr.style.background = ''; }, 600);
             }
+            if (mobileCard) {
+                mobileCard.style.transition = 'background 0.3s';
+                mobileCard.style.background = '#d4edda';
+                setTimeout(() => { mobileCard.style.background = ''; }, 600);
+            }
         } else {
-            // Revert nếu lỗi
+            // Revert
             if (statusText) {
                 const revertStatus = checked ? 0 : 1;
                 statusText.textContent = revertStatus ? 'Còn hàng' : 'Hết hàng';
-                statusText.style.color = revertStatus ? '#107c10' : '#d83b01';
+                statusText.style.color = revertStatus ? '#059669' : '#dc2626';
             }
         }
     } catch (err) {
-        // Revert nếu lỗi mạng
         if (statusText) {
             const revertStatus = checked ? 0 : 1;
             statusText.textContent = revertStatus ? 'Còn hàng' : 'Hết hàng';
-            statusText.style.color = revertStatus ? '#107c10' : '#d83b01';
+            statusText.style.color = revertStatus ? '#059669' : '#dc2626';
         }
     }
     
-    // Cập nhật local state
     const idx = adminState.data.findIndex(p => p.sku === sku);
     if (idx !== -1) {
         adminState.data[idx].status = newStatus;
@@ -498,6 +614,7 @@ const debouncedSearch = debounce(function(query) {
             const pageData = filtered.slice(start, start + adminState.perPage);
             adminState.data = pageData;
             renderTable(pageData);
+            renderMobileCards(pageData);
             renderPagination();
         } else {
             renderPendingTable();
@@ -976,8 +1093,8 @@ function renderPendingTable() {
     adminState.data = pageData;
     
     renderTable(pageData);
+    renderMobileCards(pageData);
     renderPagination();
-    updatePendingInfo();
 }
 
 function updatePendingInfo() {

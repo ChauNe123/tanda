@@ -48,6 +48,7 @@ global $sys_settings;
         .tgdd-logo {
             display: flex;
             align-items: center;
+            justify-content: center;
             flex-shrink: 0;
             font-size: 28px;
             font-weight: 900;
@@ -56,6 +57,27 @@ global $sys_settings;
             font-style: italic;
             letter-spacing: -1px;
             line-height: 1;
+            height: 85px;
+            width: auto;
+            max-width: 220px;
+            padding: 0 10px;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            background: transparent !important;
+        }
+        .tgdd-logo:hover {
+            transform: scale(1.08);
+            opacity: 0.95;
+        }
+        .tgdd-logo img {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            display: block;
+            background: transparent !important;
+            border: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
         }
         .tgdd-logo span { font-weight: 400; }
 
@@ -397,7 +419,18 @@ global $sys_settings;
                 align-items: center;
                 justify-content: flex-start;
             }
-            .tgdd-logo { font-size: 18px; flex-shrink: 0; margin-right: auto; }
+            .tgdd-logo { 
+                font-size: 18px; 
+                flex-shrink: 0; 
+                margin-right: auto;
+                max-width: 140px;
+                height: 60px;
+                padding: 0 5px;
+            }
+            .tgdd-logo img { 
+                max-width: 100%;
+                max-height: 100%;
+            }
             .tgdd-logo i { font-size: 18px !important; margin-right: 3px !important; }
             
             /* Layout order: Logo | Hamburger | Search | Cart */
@@ -526,7 +559,16 @@ global $sys_settings;
             .suggest-price-new { font-size: 13px; }
             
             .header-top { padding: 4px 6px; gap: 4px; }
-            .tgdd-logo { font-size: 16px; }
+            .tgdd-logo { 
+                font-size: 16px;
+                max-width: 110px;
+                height: 50px;
+                padding: 0 3px;
+            }
+            .tgdd-logo img {
+                max-width: 100%;
+                max-height: 100%;
+            }
             .tgdd-search { height: 28px; }
             .tgdd-search input { font-size: 10px; }
             .cart-icon-wrap { font-size: 16px; }
@@ -860,9 +902,8 @@ global $sys_settings;
     <header class="tgdd-header" id="tgddHeader">
         <div class="container header-top">
             <!-- Logo -->
-            <a href="index.php" class="tgdd-logo">
-                <i class="fas fa-camera-retro" style="font-size:24px; margin-right:6px;"></i>
-                TAN<span>DA</span>
+            <a href="index.php" class="tgdd-logo" title="TANDA Technology">
+                <img src="assets/img/LogoTANDA.png" alt="TANDA Technology Logo">
             </a>
             
             <!-- Nút Hamburger cho Mobile -->

@@ -66,10 +66,10 @@ $productsSpecs = [];
 foreach ($products as $p) {
     $specs = [];
     $groups = [
-        '📷 Camera & Tiện ích'              => $p['specs_group_1'] ?? '',
-        '📶 Kết nối & Lưu trữ'               => $p['specs_group_2'] ?? '',
-        '⚡ Nguồn điện & ĐK sử dụng'         => $p['specs_group_3'] ?? '',
-        '🛠️ Lắp đặt & Hỗ trợ'               => $p['specs_group_4'] ?? '',
+        ' Camera & Tiện ích'              => $p['specs_group_1'] ?? '',
+        ' Kết nối & Lưu trữ'               => $p['specs_group_2'] ?? '',
+        ' Nguồn điện & ĐK sử dụng'         => $p['specs_group_3'] ?? '',
+        ' Lắp đặt & Hỗ trợ'               => $p['specs_group_4'] ?? '',
     ];
     $productSpecs = [];
     foreach ($groups as $groupName => $content) {
@@ -172,7 +172,7 @@ foreach ($products as $p) {
 
                 <!-- Spec Groups -->
                 <?php 
-                $groupNames = ['📷 Camera & Tiện ích', '📶 Kết nối & Lưu trữ', '⚡ Nguồn điện & ĐK sử dụng', '🛠️ Lắp đặt & Hỗ trợ'];
+                $groupNames = ['Camera & Tiện ích', 'Kết nối & Lưu trữ', 'Nguồn điện & ĐK sử dụng', 'Lắp đặt & Hỗ trợ'];
                 foreach ($groupNames as $groupName):
                     // Kiểm tra có sản phẩm nào có spec trong group này không
                     $hasGroup = false;
